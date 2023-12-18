@@ -1,0 +1,43 @@
+<!-- htmx base document -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- Allow any inheriting page to set it's own title -->
+        <title>{% block title %}{{ title }}{% endblock %}</title>
+
+        <link rel="stylesheet" href="/static/pico.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+        <script>
+            htmx.defineExtension('my-json-enc', {
+                onEvent: function (name, evt) {
+                    if (name === "htmx:configRequest") {
+                        evt.detail.headers['Content-Type'] = "application/json";
+                    }
+                },
+                
+                encodeParameters : function(xhr, parameters, elt) {
+                    xhr.overrideMimeType('text/json');
+                    console.log(parameters);
+                    Object.keys(parameters).forEach(function(key) {
+                        if (parameters[key] === "") {
+                            delete parameters[key];
+                        }
+                    });
+                    console.log(parameters);
+                    return JSON.stringify(parameters);
+                }
+            })
+        </script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/response-targets.js"></script>
+
+        <!-- Allow any inheriting page to extend head with additional assets -->
+        {% block head %}{% endblock %}
+    </head>
+    <body>
+        <main class="container" id="content">
+            <!-- Inheriting pages will have their content rendered here, similar to app root in React, Angular, etc. -->
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>

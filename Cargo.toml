@@ -1,0 +1,17 @@
+[package]
+name = "finnish"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.4.0"
+axum = "0.7.2"
+serde = { version = "1.0.193", features = ["derive"] }
+shuttle-axum = { version = "0.35.1", default-features = false, features = ["axum-0-7"] }
+shuttle-runtime = "0.35.1"
+shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
+sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
+tokio = { version = "1.35.0", features = ["full"] }
+tower-http = { version = "0.5.0", features = ["fs"] }
+tracing = "0.1.40"

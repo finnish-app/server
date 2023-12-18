@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses{% endblock %}
+
+{% block content %}
+
+<section class="section" id="expenses">
+<h3>Carol's Expenses</h3>
+
+<figure>
+<table class="table" role="grid">
+    <thead>
+    <tr>
+      <th>Id</th>
+      <th>Cost</th>
+    </tr>
+    </thead>
+    <tbody id="expenses-overview" hx-get="/expenses" hx-trigger="load">
+    </tbody>
+</table>
+</figure>
+</section>
+
+{% endblock %}
