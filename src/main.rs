@@ -3,10 +3,11 @@ use std::sync::Arc;
 use askama::Template;
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    //    http::StatusCode,
     response::{Html, IntoResponse},
     routing::get,
-    Json, Router,
+    Router,
+    //Json,
 };
 use serde::Serialize;
 use shuttle_runtime::CustomError;
@@ -36,24 +37,24 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/expenses", get(get_expenses))
         .route("/hello", get(hello_world))
         .route("/greet/:name", get(greet))
-        .route("/whatever", get(whatever))
+        //.route("/whatever", get(whatever))
         .nest_service("/static", ServeDir::new("./css"))
         .with_state(shared_state);
 
     Ok(router.into())
 }
 
-async fn whatever(
-    State(shared_state): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    match sqlx::query_as!(Expense, "SELECT * FROM expenses")
-        .fetch_all(&shared_state.pool)
-        .await
-    {
-        Ok(expenses) => Ok((StatusCode::CREATED, Json(expenses))),
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
-    }
-}
+//async fn whatever(
+//    State(shared_state): State<Arc<AppState>>,
+//) -> Result<impl IntoResponse, impl IntoResponse> {
+//    match sqlx::query_as!(Expense, "SELECT * FROM expenses")
+//        .fetch_all(&shared_state.pool)
+//        .await
+//    {
+//        Ok(expenses) => Ok((StatusCode::CREATED, Json(expenses))),
+//        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+//    }
+//}
 
 async fn hello_world() -> &'static str {
     "Hello, world!"
@@ -78,7 +79,11 @@ async fn expenses_index() -> impl IntoResponse {
 }
 
 async fn get_expenses(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    let expenses: Vec<Expense> = sqlx::query_as!(Expense, "SELECT * FROM expenses")
+    //    let expenses: Vec<Expense> = sqlx::query_as!(Expense, "SELECT * FROM expenses")
+    //        .fetch_all(&shared_state.pool)
+    //        .await
+    //        .unwrap();
+    let expenses: Vec<Expense> = sqlx::query_as("SELECT * FROM expenses")
         .fetch_all(&shared_state.pool)
         .await
         .unwrap();
