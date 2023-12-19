@@ -1,0 +1,28 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  rustfmt:
+    name: rustfmt-ting check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - run: cargo fmt -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+      - run: cargo clippy -- -D warnings
