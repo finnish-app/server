@@ -649,6 +649,7 @@ dependencies = [
  "shuttle-runtime",
  "shuttle-shared-db",
  "sqlx",
+ "strum 0.25.0",
  "tokio",
  "tower-http 0.5.0",
  "tracing",
