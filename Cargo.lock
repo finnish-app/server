@@ -246,6 +246,7 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -283,6 +284,7 @@ dependencies = [
  "sync_wrapper",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -654,8 +656,10 @@ dependencies = [
  "sqlx",
  "strum 0.25.0",
  "tokio",
+ "tower",
  "tower-http 0.5.0",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -2324,7 +2328,6 @@ dependencies = [
  "tokio-stream",
  "tonic 0.10.2",
  "tower",
- "tracing-subscriber",
 ]
 
 [[package]]
