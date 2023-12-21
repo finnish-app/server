@@ -58,5 +58,18 @@ pub struct Expense {
 
 #[derive(Deserialize, Debug)]
 pub struct GetExpense {
+    #[serde(deserialize_with = "empty_string_to_none")]
     pub month: Option<Months>,
+}
+
+fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = serde::Deserialize::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(Months::from_str(&s).unwrap()))
+    }
 }

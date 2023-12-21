@@ -5,6 +5,7 @@ macro_rules! TABLE_ROW {
             <td>{}</td>
             <td>{}</td>
             <td>{}</td>
+            <td>{}</td>
             <td>
                 <button class=\"btn btn-danger\"
                 hx-get=\"/expenses/{}/edit\"
@@ -31,6 +32,7 @@ macro_rules! TABLE_ROW {
 macro_rules! EDITABLE_TABLE_ROW {
     () => {
         "<tr hx-trigger='cancel' class='editing' hx-get=\"/expenses/{}\">
+            <td><input type='date' name='date' value='{}'></td>
             <td><input type='text' name='description' value='{}'></td>
             <td><input type='number' name='price' value='{}'></td>
             <td><select name='expense_type'>

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use chrono::Month;
 use serde::Deserialize;
@@ -18,6 +18,28 @@ pub enum Months {
     October,
     November,
     December,
+}
+
+impl FromStr for Months {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "January" => Ok(Months::January),
+            "February" => Ok(Months::February),
+            "March" => Ok(Months::March),
+            "April" => Ok(Months::April),
+            "May" => Ok(Months::May),
+            "June" => Ok(Months::June),
+            "July" => Ok(Months::July),
+            "August" => Ok(Months::August),
+            "September" => Ok(Months::September),
+            "October" => Ok(Months::October),
+            "November" => Ok(Months::November),
+            "December" => Ok(Months::December),
+            _ => Err(format!("{} is not a valid month", s)),
+        }
+    }
 }
 
 impl Display for Months {

@@ -38,8 +38,8 @@ pub async fn get_expenses(
                 Expense,
                 r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
                 FROM expenses WHERE date BETWEEN $1 AND $2 ORDER BY date ASC"#,
-                get_first_day_from_month(month.clone() as u32),
-                get_last_day_from_month(month as u32)
+                get_first_day_from_month(month.clone() as u32 + 1),
+                get_last_day_from_month(month as u32 + 1)
             )
             .fetch_all(&shared_state.pool)
             .await
@@ -63,6 +63,7 @@ pub async fn get_expenses(
             .map(|expense| {
                 format!(
                     TABLE_ROW!(),
+                    expense.date,
                     expense.description,
                     expense.price,
                     expense.expense_type,
@@ -88,6 +89,7 @@ pub async fn edit_expense(
     Html(format!(
         EDITABLE_TABLE_ROW!(),
         expense.id,
+        expense.date,
         expense.description,
         expense.price,
         expense.is_essencial,
@@ -108,7 +110,12 @@ pub async fn get_expense(
 
     Html(format!(
         TABLE_ROW!(),
-        expense.description, expense.price, expense.expense_type, expense.is_essencial, expense.id
+        expense.date,
+        expense.description,
+        expense.price,
+        expense.expense_type,
+        expense.is_essencial,
+        expense.id
     ))
 }
 
@@ -124,6 +131,11 @@ pub async fn update_expense(
 
     Html(format!(
         TABLE_ROW!(),
-        expense.description, expense.price, expense.expense_type, expense.is_essencial, expense.id
+        expense.date,
+        expense.description,
+        expense.price,
+        expense.expense_type,
+        expense.is_essencial,
+        expense.id
     ))
 }
