@@ -1,5 +1,7 @@
+use crate::Months;
 use std::{fmt::Display, str::FromStr};
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
@@ -51,4 +53,10 @@ pub struct Expense {
     pub price: f32,
     pub expense_type: ExpenseType,
     pub is_essencial: bool,
+    pub date: NaiveDate,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GetExpense {
+    pub month: Option<Months>,
 }

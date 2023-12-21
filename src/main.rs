@@ -1,3 +1,4 @@
+mod constant;
 mod data;
 mod data_router;
 mod hypermedia_router;

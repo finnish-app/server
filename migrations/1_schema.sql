@@ -11,5 +11,6 @@ CREATE TABLE IF NOT EXISTS expenses (
     description varchar(255) NOT NULL,
     price real NOT NULL,
     expense_type expense_type NOT NULL,
-    is_essencial boolean NOT NULL
+    is_essencial boolean NOT NULL,
+    date date NOT NULL DEFAULT CURRENT_DATE
 );

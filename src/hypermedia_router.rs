@@ -1,15 +1,17 @@
+use crate::{
+    constant::{EDITABLE_TABLE_ROW, TABLE_ROW},
+    schema::{Expense, ExpenseType, GetExpense},
+    util::{get_first_day_from_month, get_last_day_from_month},
+    AppState, ExpensesTemplate,
+};
 use std::sync::Arc;
 
 use askama_axum::IntoResponse;
-use axum::extract::Path;
-use axum::routing::get;
-use axum::Router;
-use axum::{extract::State, response::Html};
-
-use crate::{
-    schema::Expense,
-    util::{EDITABLE_TABLE_ROW, TABLE_ROW},
-    AppState, ExpensesTemplate,
+use axum::{
+    extract::{Path, Query, State},
+    response::Html,
+    routing::get,
+    Router,
 };
 
 pub fn hypermedia_router() -> Router<Arc<AppState>> {
@@ -26,15 +28,34 @@ pub async fn expenses_index() -> impl IntoResponse {
     }
 }
 
-pub async fn get_expenses(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    //    let expenses: Vec<Expense> = sqlx::query_as!(Expense, "SELECT * FROM expenses")
-    //        .fetch_all(&shared_state.pool)
-    //        .await
-    //        .unwrap();
-    let expenses: Vec<Expense> = sqlx::query_as("SELECT * FROM expenses")
-        .fetch_all(&shared_state.pool)
-        .await
-        .unwrap();
+pub async fn get_expenses(
+    State(shared_state): State<Arc<AppState>>,
+    Query(get_expense_input): Query<GetExpense>,
+) -> impl IntoResponse {
+    let expenses: Vec<Expense> = match get_expense_input.month {
+        Some(month) => {
+            sqlx::query_as!(
+                Expense,
+                r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
+                FROM expenses WHERE date BETWEEN $1 AND $2 ORDER BY date ASC"#,
+                get_first_day_from_month(month.clone() as u32),
+                get_last_day_from_month(month as u32)
+            )
+            .fetch_all(&shared_state.pool)
+            .await
+            .unwrap()
+        }
+        None => {
+            sqlx::query_as!(
+                Expense,
+                r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
+                FROM expenses ORDER BY date ASC"#
+            )
+                .fetch_all(&shared_state.pool)
+                .await
+                .unwrap()
+        }
+    };
 
     Html(
         expenses

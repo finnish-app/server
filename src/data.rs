@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
 use chrono::Month;
+use serde::Deserialize;
 use strum::EnumIter;
 
-#[derive(EnumIter, Debug, PartialEq, Clone)]
+#[derive(EnumIter, Debug, PartialEq, Clone, Deserialize)]
 pub enum Months {
     January,
     February,
