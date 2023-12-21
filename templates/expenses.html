@@ -16,6 +16,7 @@
                 <option value="{{ month }}">{{ month }}</option>
             {% endif %}
         {% endfor %}
+        <option>Entire year</option>
     </select>
 
     <button type="submit">Search</button>
@@ -25,6 +26,7 @@
 <table class="table" role="grid">
     <thead>
     <tr>
+      <th>Date</th>
       <th>Description</th>
       <th>Price</th>
       <th>Category</th>

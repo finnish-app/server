@@ -1,5 +1,7 @@
+use crate::Months;
 use std::{fmt::Display, str::FromStr};
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
@@ -51,4 +53,23 @@ pub struct Expense {
     pub price: f32,
     pub expense_type: ExpenseType,
     pub is_essencial: bool,
+    pub date: NaiveDate,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GetExpense {
+    #[serde(deserialize_with = "empty_string_to_none")]
+    pub month: Option<Months>,
+}
+
+fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = serde::Deserialize::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(Months::from_str(&s).unwrap()))
+    }
 }
