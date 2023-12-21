@@ -6,14 +6,16 @@ edition = "2021"
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
-axum = "0.7.2"
+axum = { version = "0.7.2", features = ["tracing"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.193", features = ["derive"] }
 shuttle-axum = { version = "0.35.1", default-features = false, features = ["axum-0-7"] }
-shuttle-runtime = "0.35.1"
+shuttle-runtime = { version = "0.35.1", default-features = false, features = ["colored"] }
 shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
 strum = { version = "0.25.0", features = ["strum_macros", "derive"] }
 tokio = { version = "1.35.1", features = ["full"] }
-tower-http = { version = "0.5.0", features = ["fs"] }
+tower = "0.4.13"
+tower-http = { version = "0.5.0", features = ["fs", "trace"] }
 tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
