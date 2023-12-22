@@ -112,7 +112,7 @@ pub async fn edit_expense(
         expense.date,
         expense.description,
         expense.price,
-        expense.is_essencial,
+        if expense.is_essencial { "checked" } else { "" },
         expense.id,
         expense.id
     ))
