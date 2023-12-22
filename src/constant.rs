@@ -48,7 +48,7 @@ macro_rules! EDITABLE_TABLE_ROW {
                 <button class=\"btn btn-danger\" hx-get=\"/expenses/{}\">
                   Cancel
                 </button>
-                <button class=\"btn btn-danger\" hx-put=\"/expenses/{}\" hx-include=\"closest tr\">
+                <button class=\"btn btn-danger\" hx-put=\"/expenses/{}\" hx-ext=\"json-enc\" hx-include=\"closest tr\">
                   Save
                 </button>
             </td>
