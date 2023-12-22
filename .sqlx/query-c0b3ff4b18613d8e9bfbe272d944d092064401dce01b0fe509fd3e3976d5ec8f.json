@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n                FROM expenses WHERE date BETWEEN $1 AND $2 ORDER BY date ASC",
+  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -50,8 +50,7 @@
     ],
     "parameters": {
       "Left": [
-        "Date",
-        "Date"
+        "Int4"
       ]
     },
     "nullable": [
@@ -63,5 +62,5 @@
       false
     ]
   },
-  "hash": "59183ce536917b910db8f480b490771a7440e56fa6f09a36a02f3fa79516f95b"
+  "hash": "c0b3ff4b18613d8e9bfbe272d944d092064401dce01b0fe509fd3e3976d5ec8f"
 }

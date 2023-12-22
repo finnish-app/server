@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
 
-#[derive(Serialize, Clone, EnumIter, Deserialize, sqlx::Type)]
+#[derive(Debug, Serialize, Clone, EnumIter, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "expense_type", rename_all = "lowercase")]
 pub enum ExpenseType {
     Food,
@@ -46,7 +46,7 @@ impl Display for ExpenseType {
     }
 }
 
-#[derive(FromRow, Serialize)]
+#[derive(FromRow, Serialize, Debug)]
 pub struct Expense {
     pub id: i32,
     pub description: String,
@@ -62,6 +62,16 @@ pub struct GetExpense {
     pub month: Option<Months>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct UpdateExpense {
+    pub description: Option<String>,
+    #[serde(deserialize_with = "de_string_to_option_f32")]
+    pub price: Option<f32>,
+    pub expense_type: Option<ExpenseType>,
+    pub is_essencial: Option<bool>,
+    pub date: Option<NaiveDate>,
+}
+
 fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -71,5 +81,17 @@ where
         Ok(None)
     } else {
         Ok(Some(Months::from_str(&s).unwrap()))
+    }
+}
+
+fn de_string_to_option_f32<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = serde::Deserialize::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(s.parse::<f32>().unwrap()))
     }
 }
