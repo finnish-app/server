@@ -9,9 +9,9 @@ askama_axum = "0.4.0"
 axum = { version = "0.7.2", features = ["tracing"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.193", features = ["derive"] }
-shuttle-axum = { version = "0.35.1", default-features = false, features = ["axum-0-7"] }
-shuttle-runtime = { version = "0.35.1", default-features = false, features = ["colored"] }
-shuttle-shared-db = { version = "0.35.1", features = ["postgres"] }
+shuttle-axum = { version = "0.35.2", default-features = false, features = ["axum-0-7"] }
+shuttle-runtime = { version = "0.35.2", default-features = false, features = ["colored"] }
+shuttle-shared-db = { version = "0.35.2", features = ["postgres"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
 strum = { version = "0.25.0", features = ["strum_macros", "derive"] }
 tokio = { version = "1.35.1", features = ["full"] }
