@@ -43,7 +43,7 @@ macro_rules! EDITABLE_TABLE_ROW {
                 <option value='Entertainment'>Entertainment</option>
                 <option value='Other'>Other</option>
             </select></td>
-            <td><input type='checkbox' name='is_essencial' {}></td>
+            <td><input type='checkbox' name='is_essencial' role='switch' value='true' {}></td>
             <td>
                 <button class=\"btn btn-danger\" hx-get=\"/expenses/{}\">
                   Cancel

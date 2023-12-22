@@ -68,8 +68,28 @@ pub struct UpdateExpense {
     #[serde(deserialize_with = "de_string_to_option_f32")]
     pub price: Option<f32>,
     pub expense_type: Option<ExpenseType>,
+    #[serde(
+        default = "default_is_essencial_to_false",
+        deserialize_with = "de_string_to_bool"
+    )]
     pub is_essencial: Option<bool>,
     pub date: Option<NaiveDate>,
+}
+
+fn default_is_essencial_to_false() -> Option<bool> {
+    Some(false)
+}
+
+fn de_string_to_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = serde::Deserialize::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(s.parse::<bool>().unwrap()))
+    }
 }
 
 fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
