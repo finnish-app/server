@@ -1,11 +1,11 @@
 mod constant;
 mod data;
-mod data_router;
-mod hypermedia_router;
+mod data_structs;
+mod hypermedia;
 mod schema;
 mod util;
 
-use crate::data::{Months, MonthsIter};
+use crate::data_structs::{Months, MonthsIter};
 use std::{sync::Arc, time::Duration};
 
 use askama::Template;
@@ -39,8 +39,8 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
 
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
-        .merge(hypermedia_router::hypermedia_router())
-        .merge(data_router::data_router())
+        .merge(hypermedia::router::hypermedia_router())
+        .merge(data::router::data_router())
         .nest_service("/static", ServeDir::new("./css"))
         .layer(
             ServiceBuilder::new()

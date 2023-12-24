@@ -2,61 +2,20 @@ use crate::{
     constant::{EDITABLE_TABLE_ROW, TABLE_ROW},
     schema::{Expense, ExpenseType, GetExpense, UpdateExpense},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
-    AppState, ExpensesTemplate,
 };
-use std::sync::Arc;
 
 use askama_axum::IntoResponse;
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query},
     response::Html,
-    routing::get,
-    Json, Router,
+    Json,
 };
-
-pub fn hypermedia_router() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/", get(expenses_index))
-        .route("/expenses", get(get_expenses))
-        .route("/expenses/:id/edit", get(edit_expense))
-        .route("/expenses/:id", get(get_expense).put(update_expense))
-}
-
-pub async fn expenses_index() -> impl IntoResponse {
-    ExpensesTemplate {
-        ..Default::default()
-    }
-}
+use sqlx::{Pool, Postgres};
 
 pub async fn get_expenses(
-    State(shared_state): State<Arc<AppState>>,
+    db_pool: &Pool<Postgres>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    //let expenses: Vec<Expense> = match get_expense_input.month.clone() {
-    //    Some(month) => {
-    //        sqlx::query_as!(
-    //            Expense,
-    //            r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
-    //            FROM expenses WHERE date BETWEEN $1 AND $2 ORDER BY date ASC"#,
-    //            get_first_day_from_month(month.clone() as u32 + 1),
-    //            get_last_day_from_month(month as u32 + 1)
-    //        )
-    //        .fetch_all(&shared_state.pool)
-    //        .await
-    //        .unwrap()
-    //    }
-    //    None => {
-    //        sqlx::query_as!(
-    //            Expense,
-    //            r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
-    //            FROM expenses ORDER BY date ASC"#
-    //        )
-    //            .fetch_all(&shared_state.pool)
-    //            .await
-    //            .unwrap()
-    //    }
-    //};
-
     let expenses = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
@@ -67,7 +26,7 @@ pub async fn get_expenses(
         get_first_day_from_month_or_none(get_expense_input.month.clone()),
         get_last_day_from_month_or_none(get_expense_input.month)
     )
-    .fetch_all(&shared_state.pool)
+    .fetch_all(db_pool)
     .await
     .unwrap();
 
@@ -92,17 +51,14 @@ pub async fn get_expenses(
     )
 }
 
-pub async fn edit_expense(
-    Path(id): Path<i32>,
-    State(shared_state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn edit_expense(db_pool: &Pool<Postgres>, Path(id): Path<i32>) -> impl IntoResponse {
     let expense = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
         FROM expenses WHERE id = $1"#,
         id
     )
-        .fetch_one(&shared_state.pool)
+        .fetch_one(db_pool)
         .await
         .unwrap();
 
@@ -118,17 +74,14 @@ pub async fn edit_expense(
     ))
 }
 
-pub async fn get_expense(
-    Path(id): Path<i32>,
-    State(shared_state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn get_expense(db_pool: &Pool<Postgres>, Path(id): Path<i32>) -> impl IntoResponse {
     let expense = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
         FROM expenses WHERE id = $1"#,
         id
     )
-    .fetch_one(&shared_state.pool)
+    .fetch_one(db_pool)
     .await
     .unwrap();
 
@@ -144,8 +97,8 @@ pub async fn get_expense(
 }
 
 pub async fn update_expense(
+    db_pool: &Pool<Postgres>,
     Path(id): Path<i32>,
-    State(shared_state): State<Arc<AppState>>,
     Json(update_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
     let expense = sqlx::query_as!(
@@ -167,7 +120,7 @@ pub async fn update_expense(
         update_expense.date,
         id
     )
-    .fetch_one(&shared_state.pool)
+    .fetch_one(db_pool)
     .await
     .unwrap();
 
