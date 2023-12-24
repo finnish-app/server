@@ -5,22 +5,31 @@
 {% block content %}
 
 <section class="section" id="expenses">
-<h3>Carol's Expenses</h3>
+<h3>Nic's Expenses</h3>
 
-<form hx-get="/expenses" hx-ext="my-json-enc" hx-target="#expenses-table-body">
-    <select name="month" id="month">
-        {% for month in months.clone() %}
-            {% if month == current_month %}
-                <option value="{{ month }}" selected>{{ month }}</option>
-            {% else %}
-                <option value="{{ month }}">{{ month }}</option>
-            {% endif %}
-        {% endfor %}
-        <option value="">Entire year</option>
-    </select>
+<form hx-get="/expenses" hx-target="#expenses-table-body">
+    <div class="grid">
+        <select name="month" id="month">
+            {% for month in months.clone() %}
+                {% if month == current_month %}
+                    <option value="{{ month }}" selected>{{ month }}</option>
+                {% else %}
+                    <option value="{{ month }}">{{ month }}</option>
+                {% endif %}
+            {% endfor %}
+            <option value="">Entire year</option>
+        </select>
 
-    <button type="submit">Search</button>
+        <button id="fire-requests" type="submit">Search</button>
+        <button class="contrast" id="add-expense" _="on click trigger toggleModal">Add Expense</button>
+    </div>
 </form>
+<div hx-get="/expenses/plots"
+     hx-target="#expenses-plots"
+     hx-trigger="click from:#fire-requests"
+     hx-include="#month"
+>
+</div>
 
 <figure>
 <table class="table" role="grid">
@@ -38,6 +47,39 @@
     </tbody>
 </table>
 </figure>
+
+<div id="expenses-plots">
+</div>
 </section>
+
+<div id="add-expense-modal" _="on toggleModal toggle @open on #modal-example">
+    <dialog id="modal-example" open>
+        <article>
+            <h3>Add an expense!</h3>
+            <label for="date">Date
+                <input type="date" name="date" id="date">
+            </label>
+            <label for="price">Price
+                <input type="number" name="price" id="price">
+            </label>
+            <label for="description">Description
+                <input type="text" name="description" id="description">
+            </label>
+            <label for="expense_type">Category
+                <select name="expense_type" id="expense_type">
+                    {% for expense_type in expense_types.clone() %}
+                        <option value="{{ expense_type }}">{{ expense_type }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label for="essencial">Is Essencial?
+                <input type='checkbox' name='is_essencial' role='switch' value='true'>
+            </label>
+            <footer>
+                <button _="on click trigger toggleModal">Close</button>
+            </footer>
+        </article>
+    </dialog>
+</div>
 
 {% endblock %}

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
 
-#[derive(Debug, Serialize, Clone, EnumIter, Deserialize, sqlx::Type)]
+#[derive(Debug, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_type", rename_all = "lowercase")]
 pub enum ExpenseType {
     Food,
@@ -14,6 +14,7 @@ pub enum ExpenseType {
     Health,
     Education,
     Entertainment,
+    #[default]
     Other,
 }
 
@@ -46,7 +47,7 @@ impl Display for ExpenseType {
     }
 }
 
-#[derive(FromRow, Serialize, Debug)]
+#[derive(FromRow, Serialize, Debug, Default)]
 pub struct Expense {
     pub id: i32,
     pub description: String,
