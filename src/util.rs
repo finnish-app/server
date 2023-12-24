@@ -1,6 +1,6 @@
 use chrono::{Datelike, NaiveDate, Utc};
 
-use crate::data::Months;
+use crate::data_structs::Months;
 
 pub fn get_first_day_from_month(month: u32) -> NaiveDate {
     Utc::now()

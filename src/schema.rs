@@ -62,7 +62,7 @@ pub struct GetExpense {
     pub month: Option<Months>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct UpdateExpense {
     pub description: Option<String>,
     #[serde(deserialize_with = "de_string_to_option_f32")]
