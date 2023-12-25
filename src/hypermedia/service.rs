@@ -148,7 +148,7 @@ pub async fn insert_expense(
     db_pool: &Pool<Postgres>,
     Json(create_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    let expense = sqlx::query_as!(
+    let _expense = sqlx::query_as!(
         Expense,
         r#"
         INSERT INTO expenses (description, price, expense_type, is_essencial, date)
@@ -165,15 +165,20 @@ pub async fn insert_expense(
     .await
     .unwrap();
 
-    Html(format!(
-        TABLE_ROW!(),
-        expense.date,
-        expense.description,
-        expense.price,
-        expense.expense_type,
-        expense.is_essencial,
-        expense.id
-    ))
+    //    Html(format!(
+    //        TABLE_ROW!(),
+    //        expense.date,
+    //        expense.description,
+    //        expense.price,
+    //        expense.expense_type,
+    //        expense.is_essencial,
+    //        expense.id
+    //    ))
+    (
+        StatusCode::CREATED,
+        [("HX-Trigger", "refresh-table")],
+        "Created",
+    )
 }
 
 pub async fn expenses_plots(

@@ -7,7 +7,7 @@
 <section class="section" id="expenses">
 <h3>Nic's Expenses</h3>
 
-<form hx-get="/expenses" hx-target="#expenses-table-body">
+<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="refresh-table from:body, submit">
     <div class="grid">
         <select name="month" id="month">
             {% for month in months.clone() %}
@@ -61,7 +61,7 @@
               _="on click trigger toggleModal">
             </a>
             <h3>Add an expense!</h3>
-            <form id="add-expense-form" hx-post="/expenses" hx-target="#expenses-table-body" hx-swap="outerHTML" hx-ext="my-json-enc">
+            <form id="add-expense-form" hx-post="/expenses" hx-target="#return-message" hx-ext="my-json-enc">
                 <label for="date">Date
                     <input type="date" name="date" id="date" required>
                 </label>
@@ -81,11 +81,12 @@
                 <label for="essencial">Is Essencial?
                     <input type='checkbox' name='is_essencial' role='switch' value='true'>
                 </label>
+                <div id="return-message"></div>
             </form>
             <footer>
                 <div class="grid">
                     <button type="submit" form="add-expense-form">Add</button>
-                    <button _="on click trigger toggleModal" class="contrast" type="button">Cancel</button>
+                    <button _="on click trigger toggleModal" class="contrast" type="button">Close</button>
                 </div>
             </footer>
         </article>
