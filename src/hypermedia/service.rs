@@ -139,16 +139,11 @@ pub async fn update_expense(
     ))
 }
 
-//pub async fn create_expense(_db_pool: &Pool<Postgres>) -> impl IntoResponse {
-//    let _expense = Expense::default();
-//    Html(format!(CREATABLE_TABLE_ROW!(),))
-//}
-
 pub async fn insert_expense(
     db_pool: &Pool<Postgres>,
     Json(create_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    let _expense = sqlx::query_as!(
+    match sqlx::query_as!(
         Expense,
         r#"
         INSERT INTO expenses (description, price, expense_type, is_essencial, date)
@@ -162,23 +157,17 @@ pub async fn insert_expense(
         create_expense.date
     )
     .fetch_one(db_pool)
-    .await
-    .unwrap();
-
-    //    Html(format!(
-    //        TABLE_ROW!(),
-    //        expense.date,
-    //        expense.description,
-    //        expense.price,
-    //        expense.expense_type,
-    //        expense.is_essencial,
-    //        expense.id
-    //    ))
-    (
-        StatusCode::CREATED,
-        [("HX-Trigger", "refresh-table")],
-        "Created",
-    )
+    .await {
+        Ok(_) => (
+            StatusCode::CREATED,
+            [("HX-Trigger", "refresh-table")],
+            "Created",
+        ).into_response(),
+        Err(e) => {
+            tracing::error!("Error inserting expense: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        },
+    }
 }
 
 pub async fn expenses_plots(

@@ -18,7 +18,6 @@ pub fn hypermedia_router() -> Router<Arc<AppState>> {
         .route("/expenses/:id/edit", get(edit_expense))
         .route("/expenses/:id", get(get_expense).put(update_expense))
         .route("/expenses/plots", get(expenses_plots))
-    //        .route("/expenses/add", get(create_expense))
 }
 
 pub async fn expenses_index() -> impl IntoResponse {
@@ -55,10 +54,6 @@ pub async fn update_expense(
 ) -> impl IntoResponse {
     super::service::update_expense(&shared_state.pool, Path(id), Json(update_expense)).await
 }
-
-//pub async fn create_expense(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-//    super::service::create_expense(&shared_state.pool).await
-//}
 
 pub async fn insert_expense(
     State(shared_state): State<Arc<AppState>>,
