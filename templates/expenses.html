@@ -7,7 +7,7 @@
 <section class="section" id="expenses">
 <h3>Nic's Expenses</h3>
 
-<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="refresh-table from:body, submit">
+<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, submit">
     <div class="grid">
         <select name="month" id="month">
             {% for month in months.clone() %}
@@ -26,7 +26,7 @@
 </form>
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
-     hx-trigger="click from:#fire-requests"
+     hx-trigger="load, click from:#fire-requests, refresh-table from:body"
      hx-include="#month"
 >
 </div>
