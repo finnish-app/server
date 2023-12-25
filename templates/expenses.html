@@ -21,7 +21,7 @@
         </select>
 
         <button id="fire-requests" type="submit">Search</button>
-        <button class="contrast" id="add-expense" _="on click trigger toggleModal">Add Expense</button>
+        <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
     </div>
 </form>
 <div hx-get="/expenses/plots"
@@ -53,30 +53,40 @@
 </section>
 
 <div id="add-expense-modal" _="on toggleModal toggle @open on #modal-example">
-    <dialog id="modal-example" open>
+    <dialog id="modal-example">
         <article>
+            <a href="#close"
+              aria-label="Close"
+              class="close"
+              _="on click trigger toggleModal">
+            </a>
             <h3>Add an expense!</h3>
-            <label for="date">Date
-                <input type="date" name="date" id="date">
-            </label>
-            <label for="price">Price
-                <input type="number" name="price" id="price">
-            </label>
-            <label for="description">Description
-                <input type="text" name="description" id="description">
-            </label>
-            <label for="expense_type">Category
-                <select name="expense_type" id="expense_type">
-                    {% for expense_type in expense_types.clone() %}
-                        <option value="{{ expense_type }}">{{ expense_type }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label for="essencial">Is Essencial?
-                <input type='checkbox' name='is_essencial' role='switch' value='true'>
-            </label>
+            <form id="add-expense-form" hx-post="/expenses" hx-target="#expenses-table-body" hx-swap="outerHTML" hx-ext="my-json-enc">
+                <label for="date">Date
+                    <input type="date" name="date" id="date" required>
+                </label>
+                <label for="price">Price
+                    <input type="number" step="0.01" name="price" id="price" required>
+                </label>
+                <label for="description">Description
+                    <input type="text" name="description" id="description" required>
+                </label>
+                <label for="expense_type">Category
+                    <select name="expense_type" id="expense_type">
+                        {% for expense_type in expense_types.clone() %}
+                            <option value="{{ expense_type }}">{{ expense_type }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label for="essencial">Is Essencial?
+                    <input type='checkbox' name='is_essencial' role='switch' value='true'>
+                </label>
+            </form>
             <footer>
-                <button _="on click trigger toggleModal">Close</button>
+                <div class="grid">
+                    <button type="submit" form="add-expense-form">Add</button>
+                    <button _="on click trigger toggleModal" class="contrast" type="button">Cancel</button>
+                </div>
             </footer>
         </article>
     </dialog>
