@@ -8,9 +8,10 @@ mod util;
 use crate::data_structs::{Months, MonthsIter};
 use std::{sync::Arc, time::Duration};
 
-use askama::Template;
+use askama_axum::Template;
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use chrono::{Datelike, Month, Utc};
+use schema::{ExpenseType, ExpenseTypeIter};
 use shuttle_runtime::CustomError;
 use sqlx::PgPool;
 use strum::IntoEnumIterator;
@@ -67,6 +68,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
 #[derive(Template)]
 #[template(path = "expenses.html")]
 struct ExpensesTemplate {
+    expense_types: ExpenseTypeIter,
     months: MonthsIter,
     current_month: Months,
 }
@@ -74,6 +76,7 @@ struct ExpensesTemplate {
 impl Default for ExpensesTemplate {
     fn default() -> Self {
         Self {
+            expense_types: ExpenseType::iter(),
             months: Months::iter(),
             current_month: Months::from_chrono_month(
                 Month::try_from(u8::try_from(Utc::now().month()).unwrap()).unwrap(),

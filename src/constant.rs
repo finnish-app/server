@@ -34,7 +34,7 @@ macro_rules! EDITABLE_TABLE_ROW {
         "<tr hx-trigger='cancel' class='editing' hx-get=\"/expenses/{}\">
             <td><input type='date' name='date' value='{}'></td>
             <td><input type='text' name='description' value='{}'></td>
-            <td><input type='number' name='price' value='{}'></td>
+            <td><input type='number' step='0.01' name='price' value='{}'></td>
             <td><select name='expense_type'>
                 <option value='Food'>Food</option>
                 <option value='Transport'>Transport</option>

@@ -5,22 +5,31 @@
 {% block content %}
 
 <section class="section" id="expenses">
-<h3>Carol's Expenses</h3>
+<h3>Nic's Expenses</h3>
 
-<form hx-get="/expenses" hx-ext="my-json-enc" hx-target="#expenses-table-body">
-    <select name="month" id="month">
-        {% for month in months.clone() %}
-            {% if month == current_month %}
-                <option value="{{ month }}" selected>{{ month }}</option>
-            {% else %}
-                <option value="{{ month }}">{{ month }}</option>
-            {% endif %}
-        {% endfor %}
-        <option value="">Entire year</option>
-    </select>
+<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, submit">
+    <div class="grid">
+        <select name="month" id="month">
+            {% for month in months.clone() %}
+                {% if month == current_month %}
+                    <option value="{{ month }}" selected>{{ month }}</option>
+                {% else %}
+                    <option value="{{ month }}">{{ month }}</option>
+                {% endif %}
+            {% endfor %}
+            <option value="">Entire year</option>
+        </select>
 
-    <button type="submit">Search</button>
+        <button id="fire-requests" type="submit">Search</button>
+        <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
+    </div>
 </form>
+<div hx-get="/expenses/plots"
+     hx-target="#expenses-plots"
+     hx-trigger="load, click from:#fire-requests, refresh-table from:body"
+     hx-include="#month"
+>
+</div>
 
 <figure>
 <table class="table" role="grid">
@@ -38,6 +47,50 @@
     </tbody>
 </table>
 </figure>
+
+<div id="expenses-plots">
+</div>
 </section>
+
+<div id="add-expense-modal" _="on toggleModal toggle @open on #modal-example">
+    <dialog id="modal-example">
+        <article>
+            <a href="#close"
+              aria-label="Close"
+              class="close"
+              _="on click trigger toggleModal">
+            </a>
+            <h3>Add an expense!</h3>
+            <form id="add-expense-form" hx-post="/expenses" hx-target="#return-message" hx-ext="my-json-enc">
+                <label for="date">Date
+                    <input type="date" name="date" id="date" required>
+                </label>
+                <label for="price">Price
+                    <input type="number" step="0.01" name="price" id="price" placeholder="0.01" required>
+                </label>
+                <label for="description">Description
+                    <input type="text" name="description" id="description" required>
+                </label>
+                <label for="expense_type">Category
+                    <select name="expense_type" id="expense_type">
+                        {% for expense_type in expense_types.clone() %}
+                            <option value="{{ expense_type }}">{{ expense_type }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label for="essencial">Is Essencial?
+                    <input type='checkbox' name='is_essencial' role='switch' value='true'>
+                </label>
+                <div id="return-message"></div>
+            </form>
+            <footer>
+                <div class="grid">
+                    <button type="submit" form="add-expense-form">Add</button>
+                    <button _="on click trigger toggleModal" class="contrast" type="button">Close</button>
+                </div>
+            </footer>
+        </article>
+    </dialog>
+</div>
 
 {% endblock %}

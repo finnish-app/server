@@ -14,9 +14,10 @@ use axum::{
 pub fn hypermedia_router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/", get(expenses_index))
-        .route("/expenses", get(get_expenses))
+        .route("/expenses", get(get_expenses).post(insert_expense))
         .route("/expenses/:id/edit", get(edit_expense))
         .route("/expenses/:id", get(get_expense).put(update_expense))
+        .route("/expenses/plots", get(expenses_plots))
 }
 
 pub async fn expenses_index() -> impl IntoResponse {
@@ -52,4 +53,18 @@ pub async fn update_expense(
     Json(update_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
     super::service::update_expense(&shared_state.pool, Path(id), Json(update_expense)).await
+}
+
+pub async fn insert_expense(
+    State(shared_state): State<Arc<AppState>>,
+    Json(create_expense): Json<UpdateExpense>,
+) -> impl IntoResponse {
+    super::service::insert_expense(&shared_state.pool, Json(create_expense)).await
+}
+
+pub async fn expenses_plots(
+    State(shared_state): State<Arc<AppState>>,
+    Query(get_expense_input): Query<GetExpense>,
+) -> impl IntoResponse {
+    super::service::expenses_plots(&shared_state.pool, Query(get_expense_input)).await
 }
