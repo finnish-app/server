@@ -7,7 +7,7 @@
 <section class="section" id="expenses">
 <h3>Nic's Expenses</h3>
 
-<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, submit">
+<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#month">
     <div class="grid">
         <select name="month" id="month">
             {% for month in months.clone() %}
@@ -20,13 +20,12 @@
             <option value="">Entire year</option>
         </select>
 
-        <button id="fire-requests" type="submit">Search</button>
         <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
     </div>
 </form>
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
-     hx-trigger="load, click from:#fire-requests, refresh-table from:body"
+     hx-trigger="load, change from:#month, refresh-table from:body"
      hx-include="#month"
 >
 </div>
