@@ -11,6 +11,7 @@ use axum::{
     response::Html,
     Json,
 };
+use chrono::NaiveDate;
 use plotly::{common::Title, Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
 
@@ -188,16 +189,17 @@ pub async fn expenses_plots(
     .await
     .unwrap();
 
-    let date = expenses
-        .iter()
-        .map(|expense| expense.date)
-        .collect::<Vec<_>>();
-    let price = expenses
-        .iter()
-        .map(|expense| expense.price)
-        .collect::<Vec<_>>();
+    let mut expenses_by_date = std::collections::BTreeMap::<NaiveDate, f32>::new();
+    for expense in expenses {
+        let price = expenses_by_date.entry(expense.date).or_insert(0.0);
+        *price += expense.price;
+    }
 
-    let trace = Scatter::new(date, price);
+    let trace = Scatter::new(
+        expenses_by_date.keys().cloned().collect(),
+        expenses_by_date.values().cloned().collect(),
+    )
+    .name("Expenses");
 
     let mut plot = Plot::new();
     plot.add_trace(trace);
