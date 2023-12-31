@@ -1,4 +1,9 @@
 use chrono::{Datelike, NaiveDate, Utc};
+use pbkdf2::{
+    password_hash::{PasswordHasher, SaltString},
+    Pbkdf2,
+};
+use rand_core::OsRng;
 
 use crate::data_structs::Months;
 
@@ -27,4 +32,14 @@ pub fn get_last_day_from_month(month: u32) -> NaiveDate {
 
 pub fn get_last_day_from_month_or_none(month: Option<Months>) -> Option<NaiveDate> {
     month.map(|month| get_last_day_from_month(month as u32 + 1))
+}
+
+pub fn create_user(_username: &str, password: &str) {
+    let salt = SaltString::generate(&mut OsRng);
+    let hashed_password = Pbkdf2
+        .hash_password(password.as_bytes(), &salt)
+        .unwrap()
+        .to_string();
+
+    println!("{:?}", hashed_password);
 }

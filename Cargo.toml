@@ -8,7 +8,9 @@ askama = { version = "0.12.1", features = ["with-axum", "serde-json"] }
 askama_axum = "0.4.0"
 axum = { version = "0.7.2", features = ["tracing"] }
 chrono = { version = "0.4.31", features = ["serde"] }
+pbkdf2 = { version = "0.12.2", features = ["simple"] }
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
+rand_core = { version = "0.6.4", features = ["std"] }
 serde = { version = "1.0.193", features = ["derive"] }
 shuttle-axum = { version = "0.35.2", default-features = false, features = ["axum-0-7"] }
 shuttle-runtime = { version = "0.35.2", default-features = false, features = ["colored"] }
