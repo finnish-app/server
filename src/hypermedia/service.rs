@@ -1,6 +1,6 @@
 use crate::{
     constant::{EDITABLE_TABLE_ROW, TABLE_ROW},
-    schema::{Expense, ExpenseType, GetExpense, UpdateExpense},
+    schema::{Expense, ExpenseType, GetExpense, Login, UpdateExpense},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
 
@@ -14,6 +14,27 @@ use axum::{
 use chrono::NaiveDate;
 use plotly::{common::Title, Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
+
+pub async fn signin(
+    _db_pool: &Pool<Postgres>,
+    Json(_signin_input): Json<Login>,
+) -> impl IntoResponse {
+    //    match sqlx::query!(
+    //        r#"SELECT id, username, password FROM users WHERE username = $1 AND password = $2"#,
+    //        signin_input.username,
+    //        signin_input.password
+    //    )
+    //    .fetch_one(db_pool)
+    //    .await
+    let result_was: Result<(), sqlx::Error> = Ok(());
+    match result_was {
+        Ok(_) => (StatusCode::OK, [("HX-Redirect", "/")], "Logged in").into_response(),
+        Err(e) => {
+            tracing::error!("Error logging in: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
 
 pub async fn get_expenses(
     db_pool: &Pool<Postgres>,

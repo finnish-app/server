@@ -77,6 +77,12 @@ pub struct UpdateExpense {
     pub date: Option<NaiveDate>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct Login {
+    pub username: String,
+    pub password: String,
+}
+
 fn default_is_essencial_to_false() -> Option<bool> {
     Some(false)
 }

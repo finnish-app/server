@@ -1,6 +1,6 @@
 use crate::{
-    schema::{GetExpense, UpdateExpense},
-    AppState, ExpensesTemplate,
+    schema::{GetExpense, Login, UpdateExpense},
+    AppState, ExpensesTemplate, SignInTemplate,
 };
 use std::sync::Arc;
 
@@ -18,6 +18,18 @@ pub fn hypermedia_router() -> Router<Arc<AppState>> {
         .route("/expenses/:id/edit", get(edit_expense))
         .route("/expenses/:id", get(get_expense).put(update_expense))
         .route("/expenses/plots", get(expenses_plots))
+        .route("/signin", get(signin_index).post(signin))
+}
+
+pub async fn signin_index() -> impl IntoResponse {
+    SignInTemplate {}
+}
+
+pub async fn signin(
+    State(shared_state): State<Arc<AppState>>,
+    Json(signin_input): Json<Login>,
+) -> impl IntoResponse {
+    super::service::signin(&shared_state.pool, Json(signin_input)).await
 }
 
 pub async fn expenses_index() -> impl IntoResponse {

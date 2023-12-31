@@ -84,3 +84,7 @@ impl Default for ExpensesTemplate {
         }
     }
 }
+
+#[derive(Template, Default)]
+#[template(path = "signin.html")]
+struct SignInTemplate {}
