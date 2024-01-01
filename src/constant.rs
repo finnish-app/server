@@ -56,5 +56,97 @@ macro_rules! EDITABLE_TABLE_ROW {
     };
 }
 
+macro_rules! SIGN_IN_TAB {
+    () => {
+        "<article class=\"grid\">
+            <div>
+                <nav class=\"tab-list\" role=\"tablist\">
+                  <ul>
+                    <li>Sign In</li>
+                    <li><a hx-get=\"/signup\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign Up</a></li>
+                  </ul>
+                </nav>
+
+                <hgroup>
+                <h1>Sign in</h1>
+                <h2>Enter your user credentials</h2>
+                </hgroup>
+            </div>
+
+            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
+                <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\">
+                <input
+                  type=\"text\"
+                  name=\"username\"
+                  placeholder=\"Username\"
+                  aria-label=\"Login\"
+                  autocomplete=\"nickname\"
+                  required
+                />
+                <input
+                  type=\"password\"
+                  name=\"password\"
+                  placeholder=\"Password\"
+                  aria-label=\"Password\"
+                  autocomplete=\"current-password\"
+                  required
+                />
+                <button type=\"submit\" class=\"contrast\">Login</button>
+                <fieldset>
+                    <label for=\"remember\">
+                        <input type=\"checkbox\" role=\"switch\" id=\"remember\" name=\"remember\" />
+                        Remember me
+                    </label>
+                </fieldset>
+                </form>
+            </div>
+        </article>"
+    };
+}
+
+macro_rules! SIGN_UP_TAB {
+    () => {
+        "<article class=\"grid\">
+            <div>
+                <nav class=\"tab-list\" role=\"tablist\">
+                  <ul>
+                    <li><a hx-get=\"/signin\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign In</a></li>
+                    <li>Sign Up</li>
+                  </ul>
+                </nav>
+
+                <hgroup>
+                <h1>Sign Up</h1>
+                <h2>Create an account for Finnish</h2>
+                </hgroup>
+            </div>
+
+            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
+                <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
+                <input
+                  type=\"text\"
+                  name=\"username\"
+                  placeholder=\"Username\"
+                  aria-label=\"Login\"
+                  autocomplete=\"nickname\"
+                  required
+                />
+                <input
+                  type=\"password\"
+                  name=\"password\"
+                  placeholder=\"Password\"
+                  aria-label=\"Password\"
+                  autocomplete=\"current-password\"
+                  required
+                />
+                <button type=\"submit\" class=\"contrast\">Sign up</button>
+                </form>
+            </div>
+        </article>"
+    };
+}
+
 pub(crate) use EDITABLE_TABLE_ROW;
+pub(crate) use SIGN_IN_TAB;
+pub(crate) use SIGN_UP_TAB;
 pub(crate) use TABLE_ROW;
