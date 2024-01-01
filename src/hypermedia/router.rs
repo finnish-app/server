@@ -20,7 +20,7 @@ pub fn hypermedia_router() -> Router<Arc<AppState>> {
         .route("/expenses/plots", get(expenses_plots))
         .route("/auth", get(auth_index))
         .route("/signin", get(signin_tab).post(signin))
-        .route("/signup", get(signup_tab)) //.post(signup))
+        .route("/signup", get(signup_tab).post(signup))
 }
 
 pub async fn auth_index() -> impl IntoResponse {
@@ -40,6 +40,13 @@ pub async fn signin(
 
 pub async fn signup_tab() -> impl IntoResponse {
     super::service::signup_tab().await
+}
+
+pub async fn signup(
+    State(shared_state): State<Arc<AppState>>,
+    Json(signup_input): Json<Login>,
+) -> impl IntoResponse {
+    super::service::signup(&shared_state.pool, Json(signup_input)).await
 }
 
 pub async fn expenses_index() -> impl IntoResponse {

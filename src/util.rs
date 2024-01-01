@@ -34,12 +34,10 @@ pub fn get_last_day_from_month_or_none(month: Option<Months>) -> Option<NaiveDat
     month.map(|month| get_last_day_from_month(month as u32 + 1))
 }
 
-pub fn create_user(_username: &str, password: &str) {
+pub fn crypt_pass(password: &str) -> String {
     let salt = SaltString::generate(&mut OsRng);
-    let hashed_password = Pbkdf2
+    Pbkdf2
         .hash_password(password.as_bytes(), &salt)
         .unwrap()
-        .to_string();
-
-    println!("{:?}", hashed_password);
+        .to_string()
 }

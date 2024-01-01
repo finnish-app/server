@@ -123,14 +123,19 @@ macro_rules! SIGN_UP_TAB {
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
                 <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
+                <label for=\"username\">Username</label>
                 <input
                   type=\"text\"
                   name=\"username\"
                   placeholder=\"Username\"
                   aria-label=\"Login\"
                   autocomplete=\"nickname\"
+                  minlength=\"1\"
+                  maxlength=\"20\"
+                  pattern=\"[0-9a-z]+\"
                   required
                 />
+                <label for=\"password\">Password</label>
                 <input
                   type=\"password\"
                   name=\"password\"
@@ -139,6 +144,15 @@ macro_rules! SIGN_UP_TAB {
                   autocomplete=\"current-password\"
                   required
                 />
+                <label for=\"confirm_password\">Confirm Password</label>
+                  <input
+                    type=\"password\"
+                    name=\"confirm_password\"
+                    placeholder=\"Password\"
+                    aria-label=\"Password\"
+                    id=\"confirm_password\"
+                    required
+                  />
                 <button type=\"submit\" class=\"contrast\">Sign up</button>
                 </form>
             </div>
