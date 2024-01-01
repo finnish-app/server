@@ -36,6 +36,67 @@ pub async fn signin(
     }
 }
 
+pub async fn signin_tab() -> impl IntoResponse {
+    Html("
+        <div class=\"tab-list\" role=\"tablist\">
+        <button hx-get=\"/signin\" class=\"selected\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Tab 1</button>
+        <button hx-get=\"/signup\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Tab 2</button>
+        </div>
+
+        <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
+        <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\">
+        <input
+          type=\"text\"
+          name=\"username\"
+          placeholder=\"Username\"
+          aria-label=\"Login\"
+          autocomplete=\"nickname\"
+          required
+        />
+        <input
+          type=\"password\"
+          name=\"password\"
+          placeholder=\"Password\"
+          aria-label=\"Password\"
+          autocomplete=\"current-password\"
+          required
+        />
+        <button type=\"submit\" class=\"contrast\">Login</button>
+        <fieldset>
+            <label for=\"remember\">
+                <input type=\"checkbox\" role=\"switch\" id=\"remember\" name=\"remember\" />
+                Remember me
+            </label>
+        </fieldset>
+        </form>
+        </div>
+    ")
+}
+
+pub async fn signup_tab() -> impl IntoResponse {
+    Html("
+        <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
+        <input
+          type=\"text\"
+          name=\"username\"
+          placeholder=\"Username\"
+          aria-label=\"Login\"
+          autocomplete=\"nickname\"
+          required
+        />
+        <input
+          type=\"password\"
+          name=\"password\"
+          placeholder=\"Password\"
+          aria-label=\"Password\"
+          autocomplete=\"current-password\"
+          required
+        />
+        <button type=\"submit\" class=\"contrast\">Sign up</button>
+    </form>
+    ")
+}
+
 pub async fn get_expenses(
     db_pool: &Pool<Postgres>,
     Query(get_expense_input): Query<GetExpense>,

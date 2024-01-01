@@ -10,31 +10,7 @@
     <h2>A minimalist layout for Login pages</h2>
     </hgroup>
 
-    <form id="signin-form" hx-post="/signin" hx-ext="my-json-enc" hx-swap="outerHTML" hx-target="#signin-form">
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          aria-label="Login"
-          autocomplete="nickname"
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          aria-label="Password"
-          autocomplete="current-password"
-          required
-        />
-        <button type="submit" class="contrast">Login</button>
-        <fieldset>
-            <label for="remember">
-                <input type="checkbox" role="switch" id="remember" name="remember" />
-                Remember me
-            </label>
-        </fieldset>
-    </form>
+    <div id="tabs" hx-get="/signin" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
 </article>
 
 {% endblock %}
