@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum", "serde-json"] }
 askama_axum = "0.4.0"
-axum = { version = "0.7.2", features = ["tracing"] }
+axum = { version = "0.7.3", features = ["tracing"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 serde = { version = "1.0.193", features = ["derive"] }
