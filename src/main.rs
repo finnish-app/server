@@ -56,7 +56,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
-        .with_expiry(Expiry::OnInactivity(time::Duration::days(1)));
+        .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
@@ -64,10 +64,9 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
         .merge(data::router::data_router())
-        .route_layer(login_required!(Backend, login_url = "/auth")) // apparently this makes login
-        // required for the router
-        // above it
         .merge(hypermedia::router::hypermedia_router())
+        .route_layer(login_required!(Backend, login_url = "/auth"))
+        .merge(hypermedia::router::auth::auth_router())
         .nest_service("/static", ServeDir::new("./css"))
         .layer(
             ServiceBuilder::new()
@@ -94,20 +93,22 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
 
 #[derive(Template)]
 #[template(path = "expenses.html")]
-struct ExpensesTemplate {
+struct ExpensesTemplate<'a> {
+    current_month: Months,
     expense_types: ExpenseTypeIter,
     months: MonthsIter,
-    current_month: Months,
+    username: &'a str,
 }
 
-impl Default for ExpensesTemplate {
+impl Default for ExpensesTemplate<'_> {
     fn default() -> Self {
         Self {
-            expense_types: ExpenseType::iter(),
-            months: Months::iter(),
             current_month: Months::from_chrono_month(
                 Month::try_from(u8::try_from(Utc::now().month()).unwrap()).unwrap(),
             ),
+            expense_types: ExpenseType::iter(),
+            months: Months::iter(),
+            username: "user",
         }
     }
 }

@@ -8,6 +8,7 @@ use std::sync::Arc;
 use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, Query, State},
+    http::StatusCode,
     routing::get,
     Json, Router,
 };
@@ -19,9 +20,16 @@ pub fn hypermedia_router() -> Router<Arc<AppState>> {
         .route("/expenses/:id/edit", get(edit_expense))
         .route("/expenses/:id", get(get_expense).put(update_expense))
         .route("/expenses/plots", get(expenses_plots))
-        .route("/auth", get(auth_index))
-        .route("/signin", get(signin_tab).post(signin))
-        .route("/signup", get(signup_tab)) //.post(signup))
+}
+
+pub mod auth {
+    use super::*;
+    pub fn auth_router() -> Router<Arc<AppState>> {
+        Router::new()
+            .route("/auth", get(auth_index))
+            .route("/signin", get(signin_tab).post(signin))
+            .route("/signup", get(signup_tab)) //.post(signup))
+    }
 }
 
 pub async fn auth_index() -> impl IntoResponse {
@@ -50,9 +58,14 @@ pub async fn signup_tab() -> impl IntoResponse {
 //    super::service::signup(&shared_state.pool, Json(signup_input)).await
 //}
 
-pub async fn expenses_index() -> impl IntoResponse {
-    ExpensesTemplate {
-        ..Default::default()
+pub async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
+    match auth_session.user {
+        Some(user) => ExpensesTemplate {
+            username: &user.username,
+            ..Default::default()
+        }
+        .into_response(),
+        None => StatusCode::UNAUTHORIZED.into_response(),
     }
 }
 

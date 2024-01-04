@@ -32,7 +32,7 @@ pub async fn signin(
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    (StatusCode::OK, "Logged in").into_response()
+    (StatusCode::OK, [("HX-Redirect", "/")], "Logged in").into_response()
 }
 
 pub async fn signin_tab() -> impl IntoResponse {
