@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses WHERE id = $1",
+  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        ORDER BY date ASC",
   "describe": {
     "columns": [
       {
@@ -50,6 +50,8 @@
     ],
     "parameters": {
       "Left": [
+        "Date",
+        "Date",
         "Int4"
       ]
     },
@@ -62,5 +64,5 @@
       false
     ]
   },
-  "hash": "c0b3ff4b18613d8e9bfbe272d944d092064401dce01b0fe509fd3e3976d5ec8f"
+  "hash": "f2349369e9845aa6dd37b8116af27bacb3141bc14b9452d684c07320af4de743"
 }
