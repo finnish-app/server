@@ -114,5 +114,5 @@ impl Default for ExpensesTemplate<'_> {
 }
 
 #[derive(Template, Default)]
-#[template(path = "signin.html")]
+#[template(path = "auth.html")]
 struct SignInTemplate {}
