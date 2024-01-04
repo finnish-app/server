@@ -63,9 +63,11 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
 
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
-        .merge(hypermedia::router::hypermedia_router())
         .merge(data::router::data_router())
-        .route_layer(login_required!(Backend, login_url = "/auth"))
+        .route_layer(login_required!(Backend, login_url = "/auth")) // apparently this makes login
+        // required for the router
+        // above it
+        .merge(hypermedia::router::hypermedia_router())
         .nest_service("/static", ServeDir::new("./css"))
         .layer(
             ServiceBuilder::new()
