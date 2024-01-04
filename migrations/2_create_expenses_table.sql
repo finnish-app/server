@@ -12,5 +12,6 @@ CREATE TABLE IF NOT EXISTS expenses (
     price real NOT NULL,
     expense_type expense_type NOT NULL,
     is_essencial boolean NOT NULL,
-    date date NOT NULL DEFAULT CURRENT_DATE
+    date date NOT NULL DEFAULT CURRENT_DATE,
+    user_id integer REFERENCES users (id) ON DELETE RESTRICT
 );

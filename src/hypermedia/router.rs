@@ -28,7 +28,7 @@ pub mod auth {
         Router::new()
             .route("/auth", get(auth_index))
             .route("/signin", get(signin_tab).post(signin))
-            .route("/signup", get(signup_tab)) //.post(signup))
+            .route("/signup", get(signup_tab).post(signup))
     }
 }
 
@@ -51,12 +51,12 @@ pub async fn signup_tab() -> impl IntoResponse {
     super::service::signup_tab().await
 }
 
-//pub async fn signup(
-//    State(shared_state): State<Arc<AppState>>,
-//    Json(signup_input): Json<LoginCredentials>,
-//) -> impl IntoResponse {
-//    super::service::signup(&shared_state.pool, Json(signup_input)).await
-//}
+pub async fn signup(
+    State(shared_state): State<Arc<AppState>>,
+    Json(signup_input): Json<LoginCredentials>,
+) -> impl IntoResponse {
+    super::service::signup(&shared_state.pool, Json(signup_input)).await
+}
 
 pub async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
     match auth_session.user {
@@ -70,44 +70,56 @@ pub async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
 }
 
 pub async fn get_expenses(
+    auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    super::service::get_expenses(&shared_state.pool, Query(get_expense_input)).await
+    super::service::get_expenses(auth_session, &shared_state.pool, Query(get_expense_input)).await
 }
 
 pub async fn edit_expense(
+    auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    super::service::edit_expense(&shared_state.pool, Path(id)).await
+    super::service::edit_expense(auth_session, &shared_state.pool, Path(id)).await
 }
 
 pub async fn get_expense(
+    auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    super::service::get_expense(&shared_state.pool, Path(id)).await
+    super::service::get_expense(auth_session, &shared_state.pool, Path(id)).await
 }
 
 pub async fn update_expense(
+    auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
     Json(update_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    super::service::update_expense(&shared_state.pool, Path(id), Json(update_expense)).await
+    super::service::update_expense(
+        auth_session,
+        &shared_state.pool,
+        Path(id),
+        Json(update_expense),
+    )
+    .await
 }
 
 pub async fn insert_expense(
+    auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Json(create_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    super::service::insert_expense(&shared_state.pool, Json(create_expense)).await
+    super::service::insert_expense(auth_session, &shared_state.pool, Json(create_expense)).await
 }
 
 pub async fn expenses_plots(
+    auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    super::service::expenses_plots(&shared_state.pool, Query(get_expense_input)).await
+    super::service::expenses_plots(auth_session, &shared_state.pool, Query(get_expense_input)).await
 }
