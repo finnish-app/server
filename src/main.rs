@@ -1,3 +1,4 @@
+mod auth;
 mod constant;
 mod data;
 mod data_structs;
@@ -5,11 +6,19 @@ mod hypermedia;
 mod schema;
 mod util;
 
-use crate::data_structs::{Months, MonthsIter};
+use crate::{
+    auth::Backend,
+    data_structs::{Months, MonthsIter},
+};
 use std::{sync::Arc, time::Duration};
 
 use askama_axum::Template;
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
+use axum_login::{
+    login_required,
+    tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
+    AuthManagerLayerBuilder,
+};
 use chrono::{Datelike, Month, Utc};
 use schema::{ExpenseType, ExpenseTypeIter};
 use shuttle_runtime::CustomError;
@@ -38,10 +47,25 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .await
         .map_err(CustomError::new)?;
 
+    // Session layer.
+    //
+    // This uses `tower-sessions` to establish a layer that will provide the session
+    // as a request extension.
+    let session_store = PostgresStore::new(pool.clone());
+    session_store.migrate().await.map_err(CustomError::new)?;
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(time::Duration::days(1)));
+
+    let backend = Backend::new(pool.clone());
+    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
         .merge(hypermedia::router::hypermedia_router())
         .merge(data::router::data_router())
+        .route_layer(login_required!(Backend, login_url = "/auth"))
         .nest_service("/static", ServeDir::new("./css"))
         .layer(
             ServiceBuilder::new()
@@ -59,6 +83,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
+        .layer(auth_layer)
         .with_state(shared_state);
 
     tracing::debug!("Server started");

@@ -1,5 +1,6 @@
 use crate::{
-    schema::{GetExpense, Login, UpdateExpense},
+    auth::{AuthSession, LoginCredentials},
+    schema::{GetExpense, UpdateExpense},
     AppState, ExpensesTemplate, SignInTemplate,
 };
 use std::sync::Arc;
@@ -20,7 +21,7 @@ pub fn hypermedia_router() -> Router<Arc<AppState>> {
         .route("/expenses/plots", get(expenses_plots))
         .route("/auth", get(auth_index))
         .route("/signin", get(signin_tab).post(signin))
-        .route("/signup", get(signup_tab).post(signup))
+        .route("/signup", get(signup_tab)) //.post(signup))
 }
 
 pub async fn auth_index() -> impl IntoResponse {
@@ -32,22 +33,22 @@ pub async fn signin_tab() -> impl IntoResponse {
 }
 
 pub async fn signin(
-    State(shared_state): State<Arc<AppState>>,
-    Json(signin_input): Json<Login>,
+    auth_session: AuthSession,
+    Json(signin_input): Json<LoginCredentials>,
 ) -> impl IntoResponse {
-    super::service::signin(&shared_state.pool, Json(signin_input)).await
+    super::service::signin(Json(signin_input), auth_session).await
 }
 
 pub async fn signup_tab() -> impl IntoResponse {
     super::service::signup_tab().await
 }
 
-pub async fn signup(
-    State(shared_state): State<Arc<AppState>>,
-    Json(signup_input): Json<Login>,
-) -> impl IntoResponse {
-    super::service::signup(&shared_state.pool, Json(signup_input)).await
-}
+//pub async fn signup(
+//    State(shared_state): State<Arc<AppState>>,
+//    Json(signup_input): Json<LoginCredentials>,
+//) -> impl IntoResponse {
+//    super::service::signup(&shared_state.pool, Json(signup_input)).await
+//}
 
 pub async fn expenses_index() -> impl IntoResponse {
     ExpensesTemplate {
