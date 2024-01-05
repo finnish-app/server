@@ -64,10 +64,10 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
         .merge(data::router::data_router())
-        .merge(hypermedia::router::hypermedia_router())
+        .merge(hypermedia::router::expenses_router())
         .route_layer(login_required!(Backend, login_url = "/auth"))
-        .merge(hypermedia::router::auth::auth_router())
-        .merge(hypermedia::router::util::util_router())
+        .merge(hypermedia::router::auth_router())
+        .merge(hypermedia::router::validation_router())
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/img", ServeDir::new("./img"))
         .layer(

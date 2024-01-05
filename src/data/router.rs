@@ -10,14 +10,14 @@ pub fn data_router() -> Router<Arc<AppState>> {
     Router::new().route("/api/expenses", get(get_expenses).post(create_expense))
 }
 
-pub async fn get_expenses(
+async fn get_expenses(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     super::service::get_expenses(auth_session, &shared_state.pool).await
 }
 
-pub async fn create_expense(
+async fn create_expense(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Json(create_expense): Json<UpdateExpense>,
