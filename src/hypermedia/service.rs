@@ -23,7 +23,13 @@ pub async fn signin(
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
         Ok(Some(user)) => user,
-        Ok(None) => return (StatusCode::NOT_FOUND, "Invalid username or password").into_response(),
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Html("<p style=\"color:red;\">Invalid username or password</p>"),
+            )
+                .into_response()
+        }
         Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 

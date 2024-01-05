@@ -73,8 +73,8 @@ macro_rules! SIGN_IN_TAB {
                 </hgroup>
             </div>
 
-            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\">
+            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\" hx-ext=\"response-targets\">
+                <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#error-from-login\">
                 <input
                   type=\"text\"
                   name=\"username\"
@@ -99,6 +99,7 @@ macro_rules! SIGN_IN_TAB {
                     </label>
                 </fieldset>
                 </form>
+                <div id=\"error-from-login\"></div>
             </div>
         </article>"
     };
