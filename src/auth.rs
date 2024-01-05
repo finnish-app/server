@@ -8,6 +8,7 @@ use sqlx::{FromRow, PgPool};
 pub struct User {
     pub id: i32,
     pub username: String,
+    pub email: String,
     password: String,
 }
 
@@ -18,6 +19,7 @@ impl std::fmt::Debug for User {
         f.debug_struct("User")
             .field("id", &self.id)
             .field("username", &self.username)
+            .field("email", &self.email)
             .field("password", &"[redacted]")
             .finish()
     }
@@ -44,6 +46,13 @@ pub struct LoginCredentials {
     pub password: String,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct SignUpCredentials {
+    pub username: String,
+    pub email: String,
+    pub password: String,
+}
+
 #[derive(Clone)]
 pub struct Backend {
     db: PgPool,
@@ -67,7 +76,7 @@ impl AuthnBackend for Backend {
     ) -> Result<Option<Self::User>, Self::Error> {
         let user: Option<Self::User> = sqlx::query_as!(
             Self::User,
-            "select id, username, password from users where username = $1",
+            "select id, username, email, password from users where username = $1",
             creds.username
         )
         .fetch_optional(&self.db)
@@ -79,7 +88,7 @@ impl AuthnBackend for Backend {
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         let user = sqlx::query_as!(
             User,
-            r#"select id, username, password from users where id = $1"#,
+            r#"select id, username, email, password from users where id = $1"#,
             user_id
         )
         .fetch_optional(&self.db)

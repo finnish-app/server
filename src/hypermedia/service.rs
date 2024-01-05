@@ -1,5 +1,5 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials},
+    auth::{AuthSession, LoginCredentials, SignUpCredentials},
     constant::{EDITABLE_TABLE_ROW, SIGN_IN_TAB, SIGN_UP_TAB, TABLE_ROW},
     schema::{Expense, ExpenseType, GetExpense, UpdateExpense},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
@@ -23,9 +23,7 @@ pub async fn signin(
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
         Ok(Some(user)) => user,
-        Ok(None) => {
-            todo!()
-        }
+        Ok(None) => return (StatusCode::NOT_FOUND, "Invalid username or password").into_response(),
         Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
@@ -46,12 +44,13 @@ pub async fn signup_tab() -> impl IntoResponse {
 
 pub async fn signup(
     db_pool: &Pool<Postgres>,
-    Json(signup_input): Json<LoginCredentials>,
+    Json(signup_input): Json<SignUpCredentials>,
 ) -> impl IntoResponse {
     let hashed_pass = generate_hash(&signup_input.password);
     match sqlx::query!(
-        r#"INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id"#,
+        r#"INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id"#,
         signup_input.username,
+        signup_input.email,
         hashed_pass
     )
     .fetch_one(db_pool)

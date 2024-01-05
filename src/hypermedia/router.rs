@@ -1,5 +1,5 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials},
+    auth::{AuthSession, LoginCredentials, SignUpCredentials},
     schema::{GetExpense, UpdateExpense},
     AppState, ExpensesTemplate, SignInTemplate,
 };
@@ -121,7 +121,7 @@ async fn signup_tab() -> impl IntoResponse {
 
 async fn signup(
     State(shared_state): State<Arc<AppState>>,
-    Json(signup_input): Json<LoginCredentials>,
+    Json(signup_input): Json<SignUpCredentials>,
 ) -> impl IntoResponse {
     super::service::signup(&shared_state.pool, Json(signup_input)).await
 }
