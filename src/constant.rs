@@ -135,6 +135,21 @@ macro_rules! SIGN_UP_TAB {
                   pattern=\"[0-9a-z]+\"
                   required
                 />
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <label for=\"email\">Email</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <input
+                      type=\"email\"
+                      name=\"email\"
+                      placeholder=\"email@server.com\"
+                      aria-label=\"Email\"
+                      autocomplete=\"email\"
+                      hx-get=\"/validate/email\"
+                      hx-sync=\"closest form:abort\"
+                      hx-indicator=\"#ind\"
+                      required
+                    />
+                </div>
                 <label for=\"password\">Password</label>
                 <input
                   type=\"password\"

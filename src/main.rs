@@ -67,7 +67,9 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .merge(hypermedia::router::hypermedia_router())
         .route_layer(login_required!(Backend, login_url = "/auth"))
         .merge(hypermedia::router::auth::auth_router())
+        .merge(hypermedia::router::util::util_router())
         .nest_service("/static", ServeDir::new("./css"))
+        .nest_service("/img", ServeDir::new("./img"))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| async move {

@@ -12,6 +12,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use validator::Validate;
 
 pub fn hypermedia_router() -> Router<Arc<AppState>> {
     Router::new()
@@ -32,33 +33,100 @@ pub mod auth {
     }
 }
 
-pub async fn auth_index() -> impl IntoResponse {
+pub mod util {
+    use super::*;
+    use axum::response::Html;
+    use serde::Deserialize;
+
+    #[derive(Deserialize, Validate)]
+    struct EmailInput {
+        #[validate(email)]
+        email: String,
+    }
+
+    pub fn util_router() -> Router<Arc<AppState>> {
+        Router::new().route("/validate/email", get(validate_email_input))
+    }
+
+    async fn validate_email_input(Query(input): Query<EmailInput>) -> impl IntoResponse {
+        match input.validate() {
+            Ok(_) => Html(format!(
+                "
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <label for=\"email\">Email</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <input
+                      type=\"email\"
+                      name=\"email\"
+                      placeholder=\"email@server.com\"
+                      aria-label=\"Email\"
+                      aria-invalid=\"false\"
+                      autocomplete=\"email\"
+                      hx-get=\"/validate/email\"
+                      hx-sync=\"closest form:abort\"
+                      hx-indicator=\"#ind\"
+                      value=\"{}\"
+                      required
+                    />
+                </div>
+                ",
+                input.email
+            ))
+            .into_response(),
+            Err(_) => Html(format!(
+                "
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <label for=\"email\">Email</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <input
+                      type=\"email\"
+                      name=\"email\"
+                      placeholder=\"email@server.com\"
+                      aria-label=\"Email\"
+                      aria-invalid=\"true\"
+                      autocomplete=\"email\"
+                      hx-get=\"/validate/email\"
+                      hx-sync=\"closest form:abort\"
+                      hx-indicator=\"#ind\"
+                      value=\"{}\"
+                      required
+                    />
+                </div>
+                ",
+                input.email
+            ))
+            .into_response(),
+        }
+    }
+}
+
+async fn auth_index() -> impl IntoResponse {
     SignInTemplate {}
 }
 
-pub async fn signin_tab() -> impl IntoResponse {
+async fn signin_tab() -> impl IntoResponse {
     super::service::signin_tab().await
 }
 
-pub async fn signin(
+async fn signin(
     auth_session: AuthSession,
     Json(signin_input): Json<LoginCredentials>,
 ) -> impl IntoResponse {
     super::service::signin(Json(signin_input), auth_session).await
 }
 
-pub async fn signup_tab() -> impl IntoResponse {
+async fn signup_tab() -> impl IntoResponse {
     super::service::signup_tab().await
 }
 
-pub async fn signup(
+async fn signup(
     State(shared_state): State<Arc<AppState>>,
     Json(signup_input): Json<LoginCredentials>,
 ) -> impl IntoResponse {
     super::service::signup(&shared_state.pool, Json(signup_input)).await
 }
 
-pub async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
+async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
     match auth_session.user {
         Some(user) => ExpensesTemplate {
             username: &user.username,
@@ -69,7 +137,7 @@ pub async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
     }
 }
 
-pub async fn get_expenses(
+async fn get_expenses(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
@@ -77,7 +145,7 @@ pub async fn get_expenses(
     super::service::get_expenses(auth_session, &shared_state.pool, Query(get_expense_input)).await
 }
 
-pub async fn edit_expense(
+async fn edit_expense(
     auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
@@ -85,7 +153,7 @@ pub async fn edit_expense(
     super::service::edit_expense(auth_session, &shared_state.pool, Path(id)).await
 }
 
-pub async fn get_expense(
+async fn get_expense(
     auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
@@ -93,7 +161,7 @@ pub async fn get_expense(
     super::service::get_expense(auth_session, &shared_state.pool, Path(id)).await
 }
 
-pub async fn update_expense(
+async fn update_expense(
     auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
@@ -108,7 +176,7 @@ pub async fn update_expense(
     .await
 }
 
-pub async fn insert_expense(
+async fn insert_expense(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Json(create_expense): Json<UpdateExpense>,
@@ -116,7 +184,7 @@ pub async fn insert_expense(
     super::service::insert_expense(auth_session, &shared_state.pool, Json(create_expense)).await
 }
 
-pub async fn expenses_plots(
+async fn expenses_plots(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
