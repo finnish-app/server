@@ -5,7 +5,7 @@
 {% block content %}
 
 <section class="section" id="expenses">
-<h3>Nic's Expenses</h3>
+<h3>{{ username }}'s Expenses</h3>
 
 <form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#month">
     <div class="grid">
@@ -25,7 +25,7 @@
 </form>
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
-     hx-trigger="load, change from:#month, refresh-table from:body"
+     hx-trigger="load, change from:#month, refresh-table from:body, refresh-plots from:body"
      hx-include="#month"
 >
 </div>

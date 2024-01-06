@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO expenses (description, price, expense_type, is_essencial, date)\n        VALUES ($1, $2, $3 :: expense_type, $4, $5)\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        ",
+  "query": "\n        INSERT INTO expenses\n        (description, price, expense_type, is_essencial, date, user_id)\n        VALUES ($1, $2, $3 :: expense_type, $4, $5, $6)\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        ",
   "describe": {
     "columns": [
       {
@@ -68,7 +68,8 @@
           }
         },
         "Bool",
-        "Date"
+        "Date",
+        "Int4"
       ]
     },
     "nullable": [
@@ -80,5 +81,5 @@
       false
     ]
   },
-  "hash": "225f95a2d7c7d59127b17febd1b5629b48a04e17924a8403abee723f2e582ee4"
+  "hash": "be057988d986d00e85ef841e09ed831d85b1c28257640d28b7846b5c6dec6625"
 }
