@@ -106,7 +106,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a41603f7cdbf5ac4af60760f17253eb6adf6ec5b6f14a7ed830cf687d375f163"
 dependencies = [
  "askama",
- "axum-core 0.4.1",
+ "axum-core 0.4.2",
  "http 1.0.0",
 ]
 
@@ -231,12 +231,12 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "202651474fe73c62d9e0a56c6133f7a0ff1dc1c8cf7a5b03381af2a26553ac9d"
+checksum = "d09dbe0e490df5da9d69b36dca48a76635288a82f92eca90024883a56202026d"
 dependencies = [
  "async-trait",
- "axum-core 0.4.1",
+ "axum-core 0.4.2",
  "bytes",
  "futures-util",
  "http 1.0.0",
@@ -282,9 +282,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77cb22c689c44d4c07b0ab44ebc25d69d8ae601a2f28fb8d672d344178fa17aa"
+checksum = "e87c8503f93e6d144ee5690907ba22db7ba79ab001a932ab99034f0fe836b3df"
 dependencies = [
  "async-trait",
  "bytes",
@@ -793,7 +793,7 @@ version = "0.1.0"
 dependencies = [
  "askama",
  "askama_axum",
- "axum 0.7.2",
+ "axum 0.7.3",
  "axum-login",
  "chrono",
  "lazy_static",
@@ -2535,7 +2535,7 @@ version = "0.35.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b8a2198e6493677654078c3a3930a364ed0fc21b456c91e4d815858c269e3a1"
 dependencies = [
- "axum 0.7.2",
+ "axum 0.7.3",
  "shuttle-runtime",
 ]
 
