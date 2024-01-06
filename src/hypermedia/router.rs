@@ -13,16 +13,33 @@ use axum::{
     Json, Router,
 };
 
-use super::validation_service::EmailInput;
+use super::validation_service::{EmailInput, UsernameInput};
 
 // VALIDATION
 pub fn validation_router() -> Router<Arc<AppState>> {
-    Router::new().route("/validate/email", get(validate_email))
+    Router::new()
+        .route("/validate/email", get(validate_email))
+        .route("/validate/username", get(validate_username))
+    //.route("/validate/passwords", get(validate_passwords))
 }
 
-async fn validate_email(Query(input_email): Query<EmailInput>) -> impl IntoResponse {
-    super::validation_service::validate_email(input_email).await
+async fn validate_email(
+    Query(input_email): Query<EmailInput>,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    super::validation_service::validate_email(&shared_state.pool, input_email).await
 }
+
+async fn validate_username(
+    Query(input_username): Query<UsernameInput>,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    super::validation_service::validate_username(&shared_state.pool, input_username).await
+}
+
+//async fn validate_passwords(Query(input_passwords): Query<PasswordsInput>) -> impl IntoResponse {
+//    super::validation_service::validate_passwords(input_passwords).await
+//}
 
 // AUTH
 pub fn auth_router() -> Router<Arc<AppState>> {

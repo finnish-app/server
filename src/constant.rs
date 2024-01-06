@@ -124,21 +124,30 @@ macro_rules! SIGN_UP_TAB {
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
                 <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
-                <label for=\"username\">Username</label>
-                <input
-                  type=\"text\"
-                  name=\"username\"
-                  placeholder=\"Username\"
-                  aria-label=\"Login\"
-                  autocomplete=\"nickname\"
-                  minlength=\"1\"
-                  maxlength=\"20\"
-                  pattern=\"[0-9a-z]+\"
-                  required
-                />
                 <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <div class=\"grid\">
+                    <label for=\"username\">Username</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    </div>
+                    <input
+                      type=\"text\"
+                      name=\"username\"
+                      placeholder=\"Username\"
+                      aria-label=\"Login\"
+                      autocomplete=\"nickname\"
+                      pattern=\"[0-9a-z]{3,20}\"
+                      title=\"3 to 20 characters, lowercase letters or numbers only\"
+                      hx-get=\"/validate/username\"
+                      hx-sync=\"closest form:abort\"
+                      hx-indicator=\"#ind\"
+                      required
+                    />
+                </div>
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <div class=\"grid\">
                     <label for=\"email\">Email</label>
                     <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    </div>
                     <input
                       type=\"email\"
                       name=\"email\"
@@ -161,14 +170,14 @@ macro_rules! SIGN_UP_TAB {
                   required
                 />
                 <label for=\"confirm_password\">Confirm Password</label>
-                  <input
-                    type=\"password\"
-                    name=\"confirm_password\"
-                    placeholder=\"Password\"
-                    aria-label=\"Password\"
-                    id=\"confirm_password\"
-                    required
-                  />
+                <input
+                  type=\"password\"
+                  name=\"confirm_password\"
+                  placeholder=\"Password\"
+                  aria-label=\"Password\"
+                  id=\"confirm_password\"
+                  required
+                />
                 <button type=\"submit\" class=\"contrast\">Sign up</button>
                 </form>
             </div>
@@ -176,7 +185,167 @@ macro_rules! SIGN_UP_TAB {
     };
 }
 
+macro_rules! VALID_EMAIL {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"email\">Email</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"email\"
+              name=\"email\"
+              placeholder=\"email@server.com\"
+              aria-label=\"Email\"
+              aria-invalid=\"false\"
+              autocomplete=\"email\"
+              hx-get=\"/validate/email\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+        </div>"
+    };
+}
+
+macro_rules! INVALID_EMAIL {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"email\">Email</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"email\"
+              name=\"email\"
+              placeholder=\"email@server.com\"
+              aria-label=\"Email\"
+              aria-invalid=\"true\"
+              autocomplete=\"email\"
+              hx-get=\"/validate/email\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+            <div class='error-message' style=\"color:red;\">Please enter a valid email address, such as someone@gmail.com.</div>
+        </div>"
+    };
+}
+
+macro_rules! EMAIL_TAKEN {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"email\">Email</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"email\"
+              name=\"email\"
+              placeholder=\"email@server.com\"
+              aria-label=\"Email\"
+              aria-invalid=\"true\"
+              autocomplete=\"email\"
+              hx-get=\"/validate/email\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+            <div class='error-message' style=\"color:red;\">That email is already taken.  Please enter another email address.</div>
+        </div>"
+    };
+}
+
+macro_rules! VALID_USERNAME {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"username\">Username</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"text\"
+              name=\"username\"
+              placeholder=\"Username\"
+              aria-label=\"Login\"
+              aria-invalid=\"false\"
+              autocomplete=\"nickname\"
+              pattern=\"[0-9a-z]{{3,20}}\"
+              title=\"3 to 20 characters, lowercase letters or numbers only\"
+              hx-get=\"/validate/username\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+        </div>"
+    };
+}
+
+macro_rules! INVALID_USERNAME {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"username\">Username</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"text\"
+              name=\"username\"
+              placeholder=\"Username\"
+              aria-label=\"Login\"
+              aria-invalid=\"true\"
+              autocomplete=\"nickname\"
+              pattern=\"[0-9a-z]{{3,20}}\"
+              title=\"3 to 20 characters, lowercase letters or numbers only\"
+              hx-get=\"/validate/username\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+            <div class='error-message' style=\"color:red;\">Username should be 3 to 20 characters long and only consist of lowercase letters or numbers.  Please enter another username.</div>
+        </div>"
+    };
+}
+
+macro_rules! USERNAME_TAKEN {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"username\">Username</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"text\"
+              name=\"username\"
+              placeholder=\"Username\"
+              aria-label=\"Login\"
+              aria-invalid=\"true\"
+              autocomplete=\"nickname\"
+              pattern=\"[0-9a-z]{{3,20}}\"
+              title=\"3 to 20 characters, lowercase letters or numbers only\"
+              hx-get=\"/validate/username\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              value=\"{}\"
+              required
+            />
+            <div class='error-message' style=\"color:red;\">That username is already taken.  Please enter another username.</div>
+        </div>"
+    };
+}
+
 pub(crate) use EDITABLE_TABLE_ROW;
+pub(crate) use EMAIL_TAKEN;
+pub(crate) use INVALID_EMAIL;
+pub(crate) use INVALID_USERNAME;
 pub(crate) use SIGN_IN_TAB;
 pub(crate) use SIGN_UP_TAB;
 pub(crate) use TABLE_ROW;
+pub(crate) use USERNAME_TAKEN;
+pub(crate) use VALID_EMAIL;
+pub(crate) use VALID_USERNAME;
