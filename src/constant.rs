@@ -100,6 +100,7 @@ macro_rules! SIGN_IN_TAB {
                 </fieldset>
                 </form>
                 <div id=\"error-from-login\"></div>
+                {}
             </div>
         </article>"
     };

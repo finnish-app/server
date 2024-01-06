@@ -12,14 +12,21 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/auth", get(auth_index))
         .route("/signin", get(signin_tab).post(signin))
         .route("/signup", get(signup_tab).post(signup))
+        .route("/signin_after_signup", get(signin_tab_after_signup))
 }
 
 async fn auth_index() -> impl IntoResponse {
-    SignInTemplate {}
+    SignInTemplate {
+        ..Default::default()
+    }
 }
 
 async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab().await
+    crate::hypermedia::service::auth::signin_tab(false).await
+}
+
+async fn signin_tab_after_signup() -> impl IntoResponse {
+    crate::hypermedia::service::auth::signin_tab(true).await
 }
 
 async fn signin(

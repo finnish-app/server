@@ -1,6 +1,7 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
+    SignInTemplate,
 };
 
 use askama_axum::IntoResponse;
@@ -31,8 +32,17 @@ pub async fn signin(
     (StatusCode::OK, [("HX-Redirect", "/")], "Logged in").into_response()
 }
 
-pub async fn signin_tab() -> impl IntoResponse {
-    Html(SIGN_IN_TAB!())
+pub async fn signin_tab(print_message: bool) -> impl IntoResponse {
+    if print_message {
+        tracing::info!("print was true");
+        return Html(format!(
+            SIGN_IN_TAB!(),
+            "Account created successfully. Please sign in."
+        ))
+        .into_response();
+    }
+    tracing::info!("print was false");
+    Html(format!(SIGN_IN_TAB!(), "")).into_response()
 }
 
 pub async fn signup_tab() -> impl IntoResponse {
@@ -53,7 +63,13 @@ pub async fn signup(
     .fetch_one(db_pool)
     .await
     {
-        Ok(_) => (StatusCode::OK, [("HX-Redirect", "/auth")], "Created user").into_response(),
+        Ok(_) => (
+            StatusCode::OK,
+            SignInTemplate {
+                should_print_signup_message_in_signin: true,
+            },
+        )
+            .into_response(),
         Err(e) => {
             tracing::error!("Error signing up: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
