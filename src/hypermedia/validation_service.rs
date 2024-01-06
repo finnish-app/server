@@ -7,7 +7,8 @@ use sqlx::{FromRow, Pool, Postgres};
 use validator::Validate;
 
 use crate::constant::{
-    EMAIL_TAKEN, INVALID_EMAIL, INVALID_USERNAME, USERNAME_TAKEN, VALID_EMAIL, VALID_USERNAME,
+    EMAIL_TAKEN, INVALID_EMAIL, INVALID_USERNAME, MATCHING_PASSWORDS, MISMATCHING_PASSWORDS,
+    USERNAME_TAKEN, VALID_EMAIL, VALID_USERNAME,
 };
 
 lazy_static! {
@@ -24,6 +25,13 @@ pub struct EmailInput {
 pub struct UsernameInput {
     #[validate(regex = "RE_USERNAME")]
     username: String,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct PasswordsInput {
+    password: String,
+    #[validate(must_match = "password")]
+    confirm_password: String,
 }
 
 pub async fn validate_email(db_pool: &Pool<Postgres>, input: EmailInput) -> impl IntoResponse {
@@ -87,5 +95,12 @@ pub async fn validate_username(
             }
         }
         Err(_) => Html(format!(INVALID_USERNAME!(), input.username)).into_response(),
+    }
+}
+
+pub async fn validate_passwords(input: PasswordsInput) -> impl IntoResponse {
+    match input.validate() {
+        Ok(_) => Html(format!(MATCHING_PASSWORDS!(), input.password)).into_response(),
+        Err(_) => Html(format!(MISMATCHING_PASSWORDS!(), input.password)).into_response(),
     }
 }

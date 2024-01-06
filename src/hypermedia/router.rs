@@ -13,14 +13,14 @@ use axum::{
     Json, Router,
 };
 
-use super::validation_service::{EmailInput, UsernameInput};
+use super::validation_service::{EmailInput, PasswordsInput, UsernameInput};
 
 // VALIDATION
 pub fn validation_router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/validate/email", get(validate_email))
         .route("/validate/username", get(validate_username))
-    //.route("/validate/passwords", get(validate_passwords))
+        .route("/validate/passwords", get(validate_passwords))
 }
 
 async fn validate_email(
@@ -37,9 +37,9 @@ async fn validate_username(
     super::validation_service::validate_username(&shared_state.pool, input_username).await
 }
 
-//async fn validate_passwords(Query(input_passwords): Query<PasswordsInput>) -> impl IntoResponse {
-//    super::validation_service::validate_passwords(input_passwords).await
-//}
+async fn validate_passwords(Query(input_passwords): Query<PasswordsInput>) -> impl IntoResponse {
+    super::validation_service::validate_passwords(input_passwords).await
+}
 
 // AUTH
 pub fn auth_router() -> Router<Arc<AppState>> {
@@ -61,7 +61,7 @@ async fn signin(
     auth_session: AuthSession,
     Json(signin_input): Json<LoginCredentials>,
 ) -> impl IntoResponse {
-    super::auth_service::signin(Json(signin_input), auth_session).await
+    super::auth_service::signin(signin_input, auth_session).await
 }
 
 async fn signup_tab() -> impl IntoResponse {
@@ -72,7 +72,7 @@ async fn signup(
     State(shared_state): State<Arc<AppState>>,
     Json(signup_input): Json<SignUpCredentials>,
 ) -> impl IntoResponse {
-    super::auth_service::signup(&shared_state.pool, Json(signup_input)).await
+    super::auth_service::signup(&shared_state.pool, signup_input).await
 }
 
 // EXPENSES
@@ -101,12 +101,7 @@ async fn get_expenses(
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    super::expenses_service::get_expenses(
-        auth_session,
-        &shared_state.pool,
-        Query(get_expense_input),
-    )
-    .await
+    super::expenses_service::get_expenses(auth_session, &shared_state.pool, get_expense_input).await
 }
 
 async fn edit_expense(
@@ -114,7 +109,7 @@ async fn edit_expense(
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    super::expenses_service::edit_expense(auth_session, &shared_state.pool, Path(id)).await
+    super::expenses_service::edit_expense(auth_session, &shared_state.pool, id).await
 }
 
 async fn get_expense(
@@ -122,7 +117,7 @@ async fn get_expense(
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    super::expenses_service::get_expense(auth_session, &shared_state.pool, Path(id)).await
+    super::expenses_service::get_expense(auth_session, &shared_state.pool, id).await
 }
 
 async fn update_expense(
@@ -131,13 +126,8 @@ async fn update_expense(
     State(shared_state): State<Arc<AppState>>,
     Json(update_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    super::expenses_service::update_expense(
-        auth_session,
-        &shared_state.pool,
-        Path(id),
-        Json(update_expense),
-    )
-    .await
+    super::expenses_service::update_expense(auth_session, &shared_state.pool, id, update_expense)
+        .await
 }
 
 async fn insert_expense(
@@ -145,8 +135,7 @@ async fn insert_expense(
     State(shared_state): State<Arc<AppState>>,
     Json(create_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    super::expenses_service::insert_expense(auth_session, &shared_state.pool, Json(create_expense))
-        .await
+    super::expenses_service::insert_expense(auth_session, &shared_state.pool, create_expense).await
 }
 
 async fn expenses_plots(
@@ -154,10 +143,6 @@ async fn expenses_plots(
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    super::expenses_service::expenses_plots(
-        auth_session,
-        &shared_state.pool,
-        Query(get_expense_input),
-    )
-    .await
+    super::expenses_service::expenses_plots(auth_session, &shared_state.pool, get_expense_input)
+        .await
 }

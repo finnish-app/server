@@ -4,12 +4,12 @@ use crate::{
 };
 
 use askama_axum::IntoResponse;
-use axum::{http::StatusCode, response::Html, Json};
+use axum::{http::StatusCode, response::Html};
 use password_auth::generate_hash;
 use sqlx::{Pool, Postgres};
 
 pub async fn signin(
-    Json(signin_input): Json<LoginCredentials>,
+    signin_input: LoginCredentials,
     mut auth_session: AuthSession,
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
@@ -41,7 +41,7 @@ pub async fn signup_tab() -> impl IntoResponse {
 
 pub async fn signup(
     db_pool: &Pool<Postgres>,
-    Json(signup_input): Json<SignUpCredentials>,
+    signup_input: SignUpCredentials,
 ) -> impl IntoResponse {
     let hashed_pass = generate_hash(&signup_input.password);
     match sqlx::query!(

@@ -6,12 +6,7 @@ use crate::{
 };
 
 use askama_axum::IntoResponse;
-use axum::{
-    extract::{Path, Query},
-    http::StatusCode,
-    response::Html,
-    Json,
-};
+use axum::{http::StatusCode, response::Html};
 use chrono::NaiveDate;
 use plotly::{common::Title, Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
@@ -19,7 +14,7 @@ use sqlx::{Pool, Postgres};
 pub async fn get_expenses(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Query(get_expense_input): Query<GetExpense>,
+    get_expense_input: GetExpense,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expenses = sqlx::query_as!(
@@ -64,7 +59,7 @@ pub async fn get_expenses(
 pub async fn edit_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Path(id): Path<i32>,
+    id: i32,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expense = sqlx::query_as!(
@@ -93,7 +88,7 @@ pub async fn edit_expense(
 pub async fn get_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Path(id): Path<i32>,
+    id: i32,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expense = sqlx::query_as!(
@@ -121,8 +116,8 @@ pub async fn get_expense(
 pub async fn update_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Path(id): Path<i32>,
-    Json(update_expense): Json<UpdateExpense>,
+    id: i32,
+    update_expense: UpdateExpense,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
 
@@ -174,7 +169,7 @@ pub async fn update_expense(
 pub async fn insert_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Json(create_expense): Json<UpdateExpense>,
+    create_expense: UpdateExpense,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
     match sqlx::query_as!(
@@ -208,7 +203,7 @@ pub async fn insert_expense(
 pub async fn expenses_plots(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    Query(get_expense_input): Query<GetExpense>,
+    get_expense_input: GetExpense,
 ) -> impl IntoResponse {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expenses = sqlx::query_as!(

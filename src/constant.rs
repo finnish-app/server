@@ -167,17 +167,27 @@ macro_rules! SIGN_UP_TAB {
                   placeholder=\"Password\"
                   aria-label=\"Password\"
                   autocomplete=\"current-password\"
+                  id=\"password\"
                   required
                 />
-                <label for=\"confirm_password\">Confirm Password</label>
-                <input
-                  type=\"password\"
-                  name=\"confirm_password\"
-                  placeholder=\"Password\"
-                  aria-label=\"Password\"
-                  id=\"confirm_password\"
-                  required
-                />
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <div class=\"grid\">
+                    <label for=\"confirm_password\">Confirm Password</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    </div>
+                    <input
+                      type=\"password\"
+                      name=\"confirm_password\"
+                      placeholder=\"Password\"
+                      aria-label=\"Password\"
+                      id=\"confirm_password\"
+                      hx-get=\"/validate/passwords\"
+                      hx-sync=\"closest form:abort\"
+                      hx-indicator=\"#ind\"
+                      hx-include=\"#password\"
+                      required
+                    />
+                </div>
                 <button type=\"submit\" class=\"contrast\">Sign up</button>
                 </form>
             </div>
@@ -339,10 +349,63 @@ macro_rules! USERNAME_TAKEN {
     };
 }
 
+macro_rules! MATCHING_PASSWORDS {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"confirm_password\">Confirm Password</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"password\"
+              name=\"confirm_password\"
+              placeholder=\"Password\"
+              aria-label=\"Password\"
+              aria-invalid=\"false\"
+              id=\"confirm_password\"
+              hx-get=\"/validate/passwords\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              hx-include=\"#password\"
+              value=\"{}\"
+              required
+            />
+        </div>"
+    };
+}
+
+macro_rules! MISMATCHING_PASSWORDS {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"confirm_password\">Confirm Password</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+              type=\"password\"
+              name=\"confirm_password\"
+              placeholder=\"Password\"
+              aria-label=\"Password\"
+              aria-invalid=\"true\"
+              id=\"confirm_password\"
+              hx-get=\"/validate/passwords\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              hx-include=\"#password\"
+              value=\"{}\"
+              required
+            />
+            <div class='error-message' style=\"color:red;\">Passwords don't match.</div>
+        </div>"
+    };
+}
+
 pub(crate) use EDITABLE_TABLE_ROW;
 pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
+pub(crate) use MATCHING_PASSWORDS;
+pub(crate) use MISMATCHING_PASSWORDS;
 pub(crate) use SIGN_IN_TAB;
 pub(crate) use SIGN_UP_TAB;
 pub(crate) use TABLE_ROW;
