@@ -1,4 +1,4 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main)
 
 # Finnish
 
@@ -8,7 +8,11 @@ from your banking institution.
 
 This way, you're on top of your financials and can make better decisions of how to manage your hard-earned money.
 
+Sign up in: [finnish](https://finnish.shuttleapp.rs)
+
 ## Software
+
+:warning: Finnish is still in beta and will have a 0.2 beta launch soon, check in with Milestones.
 
 Finnish is not a financial product, its a software one.
 It's baffling that there is no product for this in the wild (at least not that I know of, here in Brazil).
