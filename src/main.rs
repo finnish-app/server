@@ -1,3 +1,11 @@
+#![warn(
+    clippy::all,
+    nonstandard_style,
+    future_incompatible,
+    missing_debug_implementations
+)]
+#![forbid(unsafe_code)]
+
 mod auth;
 mod constant;
 mod data;
