@@ -308,7 +308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fff85d5ba21f2063b3e8e47ba7192f7d2b73760e3d413db8e7c9b9bea3095b2"
 dependencies = [
  "async-trait",
- "axum 0.7.2",
+ "axum 0.7.3",
  "form_urlencoded",
  "ring",
  "serde",
@@ -3317,7 +3317,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fd0118512cf0b3768f7fcccf0bef1ae41d68f2b45edc1e77432b36c97c56c6d"
 dependencies = [
  "async-trait",
- "axum-core 0.4.1",
+ "axum-core 0.4.2",
  "cookie",
  "futures-util",
  "http 1.0.0",
@@ -3401,7 +3401,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "116390a480725905cc9c9b4059afef991ae331a759df51c9c3de4579e2004b2a"
 dependencies = [
  "async-trait",
- "axum-core 0.4.1",
+ "axum-core 0.4.2",
  "futures",
  "http 1.0.0",
  "parking_lot",
