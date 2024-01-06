@@ -1,4 +1,4 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/Utp3CSvGS8o9MeM1vGvzfb/KGjKQG7zbfR3yZ2T49Ai6X/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/Utp3CSvGS8o9MeM1vGvzfb/KGjKQG7zbfR3yZ2T49Ai6X/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main)
 
 # Finnish
 
