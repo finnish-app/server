@@ -79,6 +79,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .merge(hypermedia::router::validation::router())
         .layer(HelmetLayer::new(Helmet::default().add(XFrameOptions::Deny)))
         .nest_service("/static", ServeDir::new("./css"))
+        .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
         .layer(
             ServiceBuilder::new()

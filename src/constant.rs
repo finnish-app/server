@@ -74,7 +74,7 @@ macro_rules! SIGN_IN_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\" hx-ext=\"response-targets\">
-                <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#error-from-login\">
+                <form id=\"signin-form\" hx-post=\"/signin\" hx-ext=\"json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#error-from-login\">
                 <input
                   type=\"text\"
                   name=\"username\"
@@ -124,7 +124,7 @@ macro_rules! SIGN_UP_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"my-json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
+                <form id=\"signup-form\" hx-post=\"/signup\" hx-ext=\"json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
                 <div hx-target=\"this\" hx-swap=\"outerHTML\">
                     <div class=\"grid\">
                     <label for=\"username\">Username</label>
