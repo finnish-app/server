@@ -22,6 +22,7 @@ use std::{sync::Arc, time::Duration};
 
 use askama_axum::Template;
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
+use axum_helmet::{Helmet, HelmetLayer, XFrameOptions};
 use axum_login::{
     login_required,
     tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
@@ -76,6 +77,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route_layer(login_required!(Backend, login_url = "/auth"))
         .merge(hypermedia::router::auth::router())
         .merge(hypermedia::router::validation::router())
+        .layer(HelmetLayer::new(Helmet::default().add(XFrameOptions::Deny)))
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/img", ServeDir::new("./img"))
         .layer(
