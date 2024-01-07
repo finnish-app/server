@@ -22,7 +22,12 @@ use std::{sync::Arc, time::Duration};
 
 use askama_axum::Template;
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
-use axum_helmet::{Helmet, HelmetLayer, XFrameOptions};
+use axum_helmet::{
+    ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
+    OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
+    XDNSPrefetchControl, XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies,
+    XXSSProtection,
+};
 use axum_login::{
     login_required,
     tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
@@ -70,6 +75,40 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
+    let content_sec_policy = ContentSecurityPolicy::new()
+        .default_src(vec!["'self'"])
+        .base_uri(vec!["'self'"])
+        .font_src(vec!["'self'", "https:", "data:"])
+        .form_action(vec!["'self'"])
+        .frame_ancestors(vec!["'self'"])
+        .img_src(vec!["'self'", "data:"])
+        .object_src(vec!["'none'"])
+        .script_src(vec!["'self'"])
+        .script_src_attr(vec!["'self'"])
+        .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
+        .upgrade_insecure_requests();
+    tracing::debug!("content_sec_policy: {}", content_sec_policy);
+
+    let helmet_layer = HelmetLayer::new(
+        Helmet::new()
+            .add(content_sec_policy)
+            .add(CrossOriginOpenerPolicy::same_origin())
+            .add(CrossOriginResourcePolicy::same_origin())
+            .add(OriginAgentCluster::new(true))
+            .add(ReferrerPolicy::no_referrer())
+            .add(
+                StrictTransportSecurity::new()
+                    .max_age(15552000)
+                    .include_sub_domains(),
+            )
+            .add(XContentTypeOptions::nosniff())
+            .add(XDNSPrefetchControl::off())
+            .add(XDownloadOptions::noopen())
+            .add(XFrameOptions::Deny)
+            .add(XPermittedCrossDomainPolicies::none())
+            .add(XXSSProtection::off()),
+    );
+
     let shared_state = Arc::new(AppState { pool });
     let router = Router::new()
         .merge(data::router::data_router())
@@ -77,7 +116,6 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route_layer(login_required!(Backend, login_url = "/auth"))
         .merge(hypermedia::router::auth::router())
         .merge(hypermedia::router::validation::router())
-        .layer(HelmetLayer::new(Helmet::default().add(XFrameOptions::Deny)))
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
@@ -97,6 +135,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
+        .layer(helmet_layer)
         .layer(auth_layer)
         .with_state(shared_state);
 
