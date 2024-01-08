@@ -14,7 +14,7 @@ lazy_static = "1.4.0"
 password-auth = "1.0.0"
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 regex = "1.10.2"
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 shuttle-axum = { version = "0.35.2", default-features = false, features = ["axum-0-7"] }
 shuttle-runtime = { version = "0.35.2", default-features = false, features = ["colored"] }
 shuttle-shared-db = { version = "0.35.2", features = ["postgres"] }
