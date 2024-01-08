@@ -302,6 +302,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-helmet"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39893950267de4634ab036e4bb7efe0f4adeedb39e5f75c04131228bcc1e53a8"
+dependencies = [
+ "axum 0.7.3",
+ "helmet-core",
+ "http 1.0.0",
+ "pin-project-lite",
+ "tokio",
+ "tower",
+ "tower-service",
+]
+
+[[package]]
 name = "axum-login"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -794,6 +809,7 @@ dependencies = [
  "askama",
  "askama_axum",
  "axum 0.7.3",
+ "axum-helmet",
  "axum-login",
  "chrono",
  "lazy_static",
@@ -1085,6 +1101,12 @@ checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 dependencies = [
  "unicode-segmentation",
 ]
+
+[[package]]
+name = "helmet-core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c46a1217e7297a8e904aa68b4de65c59060583dffb8585886cdaaec214c787a"
 
 [[package]]
 name = "hermit-abi"

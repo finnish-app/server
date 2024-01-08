@@ -7,32 +7,11 @@
 
         <link rel="stylesheet" href="/static/pico.min.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-        <script>
-            htmx.defineExtension('my-json-enc', {
-                onEvent: function (name, evt) {
-                    if (name === "htmx:configRequest") {
-                        evt.detail.headers['Content-Type'] = "application/json";
-                    }
-                },
-
-                encodeParameters : function(xhr, parameters, elt) {
-                    xhr.overrideMimeType('text/json');
-                    console.log(parameters);
-                    Object.keys(parameters).forEach(function(key) {
-                        if (parameters[key] === "") {
-                            delete parameters[key];
-                        }
-                    });
-                    console.log(parameters);
-                    return JSON.stringify(parameters);
-                }
-            })
-        </script>
-        <script src="https://unpkg.com/htmx.org/dist/ext/response-targets.js"></script>
-        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
-        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
-        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+        <script src="/js/htmx.min.js"></script>
+        <script src="/js/json-enc.js"></script>
+        <script src="/js/response-targets.js"></script>
+        <script src="/js/hyperscript.min.js"></script>
+        <script src="/js/plotly-strict-2.28.0.min.js.js" charset="utf-8"></script>
 
         <!-- Allow any inheriting page to extend head with additional assets -->
         {% block head %}{% endblock %}
