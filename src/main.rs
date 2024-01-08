@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod auth;
+mod client;
 mod constant;
 mod data;
 mod data_structs;

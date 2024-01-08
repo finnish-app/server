@@ -1,5 +1,6 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
+    client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     SignInTemplate,
 };
@@ -54,22 +55,42 @@ pub async fn signup(
     signup_input: SignUpCredentials,
 ) -> impl IntoResponse {
     let hashed_pass = generate_hash(&signup_input.password);
-    match sqlx::query!(
-        r#"INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id"#,
+    let mut transaction = db_pool.begin().await.unwrap();
+
+    sqlx::query!(
+        r#"INSERT INTO users (username, email, password) VALUES ($1, $2, $3)"#,
         signup_input.username,
         signup_input.email,
         hashed_pass
     )
-    .fetch_one(db_pool)
+    .execute(&mut *transaction)
+    .await
+    .unwrap();
+
+    match sqlx::query!(
+        "SELECT email FROM users WHERE username = $1",
+        signup_input.username
+    )
+    .fetch_one(&mut *transaction)
     .await
     {
-        Ok(_) => (
-            StatusCode::OK,
-            SignInTemplate {
-                should_print_signup_message_in_signin: true,
-            },
-        )
-            .into_response(),
+        Ok(email) => match send_sign_up_confirmation_mail(email.email.as_str()) {
+            Ok(_) => {
+                transaction.commit().await.unwrap();
+                (
+                    StatusCode::OK,
+                    SignInTemplate {
+                        should_print_signup_message_in_signin: true,
+                    },
+                )
+                    .into_response()
+            }
+            Err(e) => {
+                transaction.rollback().await.unwrap();
+                tracing::error!("Error sending sign up confirmation mail: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        },
         Err(e) => {
             tracing::error!("Error signing up: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

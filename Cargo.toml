@@ -11,6 +11,7 @@ axum-helmet = "0.1.0"
 axum-login = "0.12.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 lazy_static = "1.4.0"
+lettre = "0.11.3"
 password-auth = "1.0.0"
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 regex = "1.10.2"
