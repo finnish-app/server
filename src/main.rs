@@ -85,6 +85,10 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .object_src(vec!["'none'"])
         .script_src(vec!["'self'"])
         .script_src_attr(vec!["'self'"])
+        .script_src_elem(vec!["'self'", "https:", "'unsafe-inline'"]) // currently breaks without unsafe-inline in htmx.min
+        // this is somehow related to
+        // plotting with plotly, but
+        // rest of app works normally
         .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
         .upgrade_insecure_requests();
     tracing::debug!("content_sec_policy: {}", content_sec_policy);
