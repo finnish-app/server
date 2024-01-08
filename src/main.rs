@@ -92,7 +92,6 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         // rest of app works normally
         .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
         .upgrade_insecure_requests();
-    tracing::debug!("content_sec_policy: {}", content_sec_policy);
 
     let helmet_layer = HelmetLayer::new(
         Helmet::new()
