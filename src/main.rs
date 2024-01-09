@@ -174,3 +174,12 @@ impl Default for ExpensesTemplate<'_> {
 struct SignInTemplate {
     should_print_signup_message_in_signin: bool,
 }
+
+#[derive(Template, Default)]
+#[template(path = "verify.html")]
+struct VerificationTemplate {
+    login_url: String,
+    message: String,
+    resend_url: String,
+    should_print_resend_link: bool,
+}

@@ -2,7 +2,7 @@ use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
-    SignInTemplate,
+    SignInTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
@@ -20,11 +20,12 @@ pub async fn signin(
             if !user.verified {
                 return (
                     StatusCode::UNAUTHORIZED,
-                    Html(
+                    Html(format!(
                         "<p style=\"color:red;\">Please verify your email before signing in</p>
-                         <a href=\"/auth/resend-verification\">Resend verification email</a>
+                         <a href=\"/auth/resend-verification?username={}\">Resend verification email</a>
                         ",
-                    ),
+                        user.username
+                    )),
                 )
                     .into_response();
             }
@@ -139,29 +140,6 @@ pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
     username: String,
 ) -> impl IntoResponse {
-    match sqlx::query!("SELECT verified FROM users WHERE username = $1", username)
-        .fetch_optional(db_pool)
-        .await
-    {
-        Ok(returned_value) => {
-            if returned_value.is_none() {
-                return StatusCode::NOT_FOUND.into_response();
-            }
-
-            if returned_value.unwrap().verified {
-                return (
-                    StatusCode::CONFLICT,
-                    Html("email already verified".to_string()),
-                )
-                    .into_response();
-            }
-        }
-        Err(e) => {
-            tracing::error!("Error getting verified user from db: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
-
     match sqlx::query_as!(
         MailToUser,
         r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE username = $3 RETURNING email, verification_code"#,
@@ -176,22 +154,30 @@ pub async fn resend_verification_email(
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
-            Ok(_) => (StatusCode::OK, Html("Email resent successfully".to_string())).into_response(),
+            Ok(_) => tracing::info!("Verification mail resent successfully"),
             Err(e) => {
                 tracing::error!("Error resending verification mail: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         },
         Err(e) => {
             tracing::error!("Error updating verification code and expiration in db: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+
+    (
+        StatusCode::OK,
+        VerificationTemplate {
+            message: "Check your inbox for your verification email".to_string(),
+            login_url: "/auth".to_string(),
+            ..Default::default()
+        },
+    )
+        .into_response()
 }
 
 pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoResponse {
     match sqlx::query!(
-        "SELECT id, verified FROM users WHERE verification_code = $1 AND code_expires_at > $2",
+        "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
         token,
         chrono::Utc::now()
     )
@@ -199,14 +185,6 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
     .await
     {
         Ok(returned_value) => {
-            if returned_value.verified {
-                return (
-                    StatusCode::CONFLICT,
-                    Html("email already verified".to_string()),
-                )
-                    .into_response();
-            }
-
             match sqlx::query!(
                 "UPDATE users SET verified = true, verification_code = NULL, code_expires_at = NULL WHERE id = $1",
                 returned_value.id
@@ -216,18 +194,37 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
             {
                 Ok(_) => (
                     StatusCode::OK,
-                    Html("email verified successfully".to_string()),
+                    VerificationTemplate {
+                        message: "Email verified successfully. You can now sign in.".to_string(),
+                        login_url: "/auth".to_string(),
+                        ..Default::default() 
+                    },
                 )
                     .into_response(),
                 Err(e) => {
-                    tracing::error!("Error verifying email: {}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                    tracing::error!("Error updating db: {}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        VerificationTemplate {
+                            message: "Error verifying email. Please try again later.".to_string(),
+                            login_url: "/auth".to_string(),
+                            ..Default::default()
+                        },
+                    ).into_response()
                 }
             }
         }
         Err(e) => {
             tracing::error!("Error verifying email: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            (
+                StatusCode::CONFLICT,
+                VerificationTemplate {
+                    login_url: "/auth".to_string(),
+                    message: "User already verified or verification code expired".to_string(),
+                    should_print_resend_link: true,
+                    resend_url: "/auth/resend-verification".to_string(),
+                },
+            ).into_response()
         }
     }
 }

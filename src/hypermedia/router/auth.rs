@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use askama_axum::IntoResponse;
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::get,
     Json, Router,
 };
@@ -53,8 +53,20 @@ async fn signup(
     crate::hypermedia::service::auth::signup(&shared_state.pool, signup_input).await
 }
 
-async fn resend_verification_email(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    crate::hypermedia::service::auth::resend_verification_email(&shared_state.pool).await
+#[derive(serde::Deserialize, Debug)]
+pub struct ResendEmailUsername {
+    username: String,
+}
+
+async fn resend_verification_email(
+    State(shared_state): State<Arc<AppState>>,
+    Query(resend_email_username): Query<ResendEmailUsername>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::resend_verification_email(
+        &shared_state.pool,
+        resend_email_username.username,
+    )
+    .await
 }
 
 async fn verify_email(
