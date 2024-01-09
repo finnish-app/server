@@ -5,14 +5,19 @@ use crate::{
 use std::sync::Arc;
 
 use askama_axum::IntoResponse;
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{
+    extract::{Path, State},
+    routing::get,
+    Json, Router,
+};
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/auth", get(auth_index))
-        .route("/signin", get(signin_tab).post(signin))
-        .route("/signup", get(signup_tab).post(signup))
-        .route("/signin_after_signup", get(signin_tab_after_signup))
+        .route("/auth/signin", get(signin_tab).post(signin))
+        .route("/auth/signup", get(signup_tab).post(signup))
+        .route("/auth/signin-after-signup", get(signin_tab_after_signup))
+        .route("/auth/verify-email/:token", get(verify_email))
 }
 
 async fn auth_index() -> impl IntoResponse {
@@ -45,4 +50,11 @@ async fn signup(
     Json(signup_input): Json<SignUpCredentials>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signup(&shared_state.pool, signup_input).await
+}
+
+async fn verify_email(
+    State(shared_state): State<Arc<AppState>>,
+    Path(token): Path<String>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::verify_email(&shared_state.pool, token).await
 }

@@ -842,6 +842,7 @@ dependencies = [
  "lettre",
  "password-auth",
  "plotly",
+ "rand",
  "regex",
  "serde",
  "shuttle-axum",
