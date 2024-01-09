@@ -1,4 +1,5 @@
 use chrono::{Datelike, NaiveDate, Utc};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 use crate::data_structs::Months;
 
@@ -27,4 +28,16 @@ pub fn get_last_day_from_month(month: u32) -> NaiveDate {
 
 pub fn get_last_day_from_month_or_none(month: Option<Months>) -> Option<NaiveDate> {
     month.map(|month| get_last_day_from_month(month as u32 + 1))
+}
+
+pub fn generate_verification_token() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(128)
+        .map(char::from)
+        .collect()
+}
+
+pub fn now_plus_24_hours() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc::now() + chrono::Duration::hours(24)
 }

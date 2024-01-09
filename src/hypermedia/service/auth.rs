@@ -2,13 +2,14 @@ use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
+    hypermedia::schema::auth::MailToUser,
+    util::{generate_verification_token, now_plus_24_hours},
     SignInTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
 use axum::{http::StatusCode, response::Html};
 use password_auth::generate_hash;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{Pool, Postgres};
 
 pub async fn signin(
@@ -63,23 +64,6 @@ pub async fn signin_tab(print_message: bool) -> impl IntoResponse {
 
 pub async fn signup_tab() -> impl IntoResponse {
     Html(SIGN_UP_TAB!())
-}
-
-pub fn generate_verification_token() -> String {
-    thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(128)
-        .map(char::from)
-        .collect()
-}
-
-pub fn now_plus_24_hours() -> chrono::DateTime<chrono::Utc> {
-    chrono::Utc::now() + chrono::Duration::hours(24)
-}
-
-struct MailToUser {
-    email: Option<String>,
-    verification_code: Option<String>,
 }
 
 pub async fn signup(
