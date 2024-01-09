@@ -18,6 +18,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/auth/signup", get(signup_tab).post(signup))
         .route("/auth/signin-after-signup", get(signin_tab_after_signup))
         .route("/auth/verify-email/:token", get(verify_email))
+        .route("/auth/resend-verification", get(resend_verification_email))
 }
 
 async fn auth_index() -> impl IntoResponse {
@@ -50,6 +51,10 @@ async fn signup(
     Json(signup_input): Json<SignUpCredentials>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signup(&shared_state.pool, signup_input).await
+}
+
+async fn resend_verification_email(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::resend_verification_email(&shared_state.pool).await
 }
 
 async fn verify_email(

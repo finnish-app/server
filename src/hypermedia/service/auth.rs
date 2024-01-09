@@ -16,7 +16,20 @@ pub async fn signin(
     mut auth_session: AuthSession,
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
-        Ok(Some(user)) => user,
+        Ok(Some(user)) => {
+            if !user.verified {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Html(
+                        "<p style=\"color:red;\">Please verify your email before signing in</p>
+                         <a href=\"/auth/resend-verification\">Resend verification email</a>
+                        ",
+                    ),
+                )
+                    .into_response();
+            }
+            user
+        }
         Ok(None) => {
             return (
                 StatusCode::NOT_FOUND,
@@ -39,7 +52,7 @@ pub async fn signin_tab(print_message: bool) -> impl IntoResponse {
         tracing::info!("print was true");
         return Html(format!(
             SIGN_IN_TAB!(),
-            "Account created successfully. Please sign in."
+            "Account created successfully. Please confirm your email and sign in."
         ))
         .into_response();
     }
@@ -117,6 +130,60 @@ pub async fn signup(
         },
         Err(e) => {
             tracing::error!("Error signing up: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+pub async fn resend_verification_email(
+    db_pool: &Pool<Postgres>,
+    username: String,
+) -> impl IntoResponse {
+    match sqlx::query!("SELECT verified FROM users WHERE username = $1", username)
+        .fetch_optional(db_pool)
+        .await
+    {
+        Ok(returned_value) => {
+            if returned_value.is_none() {
+                return StatusCode::NOT_FOUND.into_response();
+            }
+
+            if returned_value.unwrap().verified {
+                return (
+                    StatusCode::CONFLICT,
+                    Html("email already verified".to_string()),
+                )
+                    .into_response();
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error getting verified user from db: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    }
+
+    match sqlx::query_as!(
+        MailToUser,
+        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE username = $3 RETURNING email, verification_code"#,
+        generate_verification_token(),
+        now_plus_24_hours(),
+        username
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        Ok(mail_to_user) => match send_sign_up_confirmation_mail(
+            &mail_to_user.email.unwrap(),
+            &mail_to_user.verification_code.unwrap(),
+        ) {
+            Ok(_) => (StatusCode::OK, Html("Email resent successfully".to_string())).into_response(),
+            Err(e) => {
+                tracing::error!("Error resending verification mail: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!("Error updating verification code and expiration in db: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }

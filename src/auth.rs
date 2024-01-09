@@ -10,6 +10,10 @@ pub struct User {
     pub username: String,
     pub email: String,
     password: String,
+    created_at: chrono::DateTime<chrono::Utc>,
+    pub verified: bool,
+    verification_code: Option<String>,
+    code_expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 // Here we've implemented `Debug` manually to avoid accidentally logging the
@@ -76,7 +80,7 @@ impl AuthnBackend for Backend {
     ) -> Result<Option<Self::User>, Self::Error> {
         let user: Option<Self::User> = sqlx::query_as!(
             Self::User,
-            "select id, username, email, password from users where username = $1",
+            "select id, username, email, password, created_at, verified, verification_code, code_expires_at from users where username = $1",
             creds.username
         )
         .fetch_optional(&self.db)
@@ -88,7 +92,7 @@ impl AuthnBackend for Backend {
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         let user = sqlx::query_as!(
             User,
-            r#"select id, username, email, password from users where id = $1"#,
+            r#"select id, username, email, password, created_at, verified, verification_code, code_expires_at from users where id = $1"#,
             user_id
         )
         .fetch_optional(&self.db)
