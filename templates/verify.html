@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Email Confirmation{% endblock %}
+
+{% block content %}
+
+<article>
+    <h1>Email Confirmation</h1>
+
+    <div id="return-from-confirmation">
+        {{ message }}
+    </div>
+
+    {% if should_print_resend_link %}
+        <div id="resend-confirmation">
+            <form hx-get="{{ resend_url }}">
+                <input type="text" name="username" placeholder="Username"/>
+                <button type="submit">Resend Confirmation Email</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <footer><a href="{{ login_url }}">Go To Login Page</a></footer>
+</article>
+
+{% endblock %}

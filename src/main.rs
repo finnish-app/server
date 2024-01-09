@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod auth;
+mod client;
 mod constant;
 mod data;
 mod data_structs;
@@ -91,7 +92,6 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         // rest of app works normally
         .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
         .upgrade_insecure_requests();
-    tracing::debug!("content_sec_policy: {}", content_sec_policy);
 
     let helmet_layer = HelmetLayer::new(
         Helmet::new()
@@ -173,4 +173,13 @@ impl Default for ExpensesTemplate<'_> {
 #[template(path = "auth.html")]
 struct SignInTemplate {
     should_print_signup_message_in_signin: bool,
+}
+
+#[derive(Template, Default)]
+#[template(path = "verify.html")]
+struct VerificationTemplate {
+    login_url: String,
+    message: String,
+    resend_url: String,
+    should_print_resend_link: bool,
 }

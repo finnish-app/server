@@ -5,9 +5,9 @@
 {% block content %}
 
 {% if should_print_signup_message_in_signin %}
-    <div id="tabs" hx-get="/signin_after_signup" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin-after-signup" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
 {% else %}
-    <div id="tabs" hx-get="/signin" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
 {% endif %}
 
 {% endblock %}
