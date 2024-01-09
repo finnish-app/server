@@ -15,7 +15,7 @@ lettre = "0.11.3"
 password-auth = "1.0.0"
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 regex = "1.10.2"
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 shuttle-axum = { version = "0.35.2", default-features = false, features = ["axum-0-7"] }
 shuttle-runtime = { version = "0.35.2", default-features = false, features = ["colored"] }
 shuttle-shared-db = { version = "0.35.2", features = ["postgres"] }
@@ -25,7 +25,7 @@ time = "0.3.31"
 tokio = { version = "1.35.1", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.0", features = ["fs", "trace"] }
-tower-sessions = { version = "0.9.0", features = ["postgres-store"] }
+tower-sessions = { version = "0.9.1", features = ["postgres-store"] }
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 validator = { version = "0.16.1", features = ["derive"] }
