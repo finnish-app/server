@@ -197,7 +197,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                     VerificationTemplate {
                         message: "Email verified successfully. You can now sign in.".to_string(),
                         login_url: "/auth".to_string(),
-                        ..Default::default() 
+                        ..Default::default()
                     },
                 )
                     .into_response(),
