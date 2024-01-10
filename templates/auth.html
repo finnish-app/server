@@ -4,10 +4,12 @@
 
 {% block content %}
 
-{% if should_print_signup_message_in_signin %}
-    <div id="tabs" hx-get="/auth/signin-after-signup" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
+{% if should_print_message_in_signin == 1 %}
+    <div id="tabs" hx-get="/auth/signin-after-signup" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
+{% else if should_print_message_in_signin == 2 %}
+    <div id="tabs" hx-get="/auth/signin-after-change-password" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
 {% else %}
-    <div id="tabs" hx-get="/auth/signin" hx-trigger="load delay:100ms" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
 {% endif %}
 
 {% endblock %}

@@ -4,7 +4,7 @@ use crate::{
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
     util::{generate_verification_token, now_plus_24_hours},
-    SignInTemplate, VerificationTemplate,
+    AuthTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
@@ -52,17 +52,18 @@ pub async fn signin(
     (StatusCode::OK, [("HX-Redirect", "/")], "Logged in").into_response()
 }
 
-pub async fn signin_tab(print_message: bool) -> impl IntoResponse {
-    if print_message {
-        tracing::info!("print was true");
-        return Html(format!(
+pub async fn signin_tab(print_message: u8) -> impl IntoResponse {
+    match print_message.cmp(&1) {
+        std::cmp::Ordering::Greater => {
+            Html(format!(SIGN_IN_TAB!(), "Password changed successfully.")).into_response()
+        }
+        std::cmp::Ordering::Equal => Html(format!(
             SIGN_IN_TAB!(),
             "Account created successfully. Please confirm your email and sign in."
         ))
-        .into_response();
+        .into_response(),
+        std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")).into_response(),
     }
-    tracing::info!("print was false");
-    Html(format!(SIGN_IN_TAB!(), "")).into_response()
 }
 
 pub async fn signup_tab() -> impl IntoResponse {
@@ -104,8 +105,8 @@ pub async fn signup(
                 transaction.commit().await.unwrap();
                 (
                     StatusCode::OK,
-                    SignInTemplate {
-                        should_print_signup_message_in_signin: true,
+                    AuthTemplate {
+                        should_print_message_in_signin: 1,
                     },
                 )
                     .into_response()
@@ -249,17 +250,20 @@ pub async fn change_password(
             .await
             .unwrap();
 
-            StatusCode::OK.into_response()
-
-            //Redirect::to("/auth").into_response()
-        }
-        Ok(None) => {
-            return (
-                StatusCode::NOT_FOUND,
-                Html("<p style=\"color:red;\">Incorrect password</p>"),
+            (
+                StatusCode::OK,
+                [("HX-Push-Url", "/auth")],
+                AuthTemplate {
+                    should_print_message_in_signin: 2,
+                },
             )
                 .into_response()
         }
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Html("<p style=\"color:red;\">Incorrect password</p>"),
+        )
+            .into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

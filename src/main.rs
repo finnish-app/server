@@ -178,8 +178,8 @@ impl Default for ExpensesTemplate<'_> {
 
 #[derive(Template, Default)]
 #[template(path = "auth.html")]
-struct SignInTemplate {
-    should_print_signup_message_in_signin: bool,
+struct AuthTemplate {
+    should_print_message_in_signin: u8,
 }
 
 #[derive(Template, Default)]
