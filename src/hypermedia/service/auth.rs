@@ -2,13 +2,16 @@ use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
-    hypermedia::schema::auth::MailToUser,
+    hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
     util::{generate_verification_token, now_plus_24_hours},
     SignInTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
-use axum::{http::StatusCode, response::Html};
+use axum::{
+    http::StatusCode,
+    response::{Html, Redirect},
+};
 use password_auth::generate_hash;
 use sqlx::{Pool, Postgres};
 
@@ -210,5 +213,53 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                 },
             ).into_response()
         }
+    }
+}
+
+pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
+    match auth_session.logout().await {
+        Ok(_) => Redirect::to("/auth").into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+pub async fn change_password(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    change_password_input: ChangePasswordInput,
+) -> impl IntoResponse {
+    let maybe_user = &auth_session.user;
+    let user = match maybe_user {
+        Some(user) => user,
+        None => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+
+    let creds = LoginCredentials {
+        username: user.username.clone(),
+        password: change_password_input.old_password,
+    };
+    match auth_session.authenticate(creds).await {
+        Ok(Some(user)) => {
+            sqlx::query!(
+                "UPDATE users SET password = $1 WHERE id = $2",
+                generate_hash(&change_password_input.new_password),
+                user.id
+            )
+            .execute(db_pool)
+            .await
+            .unwrap();
+
+            StatusCode::OK.into_response()
+
+            //Redirect::to("/auth").into_response()
+        }
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Html("<p style=\"color:red;\">Incorrect password</p>"),
+            )
+                .into_response()
+        }
+        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

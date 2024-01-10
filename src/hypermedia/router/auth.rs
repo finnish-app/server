@@ -1,6 +1,7 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    AppState, SignInTemplate,
+    hypermedia::schema::auth::ChangePasswordInput,
+    AppState, ChangePasswordTemplate, SignInTemplate,
 };
 use std::sync::Arc;
 
@@ -11,7 +12,7 @@ use axum::{
     Json, Router,
 };
 
-pub fn router() -> Router<Arc<AppState>> {
+pub fn public_router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/auth", get(auth_index))
         .route("/auth/signin", get(signin_tab).post(signin))
@@ -19,6 +20,14 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/auth/signin-after-signup", get(signin_tab_after_signup))
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", get(resend_verification_email))
+        .route("/auth/forgot-password", get(forgot_password))
+}
+
+pub fn private_router() -> Router<Arc<AppState>> {
+    Router::new().route("/auth/logout", get(logout)).route(
+        "/auth/change-password",
+        get(change_password_screen).post(change_password),
+    )
 }
 
 async fn auth_index() -> impl IntoResponse {
@@ -74,4 +83,32 @@ async fn verify_email(
     Path(token): Path<String>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::verify_email(&shared_state.pool, token).await
+}
+
+async fn forgot_password() -> impl IntoResponse {
+    //crate::hypermedia::service::auth::forgot_password().await
+    todo!()
+}
+
+async fn logout(auth_session: AuthSession) -> impl IntoResponse {
+    crate::hypermedia::service::auth::logout(auth_session).await
+}
+
+async fn change_password_screen() -> impl IntoResponse {
+    ChangePasswordTemplate {
+        url: "/auth/change-password".to_string(),
+    }
+}
+
+async fn change_password(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+    Json(change_password_input): Json<ChangePasswordInput>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::change_password(
+        auth_session,
+        &shared_state.pool,
+        change_password_input,
+    )
+    .await
 }
