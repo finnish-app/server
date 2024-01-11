@@ -4,11 +4,12 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
 use sqlx::{FromRow, Pool, Postgres};
-use validator::Validate;
+use validator::{Validate, ValidationError};
+use zxcvbn::zxcvbn;
 
 use crate::constant::{
-    EMAIL_TAKEN, INVALID_EMAIL, INVALID_USERNAME, MATCHING_PASSWORDS, MISMATCHING_PASSWORDS,
-    USERNAME_TAKEN, VALID_EMAIL, VALID_USERNAME,
+    EMAIL_TAKEN, INVALID_EMAIL, INVALID_USERNAME, MATCHING_NEW_PASSWORDS, MATCHING_PASSWORDS,
+    MISMATCHING_NEW_PASSWORDS, MISMATCHING_PASSWORDS, USERNAME_TAKEN, VALID_EMAIL, VALID_USERNAME,
 };
 
 lazy_static! {
@@ -25,6 +26,19 @@ pub struct EmailInput {
 pub struct UsernameInput {
     #[validate(regex = "RE_USERNAME")]
     username: String,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct PasswordInput {
+    #[validate(custom = "validate_password_strength")]
+    password: String,
+}
+
+fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
+    if zxcvbn(password, &[]).unwrap().score() < 3 {
+        return Err(ValidationError::new("Password is too weak"));
+    }
+    Ok(())
 }
 
 #[derive(Deserialize, Validate)]
@@ -102,5 +116,26 @@ pub async fn validate_passwords(input: PasswordsInput) -> impl IntoResponse {
     match input.validate() {
         Ok(_) => Html(format!(MATCHING_PASSWORDS!(), input.password)).into_response(),
         Err(_) => Html(format!(MISMATCHING_PASSWORDS!(), input.password)).into_response(),
+    }
+}
+
+pub async fn validate_new_passwords(input: PasswordsInput) -> impl IntoResponse {
+    match input.validate() {
+        Ok(_) => Html(format!(MATCHING_NEW_PASSWORDS!(), input.password)).into_response(),
+        Err(_) => Html(format!(MISMATCHING_NEW_PASSWORDS!(), input.password)).into_response(),
+    }
+}
+
+pub async fn validate_password(input: PasswordInput) -> impl IntoResponse {
+    match input.validate() {
+        Ok(_) => Html("a").into_response(),
+        Err(_) => Html("a").into_response(),
+    }
+}
+
+pub async fn validate_new_password(input: PasswordInput) -> impl IntoResponse {
+    match input.validate() {
+        Ok(_) => Html("a").into_response(),
+        Err(_) => Html("a").into_response(),
     }
 }

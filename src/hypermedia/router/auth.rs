@@ -9,7 +9,7 @@ use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, Query, State},
     routing::get,
-    Json, Router,
+    Form, Router,
 };
 
 pub fn public_router() -> Router<Arc<AppState>> {
@@ -54,7 +54,7 @@ async fn signin_tab_after_change_password() -> impl IntoResponse {
 
 async fn signin(
     auth_session: AuthSession,
-    Json(signin_input): Json<LoginCredentials>,
+    Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signin(signin_input, auth_session).await
 }
@@ -65,7 +65,7 @@ async fn signup_tab() -> impl IntoResponse {
 
 async fn signup(
     State(shared_state): State<Arc<AppState>>,
-    Json(signup_input): Json<SignUpCredentials>,
+    Form(signup_input): Form<SignUpCredentials>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signup(&shared_state.pool, signup_input).await
 }
@@ -104,14 +104,16 @@ async fn logout(auth_session: AuthSession) -> impl IntoResponse {
 
 async fn change_password_screen() -> impl IntoResponse {
     ChangePasswordTemplate {
-        url: "/auth/change-password".to_string(),
+        change_password_url: "/auth/change-password".to_string(),
+        passwords_match_url: "/validate/new-passwords".to_string(),
+        password_strength_url: "/validate/password-strength".to_string(),
     }
 }
 
 async fn change_password(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
-    Json(change_password_input): Json<ChangePasswordInput>,
+    Form(change_password_input): Form<ChangePasswordInput>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::change_password(
         auth_session,

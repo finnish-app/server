@@ -160,7 +160,9 @@ struct ExpensesTemplate<'a> {
 #[derive(Template, Default)]
 #[template(path = "change_password.html")]
 struct ChangePasswordTemplate {
-    url: String,
+    change_password_url: String,
+    passwords_match_url: String,
+    password_strength_url: String,
 }
 
 impl Default for ExpensesTemplate<'_> {

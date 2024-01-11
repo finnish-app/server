@@ -10,7 +10,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     routing::get,
-    Json, Router,
+    Form, Router,
 };
 
 pub fn router() -> Router<Arc<AppState>> {
@@ -66,7 +66,7 @@ async fn update_expense(
     auth_session: AuthSession,
     Path(id): Path<i32>,
     State(shared_state): State<Arc<AppState>>,
-    Json(update_expense): Json<UpdateExpense>,
+    Form(update_expense): Form<UpdateExpense>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::expenses::update_expense(
         auth_session,
@@ -80,7 +80,7 @@ async fn update_expense(
 async fn insert_expense(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
-    Json(create_expense): Json<UpdateExpense>,
+    Form(create_expense): Form<UpdateExpense>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::expenses::insert_expense(
         auth_session,

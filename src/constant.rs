@@ -48,7 +48,7 @@ macro_rules! EDITABLE_TABLE_ROW {
                 <button class=\"btn btn-danger\" hx-get=\"/expenses/{}\">
                   Cancel
                 </button>
-                <button class=\"btn btn-danger\" hx-put=\"/expenses/{}\" hx-ext=\"json-enc\" hx-include=\"closest tr\">
+                <button class=\"btn btn-danger\" hx-put=\"/expenses/{}\" hx-include=\"closest tr\">
                   Save
                 </button>
             </td>
@@ -74,7 +74,7 @@ macro_rules! SIGN_IN_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\" hx-ext=\"response-targets\">
-                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-ext=\"json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#message\">
+                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-swap=\"outerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#message\">
                 <input
                   type=\"text\"
                   name=\"username\"
@@ -123,7 +123,7 @@ macro_rules! SIGN_UP_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signup-form\" hx-post=\"/auth/signup\" hx-ext=\"json-enc\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
+                <form id=\"signup-form\" hx-post=\"/auth/signup\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
                 <div hx-target=\"this\" hx-swap=\"outerHTML\">
                     <div class=\"grid\">
                     <label for=\"username\">Username</label>
@@ -400,6 +400,52 @@ macro_rules! MISMATCHING_PASSWORDS {
     };
 }
 
+macro_rules! MATCHING_NEW_PASSWORDS {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <input
+              type=\"password\"
+              name=\"confirm_password\"
+              placeholder=\"Confirm new password\"
+              autocomplete=\"new-password\"
+              aria-label=\"Password\"
+              aria-invalid=\"false\"
+              id=\"new_password2\"
+              hx-get=\"/validate/new-passwords\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              hx-include=\"#new_password\"
+              value=\"{}\"
+              required
+            />
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+        </div>"
+    };
+}
+
+macro_rules! MISMATCHING_NEW_PASSWORDS {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <input
+              type=\"password\"
+              name=\"confirm_password\"
+              placeholder=\"Confirm new password\"
+              autocomplete=\"new-password\"
+              aria-label=\"Password\"
+              aria-invalid=\"true\"
+              id=\"new_password2\"
+              hx-get=\"/validate/new-passwords\"
+              hx-sync=\"closest form:abort\"
+              hx-indicator=\"#ind\"
+              hx-include=\"#new_password\"
+              value=\"{}\"
+              required
+            />
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+        </div>"
+    };
+}
+
 pub(crate) use EDITABLE_TABLE_ROW;
 pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;
@@ -412,3 +458,5 @@ pub(crate) use TABLE_ROW;
 pub(crate) use USERNAME_TAKEN;
 pub(crate) use VALID_EMAIL;
 pub(crate) use VALID_USERNAME;
+pub(crate) use MATCHING_NEW_PASSWORDS;
+pub(crate) use MISMATCHING_NEW_PASSWORDS;
