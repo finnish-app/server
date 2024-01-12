@@ -18,7 +18,14 @@
     <body>
         <nav class="container-fluid">
             <ul>
-                <li><a href="#" class="secondary">≡</a></li>
+                <li>
+                    <details role="list" dir="ltr">
+                        <summary aria-haspopup="listbox" role="link" class="secondary" style="list-style: none;">≡</summary>
+                        <ul role="listbox">
+                          <li><a href="/">Expenses</a></li>
+                        </ul>
+                    </details>
+                </li>
             </ul>
             <ul>
                 <li><strong><a href="/">Finnish</a></strong></li>
