@@ -8,7 +8,6 @@
         <link rel="stylesheet" href="/static/pico.min.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="/js/htmx.min.js"></script>
-        <script src="/js/json-enc.js"></script>
         <script src="/js/response-targets.js"></script>
         <script src="/js/hyperscript.min.js"></script>
         <script src="/js/plotly-strict-2.28.0.min.js.js" charset="utf-8"></script>
@@ -17,6 +16,26 @@
         {% block head %}{% endblock %}
     </head>
     <body>
+        <nav class="container-fluid">
+            <ul>
+                <li>
+                    <details role="list" dir="ltr">
+                        <summary aria-haspopup="listbox" role="link" class="secondary" style="list-style: none;">≡</summary>
+                        <ul role="listbox">
+                          <li><a href="/">Expenses</a></li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+            <ul>
+                <li><strong><a href="/">Finnish</a></strong></li>
+            </ul>
+
+            <ul>
+                {% block logged_in %}{% endblock %}
+            </ul>
+        </nav>
+
         <main class="container" id="content">
             <!-- Inheriting pages will have their content rendered here, similar to app root in React, Angular, etc. -->
             {% block content %}{% endblock %}

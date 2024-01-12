@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_logged_in.html" %}
 
 {% block title %}Expenses{% endblock %}
 
@@ -60,7 +60,7 @@
               _="on click trigger toggleModal">
             </a>
             <h3>Add an expense!</h3>
-            <form id="add-expense-form" hx-post="/expenses" hx-target="#return-message" hx-ext="json-enc">
+            <form id="add-expense-form" hx-post="/expenses" hx-target="#return-message">
                 <label for="date">Date
                     <input type="date" name="date" id="date" required>
                 </label>

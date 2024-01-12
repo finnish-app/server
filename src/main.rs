@@ -117,8 +117,9 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
     let router = Router::new()
         .merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
+        .merge(hypermedia::router::auth::private_router())
         .route_layer(login_required!(Backend, login_url = "/auth"))
-        .merge(hypermedia::router::auth::router())
+        .merge(hypermedia::router::auth::public_router())
         .merge(hypermedia::router::validation::router())
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
@@ -156,6 +157,14 @@ struct ExpensesTemplate<'a> {
     username: &'a str,
 }
 
+#[derive(Template, Default)]
+#[template(path = "change_password.html")]
+struct ChangePasswordTemplate {
+    change_password_url: String,
+    passwords_match_url: String,
+    password_strength_url: String,
+}
+
 impl Default for ExpensesTemplate<'_> {
     fn default() -> Self {
         Self {
@@ -171,8 +180,8 @@ impl Default for ExpensesTemplate<'_> {
 
 #[derive(Template, Default)]
 #[template(path = "auth.html")]
-struct SignInTemplate {
-    should_print_signup_message_in_signin: bool,
+struct AuthTemplate {
+    should_print_message_in_signin: u8,
 }
 
 #[derive(Template, Default)]

@@ -2,13 +2,16 @@ use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
-    hypermedia::schema::auth::MailToUser,
+    hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
     util::{generate_verification_token, now_plus_24_hours},
-    SignInTemplate, VerificationTemplate,
+    AuthTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
-use axum::{http::StatusCode, response::Html};
+use axum::{
+    http::StatusCode,
+    response::{Html, Redirect},
+};
 use password_auth::generate_hash;
 use sqlx::{Pool, Postgres};
 
@@ -46,20 +49,21 @@ pub async fn signin(
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    (StatusCode::OK, [("HX-Redirect", "/")], "Logged in").into_response()
+    (StatusCode::OK, [("HX-Redirect", "/")]).into_response()
 }
 
-pub async fn signin_tab(print_message: bool) -> impl IntoResponse {
-    if print_message {
-        tracing::info!("print was true");
-        return Html(format!(
+pub async fn signin_tab(print_message: u8) -> impl IntoResponse {
+    match print_message.cmp(&1) {
+        std::cmp::Ordering::Greater => {
+            Html(format!(SIGN_IN_TAB!(), "Password changed successfully.")).into_response()
+        }
+        std::cmp::Ordering::Equal => Html(format!(
             SIGN_IN_TAB!(),
             "Account created successfully. Please confirm your email and sign in."
         ))
-        .into_response();
+        .into_response(),
+        std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")).into_response(),
     }
-    tracing::info!("print was false");
-    Html(format!(SIGN_IN_TAB!(), "")).into_response()
 }
 
 pub async fn signup_tab() -> impl IntoResponse {
@@ -101,8 +105,8 @@ pub async fn signup(
                 transaction.commit().await.unwrap();
                 (
                     StatusCode::OK,
-                    SignInTemplate {
-                        should_print_signup_message_in_signin: true,
+                    AuthTemplate {
+                        should_print_message_in_signin: 1,
                     },
                 )
                     .into_response()
@@ -210,5 +214,56 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                 },
             ).into_response()
         }
+    }
+}
+
+pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
+    match auth_session.logout().await {
+        Ok(_) => Redirect::to("/auth").into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+pub async fn change_password(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    change_password_input: ChangePasswordInput,
+) -> impl IntoResponse {
+    let maybe_user = &auth_session.user;
+    let user = match maybe_user {
+        Some(user) => user,
+        None => return StatusCode::UNAUTHORIZED.into_response(),
+    };
+
+    let creds = LoginCredentials {
+        username: user.username.clone(),
+        password: change_password_input.old_password,
+    };
+    match auth_session.authenticate(creds).await {
+        Ok(Some(user)) => {
+            sqlx::query!(
+                "UPDATE users SET password = $1 WHERE id = $2",
+                generate_hash(&change_password_input.password),
+                user.id
+            )
+            .execute(db_pool)
+            .await
+            .unwrap();
+
+            (
+                StatusCode::OK,
+                [("HX-Push-Url", "/auth")],
+                AuthTemplate {
+                    should_print_message_in_signin: 2,
+                },
+            )
+                .into_response()
+        }
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Html("<p style=\"color:red;\">Incorrect password</p>"),
+        )
+            .into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
