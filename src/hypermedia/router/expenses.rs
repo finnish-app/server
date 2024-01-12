@@ -18,7 +18,11 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/", get(expenses_index))
         .route("/expenses", get(get_expenses).post(insert_expense))
         .route("/expenses/:id/edit", get(edit_expense))
-        .route("/expenses/:id", get(get_expense).put(update_expense))
+        .route("/expenses/:id/delete-modal", get(remove_expense_modal))
+        .route(
+            "/expenses/:id",
+            get(get_expense).put(update_expense).delete(delete_expense),
+        )
         .route("/expenses/plots", get(expenses_plots))
 }
 
@@ -75,6 +79,23 @@ async fn update_expense(
         update_expense,
     )
     .await
+}
+
+async fn delete_expense(
+    auth_session: AuthSession,
+    Path(id): Path<i32>,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::expenses::delete_expense(auth_session, &shared_state.pool, id).await
+}
+
+async fn remove_expense_modal(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::expenses::remove_expense_modal(auth_session, &shared_state.pool, id)
+        .await
 }
 
 async fn insert_expense(
