@@ -31,10 +31,10 @@ macro_rules! TABLE_ROW {
 
 macro_rules! EDITABLE_TABLE_ROW {
     () => {
-        "<tr hx-trigger='cancel' class='editing' hx-get=\"/expenses/{}\">
-            <td><input type='date' name='date' value='{}'></td>
-            <td><input type='text' name='description' value='{}'></td>
-            <td><input type='number' step='0.01' name='price' value='{}'></td>
+        "<tr hx-trigger='cancel' class='editing' hx-get=\"/expenses/{id}\">
+            <td><input type='date' name='date' value='{date}'></td>
+            <td><input type='text' name='description' value='{description}'></td>
+            <td><input type='number' step='0.01' name='price' value='{price}'></td>
             <td><select name='expense_type'>
                 <option value='Food'>Food</option>
                 <option value='Transport'>Transport</option>
@@ -43,12 +43,15 @@ macro_rules! EDITABLE_TABLE_ROW {
                 <option value='Entertainment'>Entertainment</option>
                 <option value='Other'>Other</option>
             </select></td>
-            <td><input type='checkbox' name='is_essencial' role='switch' value='true' {}></td>
+            <td><input type='checkbox' name='is_essencial' role='switch' value='true' {is_essential}></td>
             <td>
-                <button class=\"btn btn-danger\" hx-get=\"/expenses/{}\">
+                <button class=\"contrast\" hx-get=\"/expenses/{id}/delete-modal\" hx-target=\"#delete-modal-here\" hx-swap=\"innerHTML\">
+                  Delete
+                </button>
+                <button class=\"btn btn-danger\" hx-get=\"/expenses/{id}\">
                   Cancel
                 </button>
-                <button class=\"btn btn-danger\" hx-put=\"/expenses/{}\" hx-include=\"closest tr\">
+                <button class=\"btn btn-danger\" hx-put=\"/expenses/{id}\" hx-include=\"closest tr\">
                   Save
                 </button>
             </td>
@@ -551,6 +554,29 @@ macro_rules! WEAK_NEW_PASSWORD {
     };
 }
 
+macro_rules! DELETE_EXPENSE_MODAL {
+    () => {
+        "<dialog id=\"delete-expense-modal\" open>
+            <article>
+                <a href=\"#close\"
+                  aria-label=\"Close\"
+                  class=\"close\"
+                  _=\"on click trigger toggleModal\">
+                </a>
+                <h3>Delete the expense</h3>
+                <p>Are you sure you want to delete this expense?</p>
+                <footer>
+                    <div class=\"grid\">
+                        <button hx-delete=\"/expenses/{}\" hx-target=\"#delete-modal-here\" class=\"contrast\" hx-trigger=\"click\">Delete</button>
+                        <button _=\"on click trigger toggleModal\" type=\"button\">Close</button>
+                    </div>
+                </footer>
+            </article>
+        </dialog>"
+    };
+}
+
+pub(crate) use DELETE_EXPENSE_MODAL;
 pub(crate) use EDITABLE_TABLE_ROW;
 pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;

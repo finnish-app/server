@@ -1,6 +1,6 @@
 use crate::{
     auth::AuthSession,
-    constant::{EDITABLE_TABLE_ROW, TABLE_ROW},
+    constant::{DELETE_EXPENSE_MODAL, EDITABLE_TABLE_ROW, TABLE_ROW},
     schema::{Expense, ExpenseType, GetExpense, UpdateExpense},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
@@ -75,13 +75,11 @@ pub async fn edit_expense(
 
     Html(format!(
         EDITABLE_TABLE_ROW!(),
-        expense.id,
-        expense.date,
-        expense.description,
-        expense.price,
-        if expense.is_essencial { "checked" } else { "" },
-        expense.id,
-        expense.id
+        id = expense.id,
+        date = expense.date,
+        description = expense.description,
+        price = expense.price,
+        is_essential = if expense.is_essencial { "checked" } else { "" },
     ))
 }
 
@@ -164,6 +162,51 @@ pub async fn update_expense(
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         },
     }
+}
+
+pub async fn delete_expense(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    id: i32,
+) -> impl IntoResponse {
+    let user_id = auth_session.user.expect("User not logged in").id;
+    match sqlx::query!(
+        r#"
+        DELETE FROM expenses
+        WHERE id = $1 AND user_id = $2
+        "#,
+        id,
+        user_id
+    )
+    .execute(db_pool)
+    .await
+    {
+        Ok(_) => (StatusCode::OK, [("HX-Trigger", "refresh-table")]).into_response(),
+        Err(e) => {
+            tracing::error!("Error deleting expense: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+pub async fn remove_expense_modal(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    id: i32,
+) -> impl IntoResponse {
+    let user_id = auth_session.user.expect("User not logged in").id;
+    let expense = sqlx::query_as!(
+        Expense,
+        r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essencial, date
+        FROM expenses WHERE id = $1 AND user_id = $2"#,
+        id,
+        user_id
+    )
+        .fetch_one(db_pool)
+        .await
+        .unwrap();
+
+    Html(format!(DELETE_EXPENSE_MODAL!(), expense.id,)).into_response()
 }
 
 pub async fn insert_expense(
