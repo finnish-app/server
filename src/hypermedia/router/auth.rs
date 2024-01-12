@@ -106,7 +106,7 @@ async fn change_password_screen() -> impl IntoResponse {
     ChangePasswordTemplate {
         change_password_url: "/auth/change-password".to_string(),
         passwords_match_url: "/validate/new-passwords".to_string(),
-        password_strength_url: "/validate/password-strength".to_string(),
+        password_strength_url: "/validate/new-password-strength".to_string(),
     }
 }
 

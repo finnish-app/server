@@ -137,7 +137,7 @@ macro_rules! SIGN_UP_TAB {
                       autocomplete=\"nickname\"
                       pattern=\"[0-9a-z]{3,20}\"
                       title=\"3 to 20 characters, lowercase letters or numbers only\"
-                      hx-get=\"/validate/username\"
+                      hx-post=\"/validate/username\"
                       hx-sync=\"closest form:abort\"
                       hx-indicator=\"#ind\"
                       required
@@ -154,22 +154,30 @@ macro_rules! SIGN_UP_TAB {
                       placeholder=\"email@server.com\"
                       aria-label=\"Email\"
                       autocomplete=\"email\"
-                      hx-get=\"/validate/email\"
+                      hx-post=\"/validate/email\"
                       hx-sync=\"closest form:abort\"
                       hx-indicator=\"#ind\"
                       required
                     />
                 </div>
-                <label for=\"password\">Password</label>
-                <input
-                  type=\"password\"
-                  name=\"password\"
-                  placeholder=\"Password\"
-                  aria-label=\"Password\"
-                  autocomplete=\"current-password\"
-                  id=\"password\"
-                  required
-                />
+                <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                    <div class=\"grid\">
+                    <label for=\"password\">Password</label>
+                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    </div>
+                    <input
+                        type=\"password\"
+                        name=\"password\"
+                        placeholder=\"Password\"
+                        aria-label=\"Password\"
+                        autocomplete=\"new-password\"
+                        id=\"password\"
+                        hx-post=\"/validate/password-strength\"
+                        hx-sync=\"closest form:abort\"
+                        hx-indicator=\"#ind\"
+                        required
+                    />
+                </div>
                 <div hx-target=\"this\" hx-swap=\"outerHTML\">
                     <div class=\"grid\">
                     <label for=\"confirm_password\">Confirm Password</label>
@@ -181,7 +189,7 @@ macro_rules! SIGN_UP_TAB {
                       placeholder=\"Password\"
                       aria-label=\"Password\"
                       id=\"confirm_password\"
-                      hx-get=\"/validate/passwords\"
+                      hx-post=\"/validate/passwords\"
                       hx-sync=\"closest form:abort\"
                       hx-indicator=\"#ind\"
                       hx-include=\"#password\"
@@ -209,7 +217,7 @@ macro_rules! VALID_EMAIL {
               aria-label=\"Email\"
               aria-invalid=\"false\"
               autocomplete=\"email\"
-              hx-get=\"/validate/email\"
+              hx-post=\"/validate/email\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -233,7 +241,7 @@ macro_rules! INVALID_EMAIL {
               aria-label=\"Email\"
               aria-invalid=\"true\"
               autocomplete=\"email\"
-              hx-get=\"/validate/email\"
+              hx-post=\"/validate/email\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -258,7 +266,7 @@ macro_rules! EMAIL_TAKEN {
               aria-label=\"Email\"
               aria-invalid=\"true\"
               autocomplete=\"email\"
-              hx-get=\"/validate/email\"
+              hx-post=\"/validate/email\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -285,7 +293,7 @@ macro_rules! VALID_USERNAME {
               autocomplete=\"nickname\"
               pattern=\"[0-9a-z]{{3,20}}\"
               title=\"3 to 20 characters, lowercase letters or numbers only\"
-              hx-get=\"/validate/username\"
+              hx-post=\"/validate/username\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -311,7 +319,7 @@ macro_rules! INVALID_USERNAME {
               autocomplete=\"nickname\"
               pattern=\"[0-9a-z]{{3,20}}\"
               title=\"3 to 20 characters, lowercase letters or numbers only\"
-              hx-get=\"/validate/username\"
+              hx-post=\"/validate/username\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -338,7 +346,7 @@ macro_rules! USERNAME_TAKEN {
               autocomplete=\"nickname\"
               pattern=\"[0-9a-z]{{3,20}}\"
               title=\"3 to 20 characters, lowercase letters or numbers only\"
-              hx-get=\"/validate/username\"
+              hx-post=\"/validate/username\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               value=\"{}\"
@@ -363,7 +371,7 @@ macro_rules! MATCHING_PASSWORDS {
               aria-label=\"Password\"
               aria-invalid=\"false\"
               id=\"confirm_password\"
-              hx-get=\"/validate/passwords\"
+              hx-post=\"/validate/passwords\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               hx-include=\"#password\"
@@ -388,7 +396,7 @@ macro_rules! MISMATCHING_PASSWORDS {
               aria-label=\"Password\"
               aria-invalid=\"true\"
               id=\"confirm_password\"
-              hx-get=\"/validate/passwords\"
+              hx-post=\"/validate/passwords\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               hx-include=\"#password\"
@@ -411,7 +419,7 @@ macro_rules! MATCHING_NEW_PASSWORDS {
               aria-label=\"Password\"
               aria-invalid=\"false\"
               id=\"new_password2\"
-              hx-get=\"/validate/new-passwords\"
+              hx-post=\"/validate/new-passwords\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               hx-include=\"#new_password\"
@@ -434,13 +442,110 @@ macro_rules! MISMATCHING_NEW_PASSWORDS {
               aria-label=\"Password\"
               aria-invalid=\"true\"
               id=\"new_password2\"
-              hx-get=\"/validate/new-passwords\"
+              hx-post=\"/validate/new-passwords\"
               hx-sync=\"closest form:abort\"
               hx-indicator=\"#ind\"
               hx-include=\"#new_password\"
               value=\"{}\"
               required
             />
+            <div class='error-message' style=\"color:red;\">Passwords don't match.</div>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+        </div>"
+    };
+}
+
+macro_rules! STRONG_PASSWORD {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"password\">Password</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+                type=\"password\"
+                name=\"password\"
+                placeholder=\"Password\"
+                aria-label=\"Password\"
+                aria-invalid=\"false\"
+                autocomplete=\"new-password\"
+                id=\"password\"
+                hx-post=\"/validate/password-strength\"
+                hx-sync=\"closest form:abort\"
+                hx-indicator=\"#ind\"
+                value=\"{}\"
+                required
+            />
+        </div>"
+    };
+}
+
+macro_rules! WEAK_PASSWORD {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <div class=\"grid\">
+            <label for=\"password\">Password</label>
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+            </div>
+            <input
+                type=\"password\"
+                name=\"password\"
+                placeholder=\"Password\"
+                aria-label=\"Password\"
+                aria-invalid=\"true\"
+                autocomplete=\"new-password\"
+                id=\"password\"
+                hx-post=\"/validate/password-strength\"
+                hx-sync=\"closest form:abort\"
+                hx-indicator=\"#ind\"
+                value=\"{}\"
+                required
+            />
+            <div class='error-message' style=\"color:red;\">Password too weak. Try using a password generator or choosing a password with uppercase, lowercase, numbers and special characters.</div>
+        </div>"
+    };
+}
+
+macro_rules! STRONG_NEW_PASSWORD {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <input
+                type=\"password\"
+                name=\"password\"
+                placeholder=\"New password\"
+                aria-label=\"Password\"
+                aria-invalid=\"false\"
+                autocomplete=\"new-password\"
+                id=\"new_password\"
+                hx-post=\"/validate/new-password-strength\"
+                hx-sync=\"closest form:abort\"
+                hx-indicator=\"#ind\"
+                value=\"{}\"
+                required
+            />
+            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+        </div>"
+    };
+}
+
+macro_rules! WEAK_NEW_PASSWORD {
+    () => {
+        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+            <input
+                type=\"password\"
+                name=\"password\"
+                placeholder=\"New password\"
+                aria-label=\"Password\"
+                aria-invalid=\"true\"
+                autocomplete=\"new-password\"
+                id=\"new_password\"
+                hx-post=\"/validate/new-password-strength\"
+                hx-sync=\"closest form:abort\"
+                hx-indicator=\"#ind\"
+                value=\"{}\"
+                required
+            />
+            <div class='error-message' style=\"color:red;\">Password too weak. Try using a password generator or choosing a password with uppercase, lowercase, numbers and special characters.</div>
             <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
         </div>"
     };
@@ -450,13 +555,17 @@ pub(crate) use EDITABLE_TABLE_ROW;
 pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
+pub(crate) use MATCHING_NEW_PASSWORDS;
 pub(crate) use MATCHING_PASSWORDS;
+pub(crate) use MISMATCHING_NEW_PASSWORDS;
 pub(crate) use MISMATCHING_PASSWORDS;
 pub(crate) use SIGN_IN_TAB;
 pub(crate) use SIGN_UP_TAB;
+pub(crate) use STRONG_NEW_PASSWORD;
+pub(crate) use STRONG_PASSWORD;
 pub(crate) use TABLE_ROW;
 pub(crate) use USERNAME_TAKEN;
 pub(crate) use VALID_EMAIL;
 pub(crate) use VALID_USERNAME;
-pub(crate) use MATCHING_NEW_PASSWORDS;
-pub(crate) use MISMATCHING_NEW_PASSWORDS;
+pub(crate) use WEAK_NEW_PASSWORD;
+pub(crate) use WEAK_PASSWORD;

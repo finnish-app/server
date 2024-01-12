@@ -243,7 +243,7 @@ pub async fn change_password(
         Ok(Some(user)) => {
             sqlx::query!(
                 "UPDATE users SET password = $1 WHERE id = $2",
-                generate_hash(&change_password_input.new_password),
+                generate_hash(&change_password_input.password),
                 user.id
             )
             .execute(db_pool)

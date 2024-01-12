@@ -8,5 +8,5 @@ pub struct MailToUser {
 #[derive(Deserialize, Debug)]
 pub struct ChangePasswordInput {
     pub old_password: String,
-    pub new_password: String,
+    pub password: String,
 }
