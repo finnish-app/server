@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
 
-#[derive(Debug, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
+#[derive(Debug, PartialEq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_type", rename_all = "lowercase")]
 pub enum ExpenseType {
     Food,

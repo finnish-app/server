@@ -10,6 +10,7 @@ use axum::{http::StatusCode, response::Html};
 use chrono::NaiveDate;
 use plotly::{common::Title, Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
+use strum::IntoEnumIterator;
 
 pub async fn get_expenses(
     auth_session: AuthSession,
@@ -56,6 +57,23 @@ pub async fn get_expenses(
     )
 }
 
+fn select_expense_type(expense_type: ExpenseType) -> String {
+    let mut options = String::new();
+    for expense_type_option in ExpenseType::iter() {
+        options.push_str(&format!(
+            r#"<option value='{}' {}>{}</option>"#,
+            expense_type_option,
+            if expense_type == expense_type_option {
+                "selected"
+            } else {
+                ""
+            },
+            expense_type_option
+        ));
+    }
+    options
+}
+
 pub async fn edit_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
@@ -80,6 +98,7 @@ pub async fn edit_expense(
         description = expense.description,
         price = expense.price,
         is_essential = if expense.is_essencial { "checked" } else { "" },
+        expense_type = select_expense_type(expense.expense_type)
     ))
 }
 

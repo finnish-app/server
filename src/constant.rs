@@ -36,12 +36,7 @@ macro_rules! EDITABLE_TABLE_ROW {
             <td><input type='text' name='description' value='{description}'></td>
             <td><input type='number' step='0.01' name='price' value='{price}'></td>
             <td><select name='expense_type'>
-                <option value='Food'>Food</option>
-                <option value='Transport'>Transport</option>
-                <option value='Health'>Health</option>
-                <option value='Education'>Education</option>
-                <option value='Entertainment'>Entertainment</option>
-                <option value='Other'>Other</option>
+                {expense_type}
             </select></td>
             <td><input type='checkbox' name='is_essencial' role='switch' value='true' {is_essential}></td>
             <td>
