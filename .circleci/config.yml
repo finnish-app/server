@@ -100,7 +100,7 @@ jobs:
 
   shuttle-deploy:
     docker:
-      - image: cimg/base:current
+      - image: cimg/rust:1.75.0
     steps:
       - checkout
       - run:
