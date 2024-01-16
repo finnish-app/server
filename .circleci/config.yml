@@ -100,7 +100,7 @@ jobs:
 
   shuttle-deploy:
     docker:
-      - image: cimg/base:latest
+      - image: cimg/base:current
     steps:
       - checkout
       - run:
@@ -141,5 +141,5 @@ workflows:
             - format
             - lint
           filters:
-            tags:
-              only: /.*/
+            branches:
+              only: main
