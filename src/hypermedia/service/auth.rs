@@ -52,21 +52,20 @@ pub async fn signin(
     (StatusCode::OK, [("HX-Redirect", "/")]).into_response()
 }
 
-pub async fn signin_tab(print_message: u8) -> impl IntoResponse {
+pub async fn signin_tab(print_message: u8) -> Html<String> {
     match print_message.cmp(&1) {
         std::cmp::Ordering::Greater => {
-            Html(format!(SIGN_IN_TAB!(), "Password changed successfully.")).into_response()
+            Html(format!(SIGN_IN_TAB!(), "Password changed successfully."))
         }
         std::cmp::Ordering::Equal => Html(format!(
             SIGN_IN_TAB!(),
             "Account created successfully. Please confirm your email and sign in."
-        ))
-        .into_response(),
-        std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")).into_response(),
+        )),
+        std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")),
     }
 }
 
-pub async fn signup_tab() -> impl IntoResponse {
+pub async fn signup_tab() -> Html<&'static str> {
     Html(SIGN_UP_TAB!())
 }
 

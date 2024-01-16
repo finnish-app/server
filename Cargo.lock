@@ -106,7 +106,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a41603f7cdbf5ac4af60760f17253eb6adf6ec5b6f14a7ed830cf687d375f163"
 dependencies = [
  "askama",
- "axum-core 0.4.2",
+ "axum-core 0.4.3",
  "http 1.0.0",
 ]
 
@@ -231,12 +231,12 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d09dbe0e490df5da9d69b36dca48a76635288a82f92eca90024883a56202026d"
+checksum = "1236b4b292f6c4d6dc34604bb5120d85c3fe1d1aa596bd5cc52ca054d13e7b9e"
 dependencies = [
  "async-trait",
- "axum-core 0.4.2",
+ "axum-core 0.4.3",
  "bytes",
  "futures-util",
  "http 1.0.0",
@@ -282,9 +282,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e87c8503f93e6d144ee5690907ba22db7ba79ab001a932ab99034f0fe836b3df"
+checksum = "a15c63fd72d41492dc4f497196f5da1fb04fb7529e631d73630d1b491e47a2e3"
 dependencies = [
  "async-trait",
  "bytes",
@@ -307,7 +307,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39893950267de4634ab036e4bb7efe0f4adeedb39e5f75c04131228bcc1e53a8"
 dependencies = [
- "axum 0.7.3",
+ "axum 0.7.4",
  "helmet-core",
  "http 1.0.0",
  "pin-project-lite",
@@ -323,7 +323,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fff85d5ba21f2063b3e8e47ba7192f7d2b73760e3d413db8e7c9b9bea3095b2"
 dependencies = [
  "async-trait",
- "axum 0.7.3",
+ "axum 0.7.4",
  "form_urlencoded",
  "ring",
  "serde",
@@ -890,7 +890,7 @@ version = "0.1.0"
 dependencies = [
  "askama",
  "askama_axum",
- "axum 0.7.3",
+ "axum 0.7.4",
  "axum-helmet",
  "axum-login",
  "chrono",
@@ -2704,7 +2704,7 @@ version = "0.35.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b8a2198e6493677654078c3a3930a364ed0fc21b456c91e4d815858c269e3a1"
 dependencies = [
- "axum 0.7.3",
+ "axum 0.7.4",
  "shuttle-runtime",
 ]
 
@@ -3499,7 +3499,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fd0118512cf0b3768f7fcccf0bef1ae41d68f2b45edc1e77432b36c97c56c6d"
 dependencies = [
  "async-trait",
- "axum-core 0.4.2",
+ "axum-core 0.4.3",
  "cookie",
  "futures-util",
  "http 1.0.0",
@@ -3583,7 +3583,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12564616434c7c811a229a223552b984f272e772d5dec4f71e61ca5bea7d3a3f"
 dependencies = [
  "async-trait",
- "axum-core 0.4.2",
+ "axum-core 0.4.3",
  "futures",
  "http 1.0.0",
  "parking_lot",

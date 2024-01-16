@@ -1,5 +1,5 @@
 use crate::{
-    hypermedia::service::validation::{EmailInput, PasswordInput, PasswordsInput, UsernameInput},
+    hypermedia::schema::validation::{EmailInput, PasswordInput, PasswordsInput, UsernameInput},
     AppState,
 };
 use std::sync::Arc;
