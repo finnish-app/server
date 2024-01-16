@@ -110,6 +110,9 @@ jobs:
           name: Install cargo-shuttle
           command: cargo binstall -y --locked cargo-shuttle
       - run:
+          name: Login to Shuttle
+          command: cargo shuttle login --api-key $SHUTTLE_API_KEY
+      - run:
           name: Deploy to Shuttle
           command: cargo shuttle deploy
 
