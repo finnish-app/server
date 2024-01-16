@@ -78,7 +78,7 @@ pub async fn edit_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
     id: i32,
-) -> impl IntoResponse {
+) -> Html<String> {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expense = sqlx::query_as!(
         Expense,
@@ -106,7 +106,7 @@ pub async fn get_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
     id: i32,
-) -> impl IntoResponse {
+) -> Html<String> {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expense = sqlx::query_as!(
         Expense,
@@ -212,7 +212,7 @@ pub async fn remove_expense_modal(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
     id: i32,
-) -> impl IntoResponse {
+) -> Html<String> {
     let user_id = auth_session.user.expect("User not logged in").id;
     let expense = sqlx::query_as!(
         Expense,
@@ -225,7 +225,7 @@ pub async fn remove_expense_modal(
         .await
         .unwrap();
 
-    Html(format!(DELETE_EXPENSE_MODAL!(), expense.id,)).into_response()
+    Html(format!(DELETE_EXPENSE_MODAL!(), expense.id))
 }
 
 pub async fn insert_expense(
