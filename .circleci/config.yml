@@ -7,7 +7,7 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: cimg/rust:1.74.1
+      - image: cimg/rust:1.75.0
     environment:
       # Fail the build if there are warnings
       RUSTFLAGS: '-D warnings'
@@ -40,7 +40,7 @@ jobs:
 
   security:
     docker:
-      - image: cimg/rust:1.74.1
+      - image: cimg/rust:1.75.0
     steps:
       - checkout
       - run:
@@ -66,7 +66,7 @@ jobs:
 
   format:
     docker:
-      - image: cimg/rust:1.74.1
+      - image: cimg/rust:1.75.0
     steps:
       - checkout
       - run:
@@ -83,7 +83,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.74.1
+      - image: cimg/rust:1.75.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -97,6 +97,22 @@ jobs:
       - run:
           name: Linting
           command: cargo clippy -- -D warnings
+
+  shuttle-deploy:
+    docker:
+      - image: cimg/base:latest
+    steps:
+      - checkout
+      - run:
+        name: Install cargo-binstall
+        command: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+      - run:
+        name: Install cargo-shuttle
+        command: cargo binstall -y --locked cargo-shuttle
+      - run:
+        name: Deploy to Shuttle
+        command: cargo shuttle deploy
+
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
@@ -116,6 +132,14 @@ workflows:
             tags:
               only: /.*/
       - lint:
+          filters:
+            tags:
+              only: /.*/
+      - shuttle-deploy:
+          requires:
+            - build-and-test
+            - format
+            - lint
           filters:
             tags:
               only: /.*/
