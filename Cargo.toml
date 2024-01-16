@@ -17,9 +17,9 @@ plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 rand = "0.8.5"
 regex = "1.10.2"
 serde = { version = "1.0.195", features = ["derive"] }
-shuttle-axum = { version = "0.35.2", default-features = false, features = ["axum-0-7"] }
-shuttle-runtime = { version = "0.35.2", default-features = false, features = ["colored"] }
-shuttle-shared-db = { version = "0.35.2", features = ["postgres"] }
+shuttle-axum = "0.36.0"
+shuttle-runtime = { version = "0.36.0", default-features = false, features = ["colored"] }
+shuttle-shared-db = { version = "0.36.0", features = ["postgres"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
 strum = { version = "0.25.0", features = ["strum_macros", "derive"] }
 time = "0.3.31"
