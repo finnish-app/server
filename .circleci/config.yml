@@ -104,14 +104,14 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Install cargo-binstall
-        command: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          name: Install cargo-binstall
+          command: curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
       - run:
-        name: Install cargo-shuttle
-        command: cargo binstall -y --locked cargo-shuttle
+          name: Install cargo-shuttle
+          command: cargo binstall -y --locked cargo-shuttle
       - run:
-        name: Deploy to Shuttle
-        command: cargo shuttle deploy
+          name: Deploy to Shuttle
+          command: cargo shuttle deploy
 
 
 # Orchestrate jobs using workflows
