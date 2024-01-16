@@ -56,7 +56,8 @@ macro_rules! EDITABLE_TABLE_ROW {
 
 macro_rules! SIGN_IN_TAB {
     () => {
-        "<article class=\"grid\">
+        "<div id=\"outside-article\">
+        <article class=\"grid\">
             <div>
                 <nav class=\"tab-list\" role=\"tablist\">
                   <ul>
@@ -72,7 +73,7 @@ macro_rules! SIGN_IN_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\" hx-ext=\"response-targets\">
-                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-swap=\"innerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#message\">
+                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-swap=\"innerHTML\" hx-target=\"#outside-article\" hx-target-error=\"#message\">
                 <input
                   type=\"text\"
                   name=\"username\"
@@ -99,7 +100,8 @@ macro_rules! SIGN_IN_TAB {
                 </form>
                 <div id=\"message\">{}</div>
             </div>
-        </article>"
+        </article>
+        </div>"
     };
 }
 

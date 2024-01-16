@@ -192,3 +192,10 @@ struct VerificationTemplate {
     resend_url: String,
     should_print_resend_link: bool,
 }
+
+#[derive(Template, Default)]
+#[template(path = "mfa.html")]
+struct MfaTemplate {
+    mfa_url: String,
+    qr_code: String,
+}

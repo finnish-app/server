@@ -38,6 +38,14 @@ pub fn generate_verification_token() -> String {
         .collect()
 }
 
+pub fn generate_otp_token() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(20) // recommended length of secret is 160 bits: https://www.rfc-editor.org/rfc/rfc4226#section-4
+        .map(char::from)
+        .collect()
+}
+
 pub fn now_plus_24_hours() -> chrono::DateTime<chrono::Utc> {
     chrono::Utc::now() + chrono::Duration::hours(24)
 }

@@ -6,9 +6,15 @@ CREATE TABLE IF NOT EXISTS users (
     email text NOT NULL UNIQUE,
     password text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT NOW(),
+
     verification_code varchar(255),
     code_expires_at timestamptz,
-    verified boolean NOT NULL DEFAULT false
+    verified boolean NOT NULL DEFAULT false,
+
+    otp_enabled boolean NOT NULL DEFAULT false,
+    otp_verified boolean NOT NULL DEFAULT false,
+    otp_secret text,
+    otp_auth_url text
 );
 
 CREATE INDEX idx_verification_code ON users (verification_code);

@@ -1,6 +1,6 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    hypermedia::schema::auth::ChangePasswordInput,
+    hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm, UsernameQuery},
     AppState, AuthTemplate, ChangePasswordTemplate,
 };
 use std::sync::Arc;
@@ -8,7 +8,7 @@ use std::sync::Arc;
 use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, Query, State},
-    routing::get,
+    routing::{get, post},
     Form, Router,
 };
 
@@ -25,6 +25,7 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", get(resend_verification_email))
         .route("/auth/forgot-password", get(forgot_password))
+        .route("/auth/mfa", post(mfa_verify))
 }
 
 pub fn private_router() -> Router<Arc<AppState>> {
@@ -54,9 +55,23 @@ async fn signin_tab_after_change_password() -> impl IntoResponse {
 
 async fn signin(
     auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(signin_input, auth_session).await
+    crate::hypermedia::service::auth::signin(auth_session, &shared_state.pool, signin_input).await
+}
+
+async fn mfa_verify(
+    State(shared_state): State<Arc<AppState>>,
+    Query(username): Query<UsernameQuery>,
+    Form(mfa_token): Form<MfaTokenForm>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::mfa_verify(
+        &shared_state.pool,
+        username.username,
+        mfa_token.token,
+    )
+    .await
 }
 
 async fn signup_tab() -> impl IntoResponse {

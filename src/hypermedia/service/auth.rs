@@ -1,10 +1,10 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials, SignUpCredentials},
+    auth::{AuthSession, LoginCredentials, SignUpCredentials, User},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
-    util::{generate_verification_token, now_plus_24_hours},
-    AuthTemplate, VerificationTemplate,
+    util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
+    AuthTemplate, MfaTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
@@ -14,10 +14,49 @@ use axum::{
 };
 use password_auth::generate_hash;
 use sqlx::{Pool, Postgres};
+use totp_rs::{Algorithm, Secret, TOTP};
+
+async fn generate_otp(db_pool: &Pool<Postgres>, user: &User) -> impl IntoResponse {
+    let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
+    tracing::info!("Secret: {:?}", secret);
+
+    let mut transaction = db_pool.begin().await.unwrap();
+
+    sqlx::query!(
+        r#"
+        UPDATE users SET otp_secret = $1 WHERE id = $2
+        "#,
+        secret.to_string(),
+        user.id
+    )
+    .execute(&mut *transaction)
+    .await
+    .unwrap();
+
+    let totp = TOTP::new(
+        Algorithm::SHA256,
+        6,
+        1,
+        30,
+        secret.to_bytes().unwrap(),
+        Some("Finnish".to_string()),
+        user.email.clone(),
+    )
+    .unwrap();
+    let qr_code = totp.get_qr_base64().unwrap(); // qr_code is a base64 encoded image
+                                                 // that can be rendered embedded in an <img> tag
+
+    transaction.commit().await.unwrap();
+    return MfaTemplate {
+        mfa_url: format!("/auth/mfa?username={}", user.username),
+        qr_code: format!("data:image/png;base64,{}", qr_code),
+    };
+}
 
 pub async fn signin(
-    signin_input: LoginCredentials,
     mut auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    signin_input: LoginCredentials,
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
         Ok(Some(user)) => {
@@ -45,11 +84,73 @@ pub async fn signin(
         Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
+    if !user.otp_enabled {
+        let qr = generate_otp(db_pool, &user).await;
+        return qr.into_response();
+    }
+
     if auth_session.login(&user).await.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
     (StatusCode::OK, [("HX-Redirect", "/")]).into_response()
+}
+
+pub async fn mfa_verify(
+    db_pool: &Pool<Postgres>,
+    username: String,
+    mfa_token: String,
+) -> impl IntoResponse {
+    let record = sqlx::query!(
+        r#"
+        SELECT email, otp_secret
+        FROM users
+        WHERE username = $1
+        "#,
+        username
+    )
+    .fetch_one(db_pool)
+    .await
+    .unwrap();
+
+    let totp = TOTP::new(
+        Algorithm::SHA256,
+        6,
+        1,
+        30,
+        record.otp_secret.unwrap().as_bytes().to_vec(),
+        Some("Finnish".to_string()),
+        record.email.clone(),
+    )
+    .unwrap();
+
+    match totp.check_current(&mfa_token) {
+        Ok(boolean) => {
+            if !boolean {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Html("<p style=\"color:red;\">Invalid MFA token</p>"),
+                )
+                    .into_response();
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error verifying MFA token: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    }
+
+    sqlx::query!(
+        r#"
+        UPDATE users SET otp_enabled = true, otp_verified = true WHERE username = $1
+        "#,
+        username
+    )
+    .execute(db_pool)
+    .await
+    .unwrap();
+
+    (StatusCode::OK, [("HX-Redirect", "/auth")]).into_response()
 }
 
 pub async fn signin_tab(print_message: u8) -> Html<String> {

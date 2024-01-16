@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 
+{% block features %}
+                <li>
+                    <details role="list" dir="ltr">
+                        <summary aria-haspopup="listbox" role="link" class="secondary" style="list-style: none;">≡</summary>
+                        <ul role="listbox">
+                          <li><a href="/">Expenses</a></li>
+                        </ul>
+                    </details>
+                </li>
+{% endblock %}
+
 {% block logged_in %}
                 <li>
                     <details role="list" dir="rtl">

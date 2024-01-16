@@ -24,6 +24,7 @@ sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "chr
 strum = { version = "0.25.0", features = ["strum_macros", "derive"] }
 time = "0.3.31"
 tokio = { version = "1.35.1", features = ["full"] }
+totp-rs = { version = "5.4.0", features = ["qr"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.1", features = ["fs", "trace"] }
 tower-sessions = { version = "0.9.1", features = ["postgres-store"] }
