@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO expenses (description, price, expense_type, is_essential, date, user_id)\n        VALUES ($1, $2, $3 :: expense_type, $4, $5, $6)\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essential, date\n        ",
+  "query": "\n        INSERT INTO expenses\n        (description, price, category, is_essential, date, user_id)\n        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6)\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        ",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "expense_type: ExpenseType",
+        "name": "category: ExpenseCategory",
         "type_info": {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -54,7 +54,7 @@
         "Float4",
         {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -81,5 +81,5 @@
       false
     ]
   },
-  "hash": "04f10e84426971238e7dd25e83e75e4139e05d7b0b7420d7db6247f9e2b6de0e"
+  "hash": "3a2c7774abb6922d72ac9abfed0a136138adb2f029207553f6afe870eecadaab"
 }

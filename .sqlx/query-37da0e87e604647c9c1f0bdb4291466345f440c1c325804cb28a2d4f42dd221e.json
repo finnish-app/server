@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essential, date\n        FROM expenses\n        WHERE user_id = $1\n        ORDER BY date ASC",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        FROM expenses WHERE id = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "expense_type: ExpenseType",
+        "name": "category: ExpenseCategory",
         "type_info": {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -50,6 +50,7 @@
     ],
     "parameters": {
       "Left": [
+        "Int4",
         "Int4"
       ]
     },
@@ -62,5 +63,5 @@
       false
     ]
   },
-  "hash": "0b0d5cd681e4dac079b70dcbeb5d2cb43b4fa094309b94be60474ad28cbfa1f6"
+  "hash": "37da0e87e604647c9c1f0bdb4291466345f440c1c325804cb28a2d4f42dd221e"
 }
