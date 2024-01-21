@@ -9,7 +9,6 @@ pub fn send_sign_up_confirmation_mail(
     to_email: &str,
     verification_code: &str,
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
-    tracing::info!("Sending sign up confirmation mail to {}", to_email);
     let smtp_username = secret_store.get("SMTP_USERNAME").unwrap_or_else(|| {
         tracing::warn!("SMTP_USERNAME not set, using default");
         "".to_string()
