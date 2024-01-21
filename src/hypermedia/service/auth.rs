@@ -99,7 +99,7 @@ pub async fn signup(
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
-            &secret_store,
+            secret_store,
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
@@ -142,7 +142,7 @@ pub async fn resend_verification_email(
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
-            &secret_store,
+            secret_store,
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
