@@ -1,7 +1,8 @@
 use crate::{
     auth::AuthSession,
     schema::{GetExpense, UpdateExpense},
-    AppState, ExpensesTemplate,
+    templates::ExpensesTemplate,
+    AppState,
 };
 use std::sync::Arc;
 

@@ -37,17 +37,17 @@ async fn validate_username(
 }
 
 async fn validate_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_passwords(input_passwords).await
+    crate::hypermedia::service::validation::validate_passwords(input_passwords)
 }
 
 async fn validate_new_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_new_passwords(input_passwords).await
+    crate::hypermedia::service::validation::validate_new_passwords(input_passwords)
 }
 
 async fn validate_password(Form(input_password): Form<PasswordInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_password(input_password).await
+    crate::hypermedia::service::validation::validate_password(input_password)
 }
 
 async fn validate_new_password(Form(input_password): Form<PasswordInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_new_password(input_password).await
+    crate::hypermedia::service::validation::validate_new_password(input_password)
 }

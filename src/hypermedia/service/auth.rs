@@ -3,8 +3,8 @@ use crate::{
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
+    templates::{AuthTemplate, MfaTemplate, VerificationTemplate},
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
-    AuthTemplate, MfaTemplate, VerificationTemplate,
 };
 
 use askama_axum::IntoResponse;
@@ -154,7 +154,7 @@ pub async fn mfa_verify(
     (StatusCode::OK, [("HX-Redirect", "/auth")]).into_response()
 }
 
-pub async fn signin_tab(print_message: u8) -> Html<String> {
+pub fn signin_tab(print_message: u8) -> Html<String> {
     match print_message.cmp(&1) {
         std::cmp::Ordering::Greater => {
             Html(format!(SIGN_IN_TAB!(), "Password changed successfully."))
@@ -167,7 +167,7 @@ pub async fn signin_tab(print_message: u8) -> Html<String> {
     }
 }
 
-pub async fn signup_tab() -> Html<&'static str> {
+pub fn signup_tab() -> Html<&'static str> {
     Html(SIGN_UP_TAB!())
 }
 

@@ -1,7 +1,8 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
     hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm, UsernameQuery},
-    AppState, AuthTemplate, ChangePasswordTemplate,
+    templates::{AuthTemplate, ChangePasswordTemplate},
+    AppState,
 };
 use std::sync::Arc;
 
@@ -42,15 +43,15 @@ async fn auth_index() -> impl IntoResponse {
 }
 
 async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(0).await
+    crate::hypermedia::service::auth::signin_tab(0)
 }
 
 async fn signin_tab_after_signup() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(1).await
+    crate::hypermedia::service::auth::signin_tab(1)
 }
 
 async fn signin_tab_after_change_password() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(2).await
+    crate::hypermedia::service::auth::signin_tab(2)
 }
 
 async fn signin(
@@ -75,7 +76,7 @@ async fn mfa_verify(
 }
 
 async fn signup_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup_tab().await
+    crate::hypermedia::service::auth::signup_tab()
 }
 
 async fn signup(

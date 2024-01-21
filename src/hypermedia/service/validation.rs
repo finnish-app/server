@@ -72,28 +72,31 @@ pub async fn validate_username(db_pool: &Pool<Postgres>, input: UsernameInput) -
     }
 }
 
-pub async fn validate_passwords(input: PasswordsInput) -> Html<String> {
+pub fn validate_passwords(input: PasswordsInput) -> Html<String> {
     match input.validate() {
-        Ok(_) => Html(format!(MATCHING_PASSWORDS!(), input.password)),
-        Err(_) => Html(format!(MISMATCHING_PASSWORDS!(), input.password)),
+        Ok(_) => Html(format!(MATCHING_PASSWORDS!(), input.confirm_password)),
+        Err(_) => Html(format!(MISMATCHING_PASSWORDS!(), input.confirm_password)),
     }
 }
 
-pub async fn validate_new_passwords(input: PasswordsInput) -> Html<String> {
+pub fn validate_new_passwords(input: PasswordsInput) -> Html<String> {
     match input.validate() {
-        Ok(_) => Html(format!(MATCHING_NEW_PASSWORDS!(), input.password)),
-        Err(_) => Html(format!(MISMATCHING_NEW_PASSWORDS!(), input.password)),
+        Ok(_) => Html(format!(MATCHING_NEW_PASSWORDS!(), input.confirm_password)),
+        Err(_) => Html(format!(
+            MISMATCHING_NEW_PASSWORDS!(),
+            input.confirm_password
+        )),
     }
 }
 
-pub async fn validate_password(input: PasswordInput) -> Html<String> {
+pub fn validate_password(input: PasswordInput) -> Html<String> {
     match input.validate() {
         Ok(_) => Html(format!(STRONG_PASSWORD!(), input.password)),
         Err(_) => Html(format!(WEAK_PASSWORD!(), input.password)),
     }
 }
 
-pub async fn validate_new_password(input: PasswordInput) -> Html<String> {
+pub fn validate_new_password(input: PasswordInput) -> Html<String> {
     match input.validate() {
         Ok(_) => Html(format!(STRONG_NEW_PASSWORD!(), input.password)),
         Err(_) => Html(format!(WEAK_NEW_PASSWORD!(), input.password)),

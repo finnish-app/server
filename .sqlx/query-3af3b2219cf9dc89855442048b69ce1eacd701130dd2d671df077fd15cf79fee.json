@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE users SET otp_enabled = true, otp_verified = true WHERE username = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3af3b2219cf9dc89855442048b69ce1eacd701130dd2d671df077fd15cf79fee"
+}
