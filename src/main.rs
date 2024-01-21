@@ -1,9 +1,9 @@
 #![warn(
     clippy::all,
-    clippy::restriction,
+//    clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
-    clippy::cargo,
+//    clippy::cargo,
     nonstandard_style,
     future_incompatible,
     missing_debug_implementations
@@ -13,7 +13,10 @@
     clippy::std_instead_of_core,
     clippy::std_instead_of_alloc,
     clippy::needless_return,
-    clippy::question_mark_used
+    clippy::module_name_repetitions,
+    clippy::multiple_unsafe_ops_per_block,
+    clippy::question_mark_used,
+    clippy::min_ident_chars
 )]
 #![forbid(unsafe_code)]
 
@@ -23,8 +26,11 @@ mod constant;
 mod data;
 mod data_structs;
 mod hypermedia;
+/// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;
+/// Module containing the askama html templates to be rendered.
 mod templates;
+/// Module containing time and crypto utility functions.
 mod util;
 
 use crate::{auth::Backend, data_structs::Months};
@@ -111,7 +117,7 @@ async fn axum(
             .add(ReferrerPolicy::no_referrer())
             .add(
                 StrictTransportSecurity::new()
-                    .max_age(15552000)
+                    .max_age(15_552_000)
                     .include_sub_domains(),
             )
             .add(XContentTypeOptions::nosniff())
@@ -139,12 +145,11 @@ async fn axum(
                     return async move {
                         if error.is::<Elapsed>() {
                             return Ok(StatusCode::REQUEST_TIMEOUT);
-                        } else {
-                            return Err((
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                format!("Unhandled internal error: {error}"),
-                            ));
                         }
+                        return Err((
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            format!("Unhandled internal error: {error}"),
+                        ));
                     };
                 }))
                 .timeout(Duration::from_secs(10))

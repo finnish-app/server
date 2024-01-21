@@ -25,29 +25,29 @@ async fn validate_email(
     State(shared_state): State<Arc<AppState>>,
     Form(input_email): Form<EmailInput>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_email(&shared_state.pool, input_email).await
+    crate::hypermedia::service::validation::validate_email(&shared_state.pool, &input_email).await
 }
 
 async fn validate_username(
     State(shared_state): State<Arc<AppState>>,
     Form(input_username): Form<UsernameInput>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_username(&shared_state.pool, input_username)
+    crate::hypermedia::service::validation::validate_username(&shared_state.pool, &input_username)
         .await
 }
 
 async fn validate_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_passwords(input_passwords)
+    crate::hypermedia::service::validation::validate_passwords(&input_passwords)
 }
 
 async fn validate_new_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_new_passwords(input_passwords)
+    crate::hypermedia::service::validation::validate_new_passwords(&input_passwords)
 }
 
 async fn validate_password(Form(input_password): Form<PasswordInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_password(input_password)
+    crate::hypermedia::service::validation::validate_password(&input_password)
 }
 
 async fn validate_new_password(Form(input_password): Form<PasswordInput>) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_new_password(input_password)
+    crate::hypermedia::service::validation::validate_new_password(&input_password)
 }

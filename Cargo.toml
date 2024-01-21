@@ -2,6 +2,10 @@
 name = "finnish"
 version = "0.1.0"
 edition = "2021"
+description = "Finnish is your personal finance manager."
+repository = "github.com/nicolasauler/finnish"
+keywords = ["finance", "personal finance", "budget", "money", "expenses", "income"]
+categories = ["finance"]
 
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum", "serde-json"] }

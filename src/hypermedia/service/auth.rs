@@ -40,7 +40,7 @@ async fn generate_otp(db_pool: &Pool<Postgres>, user: &User) -> impl IntoRespons
         1,
         30,
         secret.to_bytes().unwrap(),
-        Some("Finnish".to_string()),
+        Some("Finnish".to_owned()),
         user.email.clone(),
     )
     .unwrap();
@@ -50,7 +50,7 @@ async fn generate_otp(db_pool: &Pool<Postgres>, user: &User) -> impl IntoRespons
     transaction.commit().await.unwrap();
     return MfaTemplate {
         mfa_url: format!("/auth/mfa?username={}", user.username),
-        qr_code: format!("data:image/png;base64,{}", qr_code),
+        qr_code: format!("data:image/png;base64,{qr_code}"),
     };
 }
 
@@ -120,7 +120,7 @@ pub async fn mfa_verify(
         1,
         30,
         record.otp_secret.unwrap().as_bytes().to_vec(),
-        Some("Finnish".to_string()),
+        Some("Finnish".to_owned()),
         record.email.clone(),
     )
     .unwrap();
@@ -167,7 +167,7 @@ pub fn signin_tab(print_message: u8) -> Html<String> {
     }
 }
 
-pub fn signup_tab() -> Html<&'static str> {
+pub const fn signup_tab() -> Html<&'static str> {
     Html(SIGN_UP_TAB!())
 }
 
@@ -179,13 +179,18 @@ pub async fn signup(
     let hashed_pass = generate_hash(&signup_input.password);
     let mut transaction = db_pool.begin().await.unwrap();
 
+    let Some(expiration_date) = now_plus_24_hours() else {
+        transaction.rollback().await.unwrap();
+        tracing::error!("Error generating expiration date, maybe it overflowed?");
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
     sqlx::query!(
         r#"INSERT INTO users (username, email, password, verification_code, code_expires_at) VALUES ($1, $2, $3, $4, $5)"#,
         signup_input.username,
         signup_input.email,
         hashed_pass,
         generate_verification_token(),
-        now_plus_24_hours()
+        expiration_date
     )
     .execute(&mut *transaction)
     .await
@@ -260,8 +265,8 @@ pub async fn resend_verification_email(
     (
         StatusCode::OK,
         VerificationTemplate {
-            message: "Check your inbox for your verification email".to_string(),
-            login_url: "/auth".to_string(),
+            message: "Check your inbox for your verification email".to_owned(),
+            login_url: "/auth".to_owned(),
             ..Default::default()
         },
     )
@@ -288,8 +293,8 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                 Ok(_) => (
                     StatusCode::OK,
                     VerificationTemplate {
-                        message: "Email verified successfully. You can now sign in.".to_string(),
-                        login_url: "/auth".to_string(),
+                        message: "Email verified successfully. You can now sign in.".to_owned(),
+                        login_url: "/auth".to_owned(),
                         ..Default::default()
                     },
                 )
@@ -299,8 +304,8 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         VerificationTemplate {
-                            message: "Error verifying email. Please try again later.".to_string(),
-                            login_url: "/auth".to_string(),
+                            message: "Error verifying email. Please try again later.".to_owned(),
+                            login_url: "/auth".to_owned(),
                             ..Default::default()
                         },
                     ).into_response()
@@ -312,10 +317,10 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
             (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
-                    login_url: "/auth".to_string(),
-                    message: "User already verified or verification code expired".to_string(),
+                    login_url: "/auth".to_owned(),
+                    message: "User already verified or verification code expired".to_owned(),
                     should_print_resend_link: true,
-                    resend_url: "/auth/resend-verification".to_string(),
+                    resend_url: "/auth/resend-verification".to_owned(),
                 },
             ).into_response()
         }
@@ -335,9 +340,8 @@ pub async fn change_password(
     change_password_input: ChangePasswordInput,
 ) -> impl IntoResponse {
     let maybe_user = &auth_session.user;
-    let user = match maybe_user {
-        Some(user) => user,
-        None => return StatusCode::UNAUTHORIZED.into_response(),
+    let Some(user) = maybe_user else {
+        return StatusCode::UNAUTHORIZED.into_response();
     };
 
     let creds = LoginCredentials {

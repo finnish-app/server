@@ -31,6 +31,14 @@ impl std::fmt::Debug for User {
             .field("username", &self.username)
             .field("email", &self.email)
             .field("password", &"[redacted]")
+            .field("created_at", &self.created_at)
+            .field("verified", &self.verified)
+            .field("verification_code", &"[redacted]")
+            .field("code_expires_at", &self.code_expires_at)
+            .field("otp_enabled", &self.otp_enabled)
+            .field("otp_verified", &self.otp_verified)
+            .field("otp_secret", &"[redacted]")
+            .field("otp_auth_url", &"[redacted]")
             .finish()
     }
 }
@@ -69,7 +77,7 @@ pub struct Backend {
 }
 
 impl Backend {
-    pub fn new(db: PgPool) -> Self {
+    pub const fn new(db: PgPool) -> Self {
         Self { db }
     }
 }

@@ -117,7 +117,7 @@ async fn expenses_plots(
     State(shared_state): State<Arc<AppState>>,
     Query(get_expense_input): Query<GetExpense>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::expenses::expenses_plots(
+    crate::hypermedia::service::expenses::plot_expenses(
         auth_session,
         &shared_state.pool,
         get_expense_input,

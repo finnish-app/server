@@ -38,7 +38,7 @@ macro_rules! EDITABLE_TABLE_ROW {
             <td><select name='expense_type'>
                 {expense_type}
             </select></td>
-            <td><input type='checkbox' name='is_essencial' role='switch' value='true' {is_essential}></td>
+            <td><input type='checkbox' name='is_essential' role='switch' value='true' {is_essential}></td>
             <td>
                 <button class=\"contrast\" hx-get=\"/expenses/{id}/delete-modal\" hx-target=\"#delete-modal-here\" hx-swap=\"innerHTML\">
                   Delete

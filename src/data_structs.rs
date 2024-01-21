@@ -4,7 +4,7 @@ use chrono::Month;
 use serde::Deserialize;
 use strum::EnumIter;
 
-#[derive(EnumIter, Debug, PartialEq, Clone, Deserialize)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum Months {
     January,
     February,
@@ -25,19 +25,19 @@ impl FromStr for Months {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "January" => Ok(Months::January),
-            "February" => Ok(Months::February),
-            "March" => Ok(Months::March),
-            "April" => Ok(Months::April),
-            "May" => Ok(Months::May),
-            "June" => Ok(Months::June),
-            "July" => Ok(Months::July),
-            "August" => Ok(Months::August),
-            "September" => Ok(Months::September),
-            "October" => Ok(Months::October),
-            "November" => Ok(Months::November),
-            "December" => Ok(Months::December),
-            _ => Err(format!("{} is not a valid month", s)),
+            "January" => Ok(Self::January),
+            "February" => Ok(Self::February),
+            "March" => Ok(Self::March),
+            "April" => Ok(Self::April),
+            "May" => Ok(Self::May),
+            "June" => Ok(Self::June),
+            "July" => Ok(Self::July),
+            "August" => Ok(Self::August),
+            "September" => Ok(Self::September),
+            "October" => Ok(Self::October),
+            "November" => Ok(Self::November),
+            "December" => Ok(Self::December),
+            _ => Err(format!("{s} is not a valid month")),
         }
     }
 }
@@ -45,37 +45,58 @@ impl FromStr for Months {
 impl Display for Months {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Months::January => write!(f, "January"),
-            Months::February => write!(f, "February"),
-            Months::March => write!(f, "March"),
-            Months::April => write!(f, "April"),
-            Months::May => write!(f, "May"),
-            Months::June => write!(f, "June"),
-            Months::July => write!(f, "July"),
-            Months::August => write!(f, "August"),
-            Months::September => write!(f, "September"),
-            Months::October => write!(f, "October"),
-            Months::November => write!(f, "November"),
-            Months::December => write!(f, "December"),
+            Self::January => write!(f, "January"),
+            Self::February => write!(f, "February"),
+            Self::March => write!(f, "March"),
+            Self::April => write!(f, "April"),
+            Self::May => write!(f, "May"),
+            Self::June => write!(f, "June"),
+            Self::July => write!(f, "July"),
+            Self::August => write!(f, "August"),
+            Self::September => write!(f, "September"),
+            Self::October => write!(f, "October"),
+            Self::November => write!(f, "November"),
+            Self::December => write!(f, "December"),
+        }
+    }
+}
+
+impl TryInto<u32> for Months {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<u32, Self::Error> {
+        match self {
+            Self::January => Ok(1),
+            Self::February => Ok(2),
+            Self::March => Ok(3),
+            Self::April => Ok(4),
+            Self::May => Ok(5),
+            Self::June => Ok(6),
+            Self::July => Ok(7),
+            Self::August => Ok(8),
+            Self::September => Ok(9),
+            Self::October => Ok(10),
+            Self::November => Ok(11),
+            Self::December => Ok(12),
         }
     }
 }
 
 impl Months {
-    pub fn from_chrono_month(month: Month) -> Self {
+    pub const fn from_chrono_month(month: Month) -> Self {
         match month {
-            Month::January => Months::January,
-            Month::February => Months::February,
-            Month::March => Months::March,
-            Month::April => Months::April,
-            Month::May => Months::May,
-            Month::June => Months::June,
-            Month::July => Months::July,
-            Month::August => Months::August,
-            Month::September => Months::September,
-            Month::October => Months::October,
-            Month::November => Months::November,
-            Month::December => Months::December,
+            Month::January => Self::January,
+            Month::February => Self::February,
+            Month::March => Self::March,
+            Month::April => Self::April,
+            Month::May => Self::May,
+            Month::June => Self::June,
+            Month::July => Self::July,
+            Month::August => Self::August,
+            Month::September => Self::September,
+            Month::October => Self::October,
+            Month::November => Self::November,
+            Month::December => Self::December,
         }
     }
 }
