@@ -4,7 +4,7 @@ use sqlx::{Pool, Postgres};
 
 use crate::{
     auth::AuthSession,
-    schema::{Expense, ExpenseType, UpdateExpense},
+    schema::{Expense, ExpenseCategory, UpdateExpense},
 };
 
 pub async fn get_expenses(
@@ -14,7 +14,7 @@ pub async fn get_expenses(
     let user_id = auth_session.user.expect("User should be authenticated").id;
     match sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, expense_type as "expense_type: ExpenseType", is_essential, date
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
         FROM expenses
         WHERE user_id = $1
         ORDER BY date ASC"#,
@@ -38,13 +38,13 @@ pub async fn create_expense(
         Expense,
         r#"
         INSERT INTO expenses
-        (description, price, expense_type, is_essential, date, user_id)
-        VALUES ($1, $2, $3 :: expense_type, $4, $5, $6)
-        RETURNING id, description, price, expense_type as "expense_type: ExpenseType", is_essential, date
+        (description, price, category, is_essential, date, user_id)
+        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6)
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date
         "#,
         create_expense.description,
         create_expense.price,
-        create_expense.expense_type as Option<ExpenseType>,
+        create_expense.category as Option<ExpenseCategory>,
         create_expense.is_essential,
         create_expense.date,
         user_id

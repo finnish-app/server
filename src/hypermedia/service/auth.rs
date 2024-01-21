@@ -66,8 +66,7 @@ pub async fn signin(
                     StatusCode::UNAUTHORIZED,
                     Html(format!(
                         "<p style=\"color:red;\">Please verify your email before signing in</p>
-                         <a href=\"/auth/resend-verification?username={}\">Resend verification email</a>
-                        ",
+                         <a href=\"/auth/resend-verification?username={}\">Resend verification email</a>",
                         user.username
                     )),
                 )

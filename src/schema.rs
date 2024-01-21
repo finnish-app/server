@@ -13,7 +13,7 @@ use strum::EnumIter;
 #[sqlx(type_name = "expense_type", rename_all = "lowercase")]
 #[allow(clippy::missing_docs_in_private_items)]
 /// `ExpenseType` is an enum with the types of expenses.
-pub enum ExpenseType {
+pub enum ExpenseCategory {
     Food,
     Transport,
     Health,
@@ -23,7 +23,7 @@ pub enum ExpenseType {
     Other,
 }
 
-impl FromStr for ExpenseType {
+impl FromStr for ExpenseCategory {
     type Err = String;
 
     fn from_str(str: &str) -> Result<Self, Self::Err> {
@@ -39,7 +39,7 @@ impl FromStr for ExpenseType {
     }
 }
 
-impl Display for ExpenseType {
+impl Display for ExpenseCategory {
     fn fmt(&self, fmtr: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Self::Food => return write!(fmtr, "Food"),
@@ -59,7 +59,7 @@ pub struct Expense {
     pub id: i32,
     pub description: String,
     pub price: f32,
-    pub expense_type: ExpenseType,
+    pub category: ExpenseCategory,
     pub is_essential: bool,
     pub date: NaiveDate,
 }
@@ -82,7 +82,7 @@ pub struct UpdateExpense {
     pub description: Option<String>,
     #[serde(deserialize_with = "de_string_to_option_f32")]
     pub price: Option<f32>,
-    pub expense_type: Option<ExpenseType>,
+    pub category: Option<ExpenseCategory>,
     #[serde(
         default = "default_is_essential_to_false",
         deserialize_with = "de_string_to_bool"

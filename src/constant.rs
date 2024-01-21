@@ -35,8 +35,8 @@ macro_rules! EDITABLE_TABLE_ROW {
             <td><input type='date' name='date' value='{date}'></td>
             <td><input type='text' name='description' value='{description}'></td>
             <td><input type='number' step='0.01' name='price' value='{price}'></td>
-            <td><select name='expense_type'>
-                {expense_type}
+            <td><select name='category'>
+                {category}
             </select></td>
             <td><input type='checkbox' name='is_essential' role='switch' value='true' {is_essential}></td>
             <td>

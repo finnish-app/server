@@ -1,6 +1,6 @@
 use crate::{
     data_structs::{Months, MonthsIter},
-    schema::{ExpenseType, ExpenseTypeIter},
+    schema::{ExpenseCategory, ExpenseCategoryIter},
 };
 
 use askama_axum::Template;
@@ -14,7 +14,7 @@ pub struct ExpensesTemplate<'a> {
     /// The current month to be displayed in English in the dropdown.
     pub current_month: Months,
     /// The expense types to be displayed in the dropdown.
-    pub expense_types: ExpenseTypeIter,
+    pub expense_types: ExpenseCategoryIter,
     /// The months to be displayed in the dropdown.
     pub months: MonthsIter,
     /// The username of the logged in user.
@@ -35,7 +35,7 @@ impl Default for ExpensesTemplate<'_> {
                     .unwrap_or(Month::January),
                 )
             },
-            expense_types: ExpenseType::iter(),
+            expense_types: ExpenseCategory::iter(),
             months: Months::iter(),
             username: "",
         };
@@ -47,11 +47,11 @@ impl Default for ExpensesTemplate<'_> {
 /// The askama template for the change password page.
 pub struct ChangePasswordTemplate {
     /// The url to post to change the user password.
-    pub change_password_url: String,
+    pub change_password: String,
     /// The url to validate that the new_password matches with its confirmation.
-    pub passwords_match_url: String,
+    pub passwords_match: String,
     /// The url to validate password strength with zxcvbn.
-    pub password_strength_url: String,
+    pub password_strength: String,
 }
 
 #[derive(Template, Default)]
