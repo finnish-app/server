@@ -2,16 +2,30 @@ use lettre::{
     message::header::ContentType, transport::smtp::authentication::Credentials, Message,
     SmtpTransport, Transport,
 };
+use shuttle_secrets::SecretStore;
 
 pub fn send_sign_up_confirmation_mail(
+    secret_store: &SecretStore,
     to_email: &str,
     verification_code: &str,
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
-    let smtp_username = std::env::var("SMTP_USERNAME").expect("SMTP_USERNAME not set");
-    let smtp_key = std::env::var("SMTP_KEY").expect("SMTP_KEY not set");
-    let host = std::env::var("SMTP_HOST").expect("SMTP_HOST not set");
+    let smtp_username = secret_store.get("SMTP_USERNAME").unwrap_or_else(|| {
+        tracing::warn!("SMTP_USERNAME not set, using default");
+        "".to_string()
+    });
+    let smtp_key = secret_store.get("SMTP_KEY").unwrap_or_else(|| {
+        tracing::warn!("SMTP_KEY not set, using default");
+        "".to_string()
+    });
+    let host = secret_store.get("SMTP_HOST").unwrap_or_else(|| {
+        tracing::warn!("SMTP_HOST not set, using default");
+        "".to_string()
+    });
 
-    let from_email = std::env::var("MAIL_FROM").expect("MAIL_FROM not set");
+    let from_email = secret_store.get("MAIL_FROM").unwrap_or_else(|| {
+        tracing::warn!("MAIL_FROM not set, using default");
+        "".to_string()
+    });
 
     let email: Message = Message::builder()
         .from(from_email.parse().unwrap())

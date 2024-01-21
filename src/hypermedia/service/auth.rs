@@ -13,6 +13,7 @@ use axum::{
     response::{Html, Redirect},
 };
 use password_auth::generate_hash;
+use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
 
@@ -172,6 +173,7 @@ pub async fn signup_tab() -> Html<&'static str> {
 
 pub async fn signup(
     db_pool: &Pool<Postgres>,
+    secret_store: &SecretStore,
     signup_input: SignUpCredentials,
 ) -> impl IntoResponse {
     let hashed_pass = generate_hash(&signup_input.password);
@@ -198,6 +200,7 @@ pub async fn signup(
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
+            secret_store,
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
@@ -226,6 +229,7 @@ pub async fn signup(
 
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
+    secret_store: &SecretStore,
     username: String,
 ) -> impl IntoResponse {
     match sqlx::query_as!(
@@ -239,6 +243,7 @@ pub async fn resend_verification_email(
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
+            secret_store,
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {

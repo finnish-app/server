@@ -11,5 +11,3 @@ pyvenv.cfg
 
 # ignore pre-commit
 pre-commit-*
-
-.sqlx/

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT email, verification_code FROM users WHERE username = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "verification_code",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "4f7a030dbcf7d22ff5ef5a4fc46f2934010ddf6e6d7e8d9fb7f6f67fd0608242"
+}

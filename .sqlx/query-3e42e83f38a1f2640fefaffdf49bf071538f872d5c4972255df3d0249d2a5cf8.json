@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3e42e83f38a1f2640fefaffdf49bf071538f872d5c4972255df3d0249d2a5cf8"
+}
