@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET verified = true, verification_code = NULL, code_expires_at = NULL WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "496da391d9dfeeabf99d701fe2df19ae830f5913435f5132a558343fa2dfbbd3"
+}

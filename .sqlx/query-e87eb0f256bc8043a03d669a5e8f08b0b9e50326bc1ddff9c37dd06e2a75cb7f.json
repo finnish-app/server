@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses\n        WHERE user_id = $1\n        ORDER BY date ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "price",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 3,
+        "name": "expense_type: ExpenseType",
+        "type_info": {
+          "Custom": {
+            "name": "expense_type",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "is_essencial",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "date",
+        "type_info": "Date"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e87eb0f256bc8043a03d669a5e8f08b0b9e50326bc1ddff9c37dd06e2a75cb7f"
+}

@@ -903,6 +903,7 @@ dependencies = [
  "serde",
  "shuttle-axum",
  "shuttle-runtime",
+ "shuttle-secrets",
  "shuttle-shared-db",
  "sqlx",
  "strum 0.25.0",
@@ -2544,6 +2545,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "serde",
+ "zeroize",
+]
+
+[[package]]
 name = "security-framework"
 version = "2.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2800,6 +2811,18 @@ dependencies = [
  "tokio-stream",
  "tonic 0.10.2",
  "tower",
+]
+
+[[package]]
+name = "shuttle-secrets"
+version = "0.36.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b71c9fede35b016a177a7842546d93dd27232dbbb777eafb9bdb39890cc76fb5"
+dependencies = [
+ "async-trait",
+ "secrecy",
+ "serde",
+ "shuttle-service",
 ]
 
 [[package]]
