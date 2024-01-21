@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        ORDER BY date ASC",
+  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            expense_type = COALESCE($3 :: expense_type, expense_type),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE id = $6 AND user_id = $7\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essential, date\n        ",
   "describe": {
     "columns": [
       {
@@ -39,7 +39,7 @@
       },
       {
         "ordinal": 4,
-        "name": "is_essencial",
+        "name": "is_essential",
         "type_info": "Bool"
       },
       {
@@ -50,8 +50,26 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Float4",
+        {
+          "Custom": {
+            "name": "expense_type",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        },
+        "Bool",
         "Date",
-        "Date",
+        "Int4",
         "Int4"
       ]
     },
@@ -64,5 +82,5 @@
       false
     ]
   },
-  "hash": "f2349369e9845aa6dd37b8116af27bacb3141bc14b9452d684c07320af4de743"
+  "hash": "dc32a8da86a8de561a31bccfdca77977293ef244a83f1b5350e6583d92f3de5b"
 }

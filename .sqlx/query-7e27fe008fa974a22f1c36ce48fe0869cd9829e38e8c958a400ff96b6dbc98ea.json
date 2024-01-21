@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses\n        WHERE user_id = $1\n        ORDER BY date ASC",
+  "query": "\n        INSERT INTO expenses\n        (description, price, expense_type, is_essential, date, user_id)\n        VALUES ($1, $2, $3 :: expense_type, $4, $5, $6)\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essential, date\n        ",
   "describe": {
     "columns": [
       {
@@ -39,7 +39,7 @@
       },
       {
         "ordinal": 4,
-        "name": "is_essencial",
+        "name": "is_essential",
         "type_info": "Bool"
       },
       {
@@ -50,6 +50,25 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Float4",
+        {
+          "Custom": {
+            "name": "expense_type",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        },
+        "Bool",
+        "Date",
         "Int4"
       ]
     },
@@ -62,5 +81,5 @@
       false
     ]
   },
-  "hash": "e87eb0f256bc8043a03d669a5e8f08b0b9e50326bc1ddff9c37dd06e2a75cb7f"
+  "hash": "7e27fe008fa974a22f1c36ce48fe0869cd9829e38e8c958a400ff96b6dbc98ea"
 }
