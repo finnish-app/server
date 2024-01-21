@@ -67,7 +67,12 @@ async fn signup(
     State(shared_state): State<Arc<AppState>>,
     Form(signup_input): Form<SignUpCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup(&shared_state.pool, signup_input).await
+    crate::hypermedia::service::auth::signup(
+        &shared_state.pool,
+        &shared_state.secret_store,
+        signup_input,
+    )
+    .await
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -81,6 +86,7 @@ async fn resend_verification_email(
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::resend_verification_email(
         &shared_state.pool,
+        &shared_state.secret_store,
         resend_email_username.username,
     )
     .await

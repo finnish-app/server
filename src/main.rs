@@ -37,6 +37,7 @@ use axum_login::{
 use chrono::{Datelike, Month, Utc};
 use schema::{ExpenseType, ExpenseTypeIter};
 use shuttle_runtime::CustomError;
+use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
 use strum::IntoEnumIterator;
 use tower::{BoxError, ServiceBuilder};
@@ -45,10 +46,14 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 struct AppState {
     pool: PgPool,
+    secret_store: SecretStore,
 }
 
 #[shuttle_runtime::main]
-async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::ShuttleAxum {
+async fn axum(
+    #[shuttle_secrets::Secrets] secret_store: SecretStore,
+    #[shuttle_shared_db::Postgres] pool: PgPool,
+) -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -113,7 +118,7 @@ async fn axum(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
             .add(XXSSProtection::off()),
     );
 
-    let shared_state = Arc::new(AppState { pool });
+    let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
         .merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
