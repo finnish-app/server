@@ -70,10 +70,10 @@
                 <label for="description">Description
                     <input type="text" name="description" id="description" required>
                 </label>
-                <label for="expense_type">Category
-                    <select name="expense_type" id="expense_type">
-                        {% for expense_type in expense_types.clone() %}
-                            <option value="{{ expense_type }}">{{ expense_type }}</option>
+                <label for="expense_category">Category
+                    <select name="expense_category" id="expense_category">
+                        {% for expense_category in expense_categories.clone() %}
+                            <option value="{{ expense_category }}">{{ expense_category }}</option>
                         {% endfor %}
                     </select>
                 </label>

@@ -10,9 +10,9 @@ use sqlx::FromRow;
 use strum::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
-#[sqlx(type_name = "expense_type", rename_all = "lowercase")]
+#[sqlx(type_name = "expense_category", rename_all = "lowercase")]
 #[allow(clippy::missing_docs_in_private_items)]
-/// `ExpenseType` is an enum with the types of expenses.
+/// `ExpenseCategory` is an enum with the types of expenses.
 pub enum ExpenseCategory {
     Food,
     Transport,

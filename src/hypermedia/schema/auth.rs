@@ -15,8 +15,3 @@ pub struct ChangePasswordInput {
 pub struct MfaTokenForm {
     pub token: String,
 }
-
-#[derive(Deserialize, Debug)]
-pub struct UsernameQuery {
-    pub username: String,
-}

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            select distinct permissions.name\n            from users\n            join users_groups on users.id = users_groups.user_id\n            join groups_permissions on users_groups.group_id = groups_permissions.group_id\n            join permissions on groups_permissions.permission_id = permissions.id\n            where users.id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a3c0265a0bb04aeb5fdad90b34dbf3c042acbd477cde24a5ce5b9bf67dddf92c"
+}

@@ -44,7 +44,7 @@ use axum_helmet::{
     XXSSProtection,
 };
 use axum_login::{
-    login_required,
+    permission_required,
     tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
@@ -133,7 +133,17 @@ async fn axum(
         .merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
         .merge(hypermedia::router::auth::private_router())
-        .route_layer(login_required!(Backend, login_url = "/auth"))
+        .route_layer(permission_required!(
+            Backend,
+            login_url = "/auth",
+            "restricted:read",
+        ))
+        .merge(hypermedia::router::auth::mfa_router())
+        .route_layer(permission_required!(
+            Backend,
+            login_url = "/auth",
+            "protected:read"
+        ))
         .merge(hypermedia::router::auth::public_router())
         .merge(hypermedia::router::validation::router())
         .nest_service("/static", ServeDir::new("./css"))

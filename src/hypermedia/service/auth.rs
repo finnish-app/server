@@ -1,5 +1,5 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials, SignUpCredentials, User},
+    auth::{AuthSession, LoginCredentials, SignUpCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
@@ -17,31 +17,31 @@ use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
 
-async fn generate_otp(db_pool: &Pool<Postgres>, user: &User) -> impl IntoResponse {
+async fn generate_otp(db_pool: &Pool<Postgres>, user_id: i32) -> impl IntoResponse {
     let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
-    tracing::info!("Secret: {:?}", secret);
 
     let mut transaction = db_pool.begin().await.unwrap();
 
-    sqlx::query!(
+    let user_email = sqlx::query!(
         r#"
         UPDATE users SET otp_secret = $1 WHERE id = $2
+        RETURNING email
         "#,
-        secret.to_string(),
-        user.id
+        secret.to_encoded().to_string(),
+        user_id
     )
-    .execute(&mut *transaction)
+    .fetch_one(&mut *transaction)
     .await
     .unwrap();
 
     let totp = TOTP::new(
-        Algorithm::SHA256,
+        Algorithm::SHA1,
         6,
         1,
         30,
         secret.to_bytes().unwrap(),
         Some("Finnish".to_owned()),
-        user.email.clone(),
+        user_email.email,
     )
     .unwrap();
     let qr_code = totp.get_qr_base64().unwrap(); // qr_code is a base64 encoded image
@@ -49,7 +49,7 @@ async fn generate_otp(db_pool: &Pool<Postgres>, user: &User) -> impl IntoRespons
 
     transaction.commit().await.unwrap();
     return MfaTemplate {
-        mfa_url: format!("/auth/mfa?username={}", user.username),
+        mfa_url: "/auth/mfa".to_owned(),
         qr_code: format!("data:image/png;base64,{qr_code}"),
     };
 }
@@ -84,41 +84,43 @@ pub async fn signin(
         Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    if !user.otp_enabled {
-        let qr = generate_otp(db_pool, &user).await;
-        return qr.into_response();
-    }
-
     if auth_session.login(&user).await.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    (StatusCode::OK, [("HX-Redirect", "/")]).into_response()
+    if !user.otp_enabled {
+        let qr = generate_otp(db_pool, user.id).await;
+        return qr.into_response();
+    }
+
+    return (StatusCode::OK, [("HX-Redirect", "/")]).into_response();
 }
 
 pub async fn mfa_verify(
+    auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    username: String,
     mfa_token: String,
 ) -> impl IntoResponse {
+    let user_id = auth_session.user.expect("User not logged in").id;
     let record = sqlx::query!(
         r#"
         SELECT email, otp_secret
         FROM users
-        WHERE username = $1
+        WHERE id = $1
         "#,
-        username
+        user_id
     )
     .fetch_one(db_pool)
     .await
     .unwrap();
 
+    let secret = Secret::Encoded(record.otp_secret.unwrap());
     let totp = TOTP::new(
-        Algorithm::SHA256,
+        Algorithm::SHA1,
         6,
         1,
         30,
-        record.otp_secret.unwrap().as_bytes().to_vec(),
+        secret.to_bytes().unwrap(),
         Some("Finnish".to_owned()),
         record.email.clone(),
     )
@@ -140,17 +142,36 @@ pub async fn mfa_verify(
         }
     }
 
-    sqlx::query!(
+    let mut transaction = db_pool.begin().await.unwrap();
+    match sqlx::query!(
         r#"
-        UPDATE users SET otp_enabled = true, otp_verified = true WHERE username = $1
+        UPDATE users SET otp_enabled = true, otp_verified = true WHERE id = $1
         "#,
-        username
+        user_id
     )
-    .execute(db_pool)
+    .execute(&mut *transaction)
     .await
-    .unwrap();
-
-    (StatusCode::OK, [("HX-Redirect", "/auth")]).into_response()
+    {
+        Ok(_) => {
+            sqlx::query!(
+                r#"
+                INSERT INTO users_groups (user_id, group_id)
+                VALUES ($1, (SELECT id FROM groups WHERE name = 'user'))
+                "#,
+                user_id
+            )
+            .execute(&mut *transaction)
+            .await
+            .unwrap();
+            transaction.commit().await.unwrap();
+            return (StatusCode::OK, [("HX-Redirect", "/auth")]).into_response();
+        }
+        Err(e) => {
+            transaction.rollback().await.unwrap();
+            tracing::error!("Error updating db: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    }
 }
 
 pub fn signin_tab(print_message: u8) -> Html<String> {
@@ -282,23 +303,54 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
     .await
     {
         Ok(returned_value) => {
+            let mut transaction = db_pool.begin().await.unwrap();
             match sqlx::query!(
                 "UPDATE users SET verified = true, verification_code = NULL, code_expires_at = NULL WHERE id = $1",
                 returned_value.id
             )
-            .execute(db_pool)
+            .execute(&mut *transaction)
             .await
             {
-                Ok(_) => (
-                    StatusCode::OK,
-                    VerificationTemplate {
-                        message: "Email verified successfully. You can now sign in.".to_owned(),
-                        login_url: "/auth".to_owned(),
-                        ..Default::default()
-                    },
-                )
-                    .into_response(),
+                Ok(_) => {
+                    match sqlx::query!(
+                        r#"
+                        INSERT INTO users_groups (user_id, group_id)
+                        VALUES ($1, (SELECT id FROM groups WHERE name = 'pseudo-user'))
+                        "#,
+                        returned_value.id
+                    )
+                    .execute(&mut *transaction)
+                    .await
+                    {
+                        Ok(_) => {
+                            transaction.commit().await.unwrap();
+                            return (
+                                StatusCode::OK,
+                                VerificationTemplate {
+                                    message: "Email verified successfully. You can now sign in.".to_owned(),
+                                    login_url: "/auth".to_owned(),
+                                    ..Default::default()
+                                },
+                            )
+                                .into_response()
+                        },
+                        Err(e) => {
+                            transaction.rollback().await.unwrap();
+                            tracing::error!("Error updating db: {}", e);
+                            return (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                VerificationTemplate {
+                                    message: "Error verifying email. Please try again later.".to_owned(),
+                                    login_url: "/auth".to_owned(),
+                                    ..Default::default()
+                                },
+                            )
+                                .into_response()
+                        }
+                    }
+                },
                 Err(e) => {
+                    transaction.rollback().await.unwrap();
                     tracing::error!("Error updating db: {}", e);
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
@@ -321,7 +373,8 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                     should_print_resend_link: true,
                     resend_url: "/auth/resend-verification".to_owned(),
                 },
-            ).into_response()
+            )
+                .into_response()
         }
     }
 }

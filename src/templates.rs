@@ -14,7 +14,7 @@ pub struct ExpensesTemplate<'a> {
     /// The current month to be displayed in English in the dropdown.
     pub current_month: Months,
     /// The expense types to be displayed in the dropdown.
-    pub expense_types: ExpenseCategoryIter,
+    pub expense_categories: ExpenseCategoryIter,
     /// The months to be displayed in the dropdown.
     pub months: MonthsIter,
     /// The username of the logged in user.
@@ -35,7 +35,7 @@ impl Default for ExpensesTemplate<'_> {
                     .unwrap_or(Month::January),
                 )
             },
-            expense_types: ExpenseCategory::iter(),
+            expense_categories: ExpenseCategory::iter(),
             months: Months::iter(),
             username: "",
         };

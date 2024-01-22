@@ -1,6 +1,6 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm, UsernameQuery},
+    hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm},
     templates::{AuthTemplate, ChangePasswordTemplate},
     AppState,
 };
@@ -26,7 +26,10 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", get(resend_verification_email))
         .route("/auth/forgot-password", get(forgot_password))
-        .route("/auth/mfa", post(mfa_verify))
+}
+
+pub fn mfa_router() -> Router<Arc<AppState>> {
+    Router::new().route("/auth/mfa", post(mfa_verify))
 }
 
 pub fn private_router() -> Router<Arc<AppState>> {
@@ -61,16 +64,12 @@ async fn signin(
 }
 
 async fn mfa_verify(
+    auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
-    Query(username): Query<UsernameQuery>,
     Form(mfa_token): Form<MfaTokenForm>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::mfa_verify(
-        &shared_state.pool,
-        username.username,
-        mfa_token.token,
-    )
-    .await
+    crate::hypermedia::service::auth::mfa_verify(auth_session, &shared_state.pool, mfa_token.token)
+        .await
 }
 
 async fn signup_tab() -> impl IntoResponse {
