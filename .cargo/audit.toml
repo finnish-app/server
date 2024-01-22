@@ -1,0 +1,8 @@
+[advisories]
+ignore = [
+    "RUSTSEC-2023-0071", # rsa marvin attack
+]
+
+[output]
+quiet = false
+deny = ["warnings"]
