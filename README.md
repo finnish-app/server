@@ -1,28 +1,61 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main)
+<h1 align="center">
+    Finnish
+</h1>
 
-# Finnish
+<p align="center">
+    Your Financial Manager of the future
+</p>
 
-Finnish is your finn-man (financial manager), but in the 21st century.
-Its purpose is to use the Open Finance API's to securely and automatically retrieve expenses and savings information
-from your banking institution.
+<div align="center">
+    <a href="https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main">
+        <img src="https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=shield" />
+    </a>
+</div>
+
+## 🏞️ Overview
+
+Finnish is your finn-man (financial manager) for the 21st century.
+Gone are the days of using insecure, laggy and undeveloped pieces of software.
+
+The purpose of Finnish is to use the banking institution's public API's, as well as the brazilian open finance API
+to securely and automatically retrieve your expenses, savings and income information from all of your banks, centralizing
+your financial information and helping you better organize your life.
 
 This way, you're on top of your financials and can make better decisions of how to manage your hard-earned money.
 
 Sign up in: [finnish](https://finnish.shuttleapp.rs)
 
-## Software
+:warning: Finnish is still in beta and will have a 0.2 launch soon:
 
-:warning: Finnish is still in beta and will have a 0.2 beta launch soon, check in with Milestones.
+## 🦺 Security and 💻 Software
 
-Finnish is not a financial product, its a software one.
-It's baffling that there is no product for this in the wild (at least not that I know of, here in Brazil).
-Why should a user have to keep track of their various financial institutions, via their banking app, investment app, etc,
-when they could have a single secure hub to manage it all?
+Finnish is written in Rust, with Axum + HTMX,
+and uses `#![forbid(unsafe_code)]` to ensure everything is implemented in 100% safe Rust.
 
-The purpose of this solution is to, by using cutting-edge technology and prioritizing quality of software,
-deliver this missing piece.
+Current security status:
+- [x] Basic stuff: redacted password in inputs, completion from browser
+- [x] Password strengh validation and enforcement
+- [x] Password encryption with Argon2
+- [x] Expiring sessions
+- [x] Email confirmation
+- [x] Secure Multi-Factor Authentication (no SMS or email)
+- [ ] MFA sessions and management
+- [ ] Captcha and spam avoidance
 
-## Contributing
+Current financial features status:
+- [x] Basic expenses managing (manual insert, editing and removal)
+- [x] Plotting of expenses in period
+- [ ] Automatic retrieval of expenses from banking institutions
+- [ ] Basic income managing
+- [ ] Basic savings managing
+- [ ] Automatic retrieval of income and savings from banking instutions
+
+Disclosure:
+Finnish was born as a software product and will continue to prioritize the experience of using a good software,
+before the features of a financial product. This means that the Finnish Team will always put security and functional
+updates, before adding idk, a new plot in the expenses or income page.
+
+## ⚗️ Contributing
 
 ### Install pre-commit
 ```shell
