@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret, otp_auth_url\n            from users\n            where username = $1\n            ",
+  "query": "\n            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret\n            from users\n            where id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -56,17 +56,12 @@
       {
         "ordinal": 10,
         "name": "otp_secret",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 11,
-        "name": "otp_auth_url",
-        "type_info": "Text"
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Int4"
       ]
     },
     "nullable": [
@@ -80,9 +75,8 @@
       true,
       false,
       false,
-      true,
       true
     ]
   },
-  "hash": "b88fc50c56ce4d2ba340666c1a0569bdc3b2a6c9309b0c6389985b1cb16cd4a3"
+  "hash": "caaac5c9be60aea7750c7f06575a5add2d04275d7199a934d6b7b4ff5852a19d"
 }

@@ -142,7 +142,7 @@ async fn axum(
         .route_layer(permission_required!(
             Backend,
             login_url = "/auth",
-            "protected:read"
+            "protected:read",
         ))
         .merge(hypermedia::router::auth::public_router())
         .merge(hypermedia::router::validation::router())

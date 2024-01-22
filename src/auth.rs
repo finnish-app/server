@@ -21,7 +21,6 @@ pub struct User {
     pub otp_enabled: bool,
     pub otp_verified: bool,
     pub otp_secret: Option<String>,
-    otp_auth_url: Option<String>,
 }
 
 // Here we've implemented `Debug` manually to avoid accidentally logging the
@@ -40,7 +39,6 @@ impl std::fmt::Debug for User {
             .field("otp_enabled", &self.otp_enabled)
             .field("otp_verified", &self.otp_verified)
             .field("otp_secret", &"[redacted]")
-            .field("otp_auth_url", &"[redacted]")
             .finish()
     }
 }
@@ -97,7 +95,7 @@ impl AuthnBackend for Backend {
         let user: Option<Self::User> = sqlx::query_as!(
             Self::User,
             r#"
-            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret, otp_auth_url
+            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret
             from users
             where username = $1
             "#,
@@ -113,7 +111,7 @@ impl AuthnBackend for Backend {
         let user = sqlx::query_as!(
             User,
             r#"
-            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret, otp_auth_url
+            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret
             from users
             where id = $1
             "#,

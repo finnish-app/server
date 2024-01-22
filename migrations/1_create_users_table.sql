@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 
     otp_enabled boolean NOT NULL DEFAULT false,
     otp_verified boolean NOT NULL DEFAULT false,
-    otp_secret text,
-    otp_auth_url text
+    otp_secret varchar(32)
 );
 
 CREATE INDEX idx_verification_code ON users (verification_code);
