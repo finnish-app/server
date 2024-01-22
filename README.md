@@ -12,7 +12,7 @@
     </a>
 </div>
 
-## Overview
+## 🏞️ Overview
 
 Finnish is your finn-man (financial manager) for the 21st century.
 Gone are the days of using insecure, laggy and undeveloped pieces of software.
@@ -24,9 +24,10 @@ your financial information and helping you better organize your life.
 This way, you're on top of your financials and can make better decisions of how to manage your hard-earned money.
 
 Sign up in: [finnish](https://finnish.shuttleapp.rs)
+
 :warning: Finnish is still in beta and will have a 0.2 launch soon:
 
-## Security and Software
+## 🦺 Security and 💻 Software
 
 Finnish is written in Rust, with Axum + HTMX,
 and uses `#![forbid(unsafe_code)]` to ensure everything is implemented in 100% safe Rust.
@@ -54,7 +55,7 @@ Finnish was born as a software product and will continue to prioritize the exper
 before the features of a financial product. This means that the Finnish Team will always put security and functional
 updates, before adding idk, a new plot in the expenses or income page.
 
-## Contributing
+## ⚗️ Contributing
 
 ### Install pre-commit
 ```shell
