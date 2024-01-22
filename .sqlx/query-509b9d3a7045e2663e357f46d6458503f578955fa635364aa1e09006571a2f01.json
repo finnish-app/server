@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            expense_type = COALESCE($3 :: expense_type, expense_type),\n            is_essencial = COALESCE($4, is_essencial),\n            date = COALESCE($5, date)\n        WHERE id = $6 AND user_id = $7\n        RETURNING id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        ",
+  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            category = COALESCE($3 :: expense_category, category),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE id = $6 AND user_id = $7\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        ",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "expense_type: ExpenseType",
+        "name": "category: ExpenseCategory",
         "type_info": {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -39,7 +39,7 @@
       },
       {
         "ordinal": 4,
-        "name": "is_essencial",
+        "name": "is_essential",
         "type_info": "Bool"
       },
       {
@@ -54,7 +54,7 @@
         "Float4",
         {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -82,5 +82,5 @@
       false
     ]
   },
-  "hash": "20394f703d69eb5948fde0a581a10339150e05e89e472f8db95be457e2d9b5d5"
+  "hash": "509b9d3a7045e2663e357f46d6458503f578955fa635364aa1e09006571a2f01"
 }

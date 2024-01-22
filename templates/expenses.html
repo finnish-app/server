@@ -38,7 +38,7 @@
       <th>Description</th>
       <th>Price</th>
       <th>Category</th>
-      <th>Essencial</th>
+      <th>Essential</th>
       <th></th>
     </tr>
     </thead>
@@ -70,15 +70,15 @@
                 <label for="description">Description
                     <input type="text" name="description" id="description" required>
                 </label>
-                <label for="expense_type">Category
-                    <select name="expense_type" id="expense_type">
-                        {% for expense_type in expense_types.clone() %}
-                            <option value="{{ expense_type }}">{{ expense_type }}</option>
+                <label for="category">Category
+                    <select name="category" id="category">
+                        {% for category in expense_categories.clone() %}
+                            <option value="{{ category }}">{{ category }}</option>
                         {% endfor %}
                     </select>
                 </label>
-                <label for="essencial">Is Essencial?
-                    <input type='checkbox' name='is_essencial' role='switch' value='true'>
+                <label for="essential">Is Essential?
+                    <input type='checkbox' name='is_essential' role='switch' value='true'>
                 </label>
                 <div id="return-message"></div>
             </form>

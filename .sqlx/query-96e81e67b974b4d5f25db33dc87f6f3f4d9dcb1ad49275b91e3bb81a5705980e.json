@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select id, username, email, password, created_at, verified, verification_code, code_expires_at from users where username = $1",
+  "query": "\n            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret\n            from users\n            where username = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,21 @@
         "ordinal": 7,
         "name": "code_expires_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "otp_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "otp_verified",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "otp_secret",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -57,8 +72,11 @@
       false,
       false,
       true,
+      true,
+      false,
+      false,
       true
     ]
   },
-  "hash": "f8612ee210f39d0623d7752f805c636e1193e7949798e5724c876beca2a0762d"
+  "hash": "96e81e67b974b4d5f25db33dc87f6f3f4d9dcb1ad49275b91e3bb81a5705980e"
 }

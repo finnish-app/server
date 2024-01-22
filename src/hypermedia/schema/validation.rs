@@ -37,5 +37,5 @@ fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
 pub struct PasswordsInput {
     pub password: String,
     #[validate(must_match = "password")]
-    confirm_password: String,
+    pub confirm_password: String,
 }

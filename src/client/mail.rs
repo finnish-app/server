@@ -11,20 +11,20 @@ pub fn send_sign_up_confirmation_mail(
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
     let smtp_username = secret_store.get("SMTP_USERNAME").unwrap_or_else(|| {
         tracing::warn!("SMTP_USERNAME not set, using default");
-        "".to_string()
+        String::new()
     });
     let smtp_key = secret_store.get("SMTP_KEY").unwrap_or_else(|| {
         tracing::warn!("SMTP_KEY not set, using default");
-        "".to_string()
+        String::new()
     });
     let host = secret_store.get("SMTP_HOST").unwrap_or_else(|| {
         tracing::warn!("SMTP_HOST not set, using default");
-        "".to_string()
+        String::new()
     });
 
     let from_email = secret_store.get("MAIL_FROM").unwrap_or_else(|| {
         tracing::warn!("MAIL_FROM not set, using default");
-        "".to_string()
+        String::new()
     });
 
     let email: Message = Message::builder()
@@ -37,10 +37,9 @@ pub fn send_sign_up_confirmation_mail(
                 <body>
                     <h1>Hi there!</h1>
                     <p>Thanks for signing up for finnish!</p>
-                    <p>Click <a href=\"https://finnish.shuttleapp.rs/auth/verify-email/{}\">here</a> to verify your email.</p>
+                    <p>Click <a href=\"https://finnish.shuttleapp.rs/auth/verify-email/{verification_code}\">here</a> to verify your email.</p>
                 </body>
             </html>",
-            verification_code
         )).unwrap();
 
     let creds = Credentials::new(smtp_username, smtp_key);

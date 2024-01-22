@@ -1,0 +1,24 @@
+<h3>Setup your 2-Factor Authentication</h3>
+
+<article>
+<strong>Scan the QR code below with your authenticator app, like Google Authenticator or Authy.</strong>
+<p>After setting up your authenticator app, enter the code below.</p>
+
+<div class="grid">
+    <img src="{{ qr_code }}" alt="QR Code" />
+
+    <form hx-post="{{ mfa_url }}" hx-trigger="submit, changed from:#token">
+        <input
+            type="text"
+            name="token"
+            id="token"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            autocomplete="one-time-code"
+            required
+        />
+        <button type="submit">Submit</button>
+    </form>
+</div>
+
+</article>

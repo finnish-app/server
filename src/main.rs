@@ -1,8 +1,22 @@
 #![warn(
     clippy::all,
+//    clippy::restriction,
+    clippy::pedantic,
+    clippy::nursery,
+//    clippy::cargo,
     nonstandard_style,
     future_incompatible,
     missing_debug_implementations
+)]
+#![allow(
+    clippy::single_call_fn,
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::needless_return,
+    clippy::module_name_repetitions,
+    clippy::multiple_unsafe_ops_per_block,
+    clippy::question_mark_used,
+    clippy::min_ident_chars
 )]
 #![forbid(unsafe_code)]
 
@@ -12,16 +26,16 @@ mod constant;
 mod data;
 mod data_structs;
 mod hypermedia;
+/// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;
+/// Module containing the askama html templates to be rendered.
+mod templates;
+/// Module containing time and crypto utility functions.
 mod util;
 
-use crate::{
-    auth::Backend,
-    data_structs::{Months, MonthsIter},
-};
+use crate::{auth::Backend, data_structs::Months};
 use std::{sync::Arc, time::Duration};
 
-use askama_axum::Template;
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use axum_helmet::{
     ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
@@ -30,36 +44,36 @@ use axum_helmet::{
     XXSSProtection,
 };
 use axum_login::{
-    login_required,
+    permission_required,
     tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use chrono::{Datelike, Month, Utc};
-use schema::{ExpenseType, ExpenseTypeIter};
 use shuttle_runtime::CustomError;
 use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
-use strum::IntoEnumIterator;
-use tower::{BoxError, ServiceBuilder};
+use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+/// The application state to be shared in axum.
 struct AppState {
+    /// The postgres connection pool.
     pool: PgPool,
+    /// The shuttle secret store.
     secret_store: SecretStore,
 }
 
 #[shuttle_runtime::main]
+/// The main function of the application.
 async fn axum(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
     #[shuttle_shared_db::Postgres] pool: PgPool,
 ) -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "finnish=debug,tower_http=debug,axum::rejection=trace".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            return "finnish=debug,tower_http=debug,axum::rejection=trace".into();
+        }))
+        .with(fmt::layer())
         .init();
 
     sqlx::migrate!()
@@ -67,10 +81,6 @@ async fn axum(
         .await
         .map_err(CustomError::new)?;
 
-    // Session layer.
-    //
-    // This uses `tower-sessions` to establish a layer that will provide the session
-    // as a request extension.
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
 
@@ -107,7 +117,7 @@ async fn axum(
             .add(ReferrerPolicy::no_referrer())
             .add(
                 StrictTransportSecurity::new()
-                    .max_age(15552000)
+                    .max_age(15_552_000)
                     .include_sub_domains(),
             )
             .add(XContentTypeOptions::nosniff())
@@ -123,7 +133,17 @@ async fn axum(
         .merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
         .merge(hypermedia::router::auth::private_router())
-        .route_layer(login_required!(Backend, login_url = "/auth"))
+        .route_layer(permission_required!(
+            Backend,
+            login_url = "/auth",
+            "restricted:read",
+        ))
+        .merge(hypermedia::router::auth::mfa_router())
+        .route_layer(permission_required!(
+            Backend,
+            login_url = "/auth",
+            "protected:read",
+        ))
         .merge(hypermedia::router::auth::public_router())
         .merge(hypermedia::router::validation::router())
         .nest_service("/static", ServeDir::new("./css"))
@@ -131,15 +151,16 @@ async fn axum(
         .nest_service("/img", ServeDir::new("./img"))
         .layer(
             ServiceBuilder::new()
-                .layer(HandleErrorLayer::new(|error: BoxError| async move {
-                    if error.is::<tower::timeout::error::Elapsed>() {
-                        Ok(StatusCode::REQUEST_TIMEOUT)
-                    } else {
-                        Err((
+                .layer(HandleErrorLayer::new(|error: BoxError| {
+                    return async move {
+                        if error.is::<Elapsed>() {
+                            return Ok(StatusCode::REQUEST_TIMEOUT);
+                        }
+                        return Err((
                             StatusCode::INTERNAL_SERVER_ERROR,
                             format!("Unhandled internal error: {error}"),
-                        ))
-                    }
+                        ));
+                    };
                 }))
                 .timeout(Duration::from_secs(10))
                 .layer(TraceLayer::new_for_http())
@@ -151,49 +172,4 @@ async fn axum(
 
     tracing::debug!("Server started");
     Ok(router.into())
-}
-
-#[derive(Template)]
-#[template(path = "expenses.html")]
-struct ExpensesTemplate<'a> {
-    current_month: Months,
-    expense_types: ExpenseTypeIter,
-    months: MonthsIter,
-    username: &'a str,
-}
-
-#[derive(Template, Default)]
-#[template(path = "change_password.html")]
-struct ChangePasswordTemplate {
-    change_password_url: String,
-    passwords_match_url: String,
-    password_strength_url: String,
-}
-
-impl Default for ExpensesTemplate<'_> {
-    fn default() -> Self {
-        Self {
-            current_month: Months::from_chrono_month(
-                Month::try_from(u8::try_from(Utc::now().month()).unwrap()).unwrap(),
-            ),
-            expense_types: ExpenseType::iter(),
-            months: Months::iter(),
-            username: "user",
-        }
-    }
-}
-
-#[derive(Template, Default)]
-#[template(path = "auth.html")]
-struct AuthTemplate {
-    should_print_message_in_signin: u8,
-}
-
-#[derive(Template, Default)]
-#[template(path = "verify.html")]
-struct VerificationTemplate {
-    login_url: String,
-    message: String,
-    resend_url: String,
-    should_print_resend_link: bool,
 }

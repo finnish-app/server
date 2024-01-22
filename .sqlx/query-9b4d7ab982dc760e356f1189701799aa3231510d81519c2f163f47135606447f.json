@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, expense_type as \"expense_type: ExpenseType\", is_essencial, date\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        ORDER BY date ASC",
+  "query": "\n        INSERT INTO expenses (description, price, category, is_essential, date, user_id)\n        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6)\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        ",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "expense_type: ExpenseType",
+        "name": "category: ExpenseCategory",
         "type_info": {
           "Custom": {
-            "name": "expense_type",
+            "name": "expense_category",
             "kind": {
               "Enum": [
                 "food",
@@ -39,7 +39,7 @@
       },
       {
         "ordinal": 4,
-        "name": "is_essencial",
+        "name": "is_essential",
         "type_info": "Bool"
       },
       {
@@ -50,7 +50,24 @@
     ],
     "parameters": {
       "Left": [
-        "Date",
+        "Varchar",
+        "Float4",
+        {
+          "Custom": {
+            "name": "expense_category",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        },
+        "Bool",
         "Date",
         "Int4"
       ]
@@ -64,5 +81,5 @@
       false
     ]
   },
-  "hash": "f2349369e9845aa6dd37b8116af27bacb3141bc14b9452d684c07320af4de743"
+  "hash": "9b4d7ab982dc760e356f1189701799aa3231510d81519c2f163f47135606447f"
 }

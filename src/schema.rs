@@ -1,14 +1,19 @@
 use crate::Months;
-use std::{fmt::Display, str::FromStr};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
 
-#[derive(Debug, PartialEq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
-#[sqlx(type_name = "expense_type", rename_all = "lowercase")]
-pub enum ExpenseType {
+#[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
+#[sqlx(type_name = "expense_category", rename_all = "lowercase")]
+#[allow(clippy::missing_docs_in_private_items)]
+/// `ExpenseCategory` is an enum with the types of expenses.
+pub enum ExpenseCategory {
     Food,
     Transport,
     Health,
@@ -18,101 +23,122 @@ pub enum ExpenseType {
     Other,
 }
 
-impl FromStr for ExpenseType {
+impl FromStr for ExpenseCategory {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Food" => Ok(ExpenseType::Food),
-            "Transport" => Ok(ExpenseType::Transport),
-            "Health" => Ok(ExpenseType::Health),
-            "Education" => Ok(ExpenseType::Education),
-            "Entertainment" => Ok(ExpenseType::Entertainment),
-            "Other" => Ok(ExpenseType::Other),
-            _ => Err(format!("{} is not a valid expense type", s)),
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        match str {
+            "Food" => return Ok(Self::Food),
+            "Transport" => return Ok(Self::Transport),
+            "Health" => return Ok(Self::Health),
+            "Education" => return Ok(Self::Education),
+            "Entertainment" => return Ok(Self::Entertainment),
+            "Other" => return Ok(Self::Other),
+            _ => return Err(format!("{str} is not a valid expense type")),
         }
     }
 }
 
-impl Display for ExpenseType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExpenseType::Food => write!(f, "Food"),
-            ExpenseType::Transport => write!(f, "Transport"),
-            ExpenseType::Health => write!(f, "Health"),
-            ExpenseType::Education => write!(f, "Education"),
-            ExpenseType::Entertainment => write!(f, "Entertainment"),
-            ExpenseType::Other => write!(f, "Other"),
+impl Display for ExpenseCategory {
+    fn fmt(&self, fmtr: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Self::Food => return write!(fmtr, "Food"),
+            Self::Transport => return write!(fmtr, "Transport"),
+            Self::Health => return write!(fmtr, "Health"),
+            Self::Education => return write!(fmtr, "Education"),
+            Self::Entertainment => return write!(fmtr, "Entertainment"),
+            Self::Other => return write!(fmtr, "Other"),
         }
     }
 }
 
 #[derive(FromRow, Serialize, Debug, Default)]
+#[allow(clippy::missing_docs_in_private_items)]
+/// Expense is a struct with the fields of an expense.
 pub struct Expense {
     pub id: i32,
     pub description: String,
     pub price: f32,
-    pub expense_type: ExpenseType,
-    pub is_essencial: bool,
+    pub category: ExpenseCategory,
+    pub is_essential: bool,
     pub date: NaiveDate,
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(clippy::missing_docs_in_private_items)]
+/// `GetExpense` is a struct with the fields of an expense that can be retrieved.
+/// Currently, only the month is supported and it is optional.
+/// If no month is passed, all expenses are retrieved.
 pub struct GetExpense {
     #[serde(deserialize_with = "empty_string_to_none")]
     pub month: Option<Months>,
 }
 
 #[derive(Deserialize, Debug, Default)]
+#[allow(clippy::missing_docs_in_private_items)]
+/// `UpdateExpense` is a struct with the fields of an expense that can be updated.
+/// All fields are optional.
 pub struct UpdateExpense {
     pub description: Option<String>,
     #[serde(deserialize_with = "de_string_to_option_f32")]
     pub price: Option<f32>,
-    pub expense_type: Option<ExpenseType>,
+    pub category: Option<ExpenseCategory>,
     #[serde(
-        default = "default_is_essencial_to_false",
+        default = "default_is_essential_to_false",
         deserialize_with = "de_string_to_bool"
     )]
-    pub is_essencial: Option<bool>,
+    pub is_essential: Option<bool>,
     pub date: Option<NaiveDate>,
 }
 
-fn default_is_essencial_to_false() -> Option<bool> {
-    Some(false)
+/// Function to set the default value for `is_essential` in `UpdateExpense` to be Some(false).
+#[allow(clippy::unnecessary_wraps)]
+const fn default_is_essential_to_false() -> Option<bool> {
+    return Some(false);
 }
 
+/// Deserialization serde function that parses a bool from a string.
+/// If the string is empty, returns None.
+/// If the string is 'true', returns Some(true).
+/// If the string is 'false', returns Some(false).
+/// If the string is not 'true' or 'false', returns an error.
 fn de_string_to_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let s: String = serde::Deserialize::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(s.parse::<bool>().unwrap()))
+    let str: String = Deserialize::deserialize(deserializer)?;
+    if str.is_empty() {
+        return Ok(None);
     }
+    return Ok(Some(str.parse::<bool>().map_err(de::Error::custom)?));
 }
 
+/// Deserialization serde function that parses a Months from a string.
+/// If the string is empty, returns None.
+/// If the string is a valid month, returns Some(Months).
+/// If the string is not a valid month, returns an error.
 fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let s: String = serde::Deserialize::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(Months::from_str(&s).unwrap()))
+    let str: String = Deserialize::deserialize(deserializer)?;
+    if str.is_empty() {
+        return Ok(None);
     }
+    return Ok(Some(Months::from_str(&str).map_err(de::Error::custom)?));
 }
 
+/// Deserialization serde function that parses a f32 from a string.
+/// If the string is empty, returns None.
+/// If the string is a valid f32, returns Some(f32).
+/// If the string is not a valid f32, returns an error.
 fn de_string_to_option_f32<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let s: String = serde::Deserialize::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(s.parse::<f32>().unwrap()))
+    let str: String = Deserialize::deserialize(deserializer)?;
+    if str.is_empty() {
+        return Ok(None);
     }
+    return Ok(Some(str.parse::<f32>().map_err(de::Error::custom)?));
 }

@@ -1,14 +1,15 @@
 use crate::{
     auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    hypermedia::schema::auth::ChangePasswordInput,
-    AppState, AuthTemplate, ChangePasswordTemplate,
+    hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm},
+    templates::{AuthTemplate, ChangePasswordTemplate},
+    AppState,
 };
 use std::sync::Arc;
 
 use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, Query, State},
-    routing::get,
+    routing::{get, post},
     Form, Router,
 };
 
@@ -27,6 +28,10 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/forgot-password", get(forgot_password))
 }
 
+pub fn mfa_router() -> Router<Arc<AppState>> {
+    Router::new().route("/auth/mfa", post(mfa_verify))
+}
+
 pub fn private_router() -> Router<Arc<AppState>> {
     Router::new().route("/auth/logout", get(logout)).route(
         "/auth/change-password",
@@ -35,32 +40,40 @@ pub fn private_router() -> Router<Arc<AppState>> {
 }
 
 async fn auth_index() -> impl IntoResponse {
-    AuthTemplate {
-        ..Default::default()
-    }
+    AuthTemplate::default()
 }
 
 async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(0).await
+    crate::hypermedia::service::auth::signin_tab(0)
 }
 
 async fn signin_tab_after_signup() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(1).await
+    crate::hypermedia::service::auth::signin_tab(1)
 }
 
 async fn signin_tab_after_change_password() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(2).await
+    crate::hypermedia::service::auth::signin_tab(2)
 }
 
 async fn signin(
     auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(signin_input, auth_session).await
+    crate::hypermedia::service::auth::signin(auth_session, &shared_state.pool, signin_input).await
+}
+
+async fn mfa_verify(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+    Form(mfa_token): Form<MfaTokenForm>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::mfa_verify(auth_session, &shared_state.pool, mfa_token.token)
+        .await
 }
 
 async fn signup_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup_tab().await
+    crate::hypermedia::service::auth::signup_tab()
 }
 
 async fn signup(
@@ -110,9 +123,9 @@ async fn logout(auth_session: AuthSession) -> impl IntoResponse {
 
 async fn change_password_screen() -> impl IntoResponse {
     ChangePasswordTemplate {
-        change_password_url: "/auth/change-password".to_string(),
-        passwords_match_url: "/validate/new-passwords".to_string(),
-        password_strength_url: "/validate/new-password-strength".to_string(),
+        change_password: "/auth/change-password".to_owned(),
+        passwords_match: "/validate/new-passwords".to_owned(),
+        password_strength: "/validate/new-password-strength".to_owned(),
     }
 }
 
