@@ -1,24 +1,50 @@
+{% extends "base_logged_in.html" %}
+
+{% block title %}Authentication{% endblock %}
+
+{% block content %}
+
+<section class="section" id="mfa">
 <h3>Setup your 2-Factor Authentication</h3>
 
 <article>
-<strong>Scan the QR code below with your authenticator app, like Google Authenticator or Authy.</strong>
-<p>After setting up your authenticator app, enter the code below.</p>
+<h5>Scan the QR code below with your authenticator app, like Google Authenticator or Authy.</h5>
 
 <div class="grid">
     <img src="{{ qr_code }}" alt="QR Code" />
 
-    <form hx-post="{{ mfa_url }}" hx-trigger="submit, changed from:#token">
-        <input
-            type="text"
-            name="token"
-            id="token"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            autocomplete="one-time-code"
-            required
-        />
-        <button type="submit">Submit</button>
-    </form>
+    <div id="mfa-form">
+        <p>After setting up your authenticator app, enter the code below.</p>
+        <form hx-post="{{ mfa_url }}" hx-trigger="submit, changed from:#token">
+            <input
+                type="text"
+                name="token"
+                id="token"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="one-time-code"
+                required
+            />
+            <button type="submit">Submit</button>
+        </form>
+    </div>
 </div>
 
+<footer>
+    <p>Using mobile or having trouble scanning the QR code?</p>
+    <a href="{{ otp_auth_url }}">Click here to open your authenticator app directly.</a>
+</footer>
+
 </article>
+
+<footer>
+    <p>Don't have an authenticator app? We recommend Authy:</p>
+    <a href="https://play.google.com/store/apps/details?id=com.authy.authy" target="_blank" rel="noopener noreferrer">
+        <img id="google_play_store_image" src="/img/google-play.svg" alt="Get it on Google Play image"/>
+    </a>
+    <a href="https://itunes.apple.com/us/app/authy/id494168017" target="_blank" rel="noopener noreferrer">
+        <img id="app_store_image" src="/img/app-store.svg" alt="Download on the App Store image"/>
+    </a>
+</footer>
+
+{% endblock %}

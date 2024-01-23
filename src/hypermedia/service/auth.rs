@@ -17,46 +17,8 @@ use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
 
-async fn generate_otp(db_pool: &Pool<Postgres>, user_id: i32) -> impl IntoResponse {
-    let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
-
-    let mut transaction = db_pool.begin().await.unwrap();
-
-    let user_email = sqlx::query!(
-        r#"
-        UPDATE users SET otp_secret = $1 WHERE id = $2
-        RETURNING email
-        "#,
-        secret.to_encoded().to_string(),
-        user_id
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .unwrap();
-
-    let totp = TOTP::new(
-        Algorithm::SHA1,
-        6,
-        1,
-        30,
-        secret.to_bytes().unwrap(),
-        Some("Finnish".to_owned()),
-        user_email.email,
-    )
-    .unwrap();
-    let qr_code = totp.get_qr_base64().unwrap(); // qr_code is a base64 encoded image
-                                                 // that can be rendered embedded in an <img> tag
-
-    transaction.commit().await.unwrap();
-    return MfaTemplate {
-        mfa_url: "/auth/mfa".to_owned(),
-        qr_code: format!("data:image/png;base64,{qr_code}"),
-    };
-}
-
 pub async fn signin(
     mut auth_session: AuthSession,
-    db_pool: &Pool<Postgres>,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
     let user = match auth_session.authenticate(signin_input).await {
@@ -88,12 +50,59 @@ pub async fn signin(
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    if !user.otp_enabled {
-        let qr = generate_otp(db_pool, user.id).await;
-        return qr.into_response();
+    if !user.otp_verified {
+        return (StatusCode::OK, [("HX-Redirect", "/auth/mfa")]).into_response();
+    }
+    return (StatusCode::OK, [("HX-Redirect", "/")]).into_response();
+}
+
+pub async fn mfa_qr(auth_session: AuthSession, db_pool: &Pool<Postgres>) -> impl IntoResponse {
+    let Some(user) = auth_session.user else {
+        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth")]).into_response();
+    };
+    let user_id = user.id;
+    if user.otp_enabled {
+        // TODO
+        todo!("Create logic for changing MFA method");
     }
 
-    return (StatusCode::OK, [("HX-Redirect", "/")]).into_response();
+    let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
+    let mut transaction = db_pool.begin().await.unwrap();
+
+    let user_email = sqlx::query!(
+        r#"
+        UPDATE users SET otp_secret = $1 WHERE id = $2
+        RETURNING email
+        "#,
+        secret.to_encoded().to_string(),
+        user_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .unwrap();
+
+    let totp = TOTP::new(
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
+        secret.to_bytes().unwrap(),
+        Some("Finnish".to_owned()),
+        user_email.email,
+    )
+    .unwrap();
+    let qr_code = totp.get_qr_base64().unwrap(); // qr_code is a base64 encoded image
+                                                 // that can be rendered embedded in an <img> tag
+    let otp_url = totp.get_url(); // otp_url is a otpauth:// url
+                                  // that can be rendered as a QR code
+
+    transaction.commit().await.unwrap();
+    return MfaTemplate {
+        mfa_url: "/auth/mfa".to_owned(),
+        qr_code: format!("data:image/png;base64,{qr_code}"),
+        otp_auth_url: otp_url,
+    }
+    .into_response();
 }
 
 pub async fn mfa_verify(

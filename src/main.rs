@@ -132,13 +132,12 @@ async fn axum(
     let router = Router::new()
         .merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
-        .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
-            login_url = "/auth",
+            login_url = "/auth/mfa",
             "restricted:read",
         ))
-        .merge(hypermedia::router::auth::mfa_router())
+        .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
             login_url = "/auth",
