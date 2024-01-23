@@ -56,12 +56,12 @@ macro_rules! EDITABLE_TABLE_ROW {
 
 macro_rules! SIGN_IN_TAB {
     () => {
-        "<article class=\"grid\">
+        "<article id=\"signin-article\" class=\"grid\" hx-ext=\"response-targets\">
             <div>
                 <nav class=\"tab-list\" role=\"tablist\">
                   <ul>
                     <li>Sign In</li>
-                    <li><a hx-get=\"/auth/signup\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign Up</a></li>
+                    <li><a hx-get=\"/auth/signup\" hx-target=\"#signin-article\" hx-swap=\"outerHTML\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign Up</a></li>
                   </ul>
                 </nav>
 
@@ -71,31 +71,31 @@ macro_rules! SIGN_IN_TAB {
                 </hgroup>
             </div>
 
-            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\" hx-ext=\"response-targets\">
-                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-swap=\"innerHTML\" hx-target=\"#signin-form\" hx-target-error=\"#message\">
-                <input
-                  type=\"text\"
-                  name=\"username\"
-                  placeholder=\"Username\"
-                  aria-label=\"Login\"
-                  autocomplete=\"nickname\"
-                  required
-                />
-                <input
-                  type=\"password\"
-                  name=\"password\"
-                  placeholder=\"Password\"
-                  aria-label=\"Password\"
-                  autocomplete=\"current-password\"
-                  required
-                />
-                <button type=\"submit\" class=\"contrast\">Login</button>
-                <fieldset>
-                    <label for=\"remember\">
-                        <input type=\"checkbox\" role=\"switch\" id=\"remember\" name=\"remember\" />
-                        Remember me
-                    </label>
-                </fieldset>
+            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
+                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-target=\"#signin-article\" hx-target-error=\"#message\">
+                    <input
+                      type=\"text\"
+                      name=\"username\"
+                      placeholder=\"Username\"
+                      aria-label=\"Login\"
+                      autocomplete=\"nickname\"
+                      required
+                    />
+                    <input
+                      type=\"password\"
+                      name=\"password\"
+                      placeholder=\"Password\"
+                      aria-label=\"Password\"
+                      autocomplete=\"current-password\"
+                      required
+                    />
+                    <button type=\"submit\" class=\"contrast\">Login</button>
+                    <fieldset>
+                        <label for=\"remember\">
+                            <input type=\"checkbox\" role=\"switch\" id=\"remember\" name=\"remember\" />
+                            Remember me
+                        </label>
+                    </fieldset>
                 </form>
                 <div id=\"message\">{}</div>
             </div>
@@ -105,11 +105,11 @@ macro_rules! SIGN_IN_TAB {
 
 macro_rules! SIGN_UP_TAB {
     () => {
-        "<article class=\"grid\">
+        "<article id=\"signin-article\" class=\"grid\" hx-ext=\"response-targets\">
             <div>
                 <nav class=\"tab-list\" role=\"tablist\">
                   <ul>
-                    <li><a hx-get=\"/auth/signin\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign In</a></li>
+                    <li><a hx-get=\"/auth/signin\" hx-target=\"#signin-article\" hx-swap=\"outerHTML\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign In</a></li>
                     <li>Sign Up</li>
                   </ul>
                 </nav>
@@ -121,80 +121,80 @@ macro_rules! SIGN_UP_TAB {
             </div>
 
             <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signup-form\" hx-post=\"/auth/signup\" hx-swap=\"outerHTML\" hx-target=\"#signup-form\">
-                <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                    <div class=\"grid\">
-                    <label for=\"username\">Username</label>
-                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                <form id=\"signup-form\" hx-post=\"/auth/signup\" hx-swap=\"outerHTML\" hx-target=\"body\">
+                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                        <div class=\"grid\">
+                        <label for=\"username\">Username</label>
+                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                        </div>
+                        <input
+                          type=\"text\"
+                          name=\"username\"
+                          placeholder=\"Username\"
+                          aria-label=\"Login\"
+                          autocomplete=\"nickname\"
+                          pattern=\"[0-9a-z]{3,20}\"
+                          title=\"3 to 20 characters, lowercase letters or numbers only\"
+                          hx-post=\"/validate/username\"
+                          hx-sync=\"closest form:abort\"
+                          hx-indicator=\"#ind\"
+                          required
+                        />
                     </div>
-                    <input
-                      type=\"text\"
-                      name=\"username\"
-                      placeholder=\"Username\"
-                      aria-label=\"Login\"
-                      autocomplete=\"nickname\"
-                      pattern=\"[0-9a-z]{3,20}\"
-                      title=\"3 to 20 characters, lowercase letters or numbers only\"
-                      hx-post=\"/validate/username\"
-                      hx-sync=\"closest form:abort\"
-                      hx-indicator=\"#ind\"
-                      required
-                    />
-                </div>
-                <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                    <div class=\"grid\">
-                    <label for=\"email\">Email</label>
-                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                        <div class=\"grid\">
+                        <label for=\"email\">Email</label>
+                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                        </div>
+                        <input
+                          type=\"email\"
+                          name=\"email\"
+                          placeholder=\"email@server.com\"
+                          aria-label=\"Email\"
+                          autocomplete=\"email\"
+                          hx-post=\"/validate/email\"
+                          hx-sync=\"closest form:abort\"
+                          hx-indicator=\"#ind\"
+                          required
+                        />
                     </div>
-                    <input
-                      type=\"email\"
-                      name=\"email\"
-                      placeholder=\"email@server.com\"
-                      aria-label=\"Email\"
-                      autocomplete=\"email\"
-                      hx-post=\"/validate/email\"
-                      hx-sync=\"closest form:abort\"
-                      hx-indicator=\"#ind\"
-                      required
-                    />
-                </div>
-                <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                    <div class=\"grid\">
-                    <label for=\"password\">Password</label>
-                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                        <div class=\"grid\">
+                        <label for=\"password\">Password</label>
+                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                        </div>
+                        <input
+                            type=\"password\"
+                            name=\"password\"
+                            placeholder=\"Password\"
+                            aria-label=\"Password\"
+                            autocomplete=\"new-password\"
+                            id=\"password\"
+                            hx-post=\"/validate/password-strength\"
+                            hx-sync=\"closest form:abort\"
+                            hx-indicator=\"#ind\"
+                            required
+                        />
                     </div>
-                    <input
-                        type=\"password\"
-                        name=\"password\"
-                        placeholder=\"Password\"
-                        aria-label=\"Password\"
-                        autocomplete=\"new-password\"
-                        id=\"password\"
-                        hx-post=\"/validate/password-strength\"
-                        hx-sync=\"closest form:abort\"
-                        hx-indicator=\"#ind\"
-                        required
-                    />
-                </div>
-                <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                    <div class=\"grid\">
-                    <label for=\"confirm_password\">Confirm Password</label>
-                    <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
+                        <div class=\"grid\">
+                        <label for=\"confirm_password\">Confirm Password</label>
+                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+                        </div>
+                        <input
+                          type=\"password\"
+                          name=\"confirm_password\"
+                          placeholder=\"Password\"
+                          aria-label=\"Password\"
+                          id=\"confirm_password\"
+                          hx-post=\"/validate/passwords\"
+                          hx-sync=\"closest form:abort\"
+                          hx-indicator=\"#ind\"
+                          hx-include=\"#password\"
+                          required
+                        />
                     </div>
-                    <input
-                      type=\"password\"
-                      name=\"confirm_password\"
-                      placeholder=\"Password\"
-                      aria-label=\"Password\"
-                      id=\"confirm_password\"
-                      hx-post=\"/validate/passwords\"
-                      hx-sync=\"closest form:abort\"
-                      hx-indicator=\"#ind\"
-                      hx-include=\"#password\"
-                      required
-                    />
-                </div>
-                <button type=\"submit\" class=\"contrast\">Sign up</button>
+                    <button type=\"submit\" class=\"contrast\">Sign up</button>
                 </form>
             </div>
         </article>"

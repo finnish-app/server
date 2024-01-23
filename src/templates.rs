@@ -88,4 +88,7 @@ pub struct MfaTemplate {
     /// QR code to be displayed to the user.
     /// It's a base64 encoded PNG.
     pub qr_code: String,
+    /// The url of the qr code.
+    /// So that users in mobile can click it, since scanning is not an option.
+    pub otp_auth_url: String,
 }

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, Query, State},
-    routing::{get, post},
+    routing::get,
     Form, Router,
 };
 
@@ -28,15 +28,14 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/forgot-password", get(forgot_password))
 }
 
-pub fn mfa_router() -> Router<Arc<AppState>> {
-    Router::new().route("/auth/mfa", post(mfa_verify))
-}
-
 pub fn private_router() -> Router<Arc<AppState>> {
-    Router::new().route("/auth/logout", get(logout)).route(
-        "/auth/change-password",
-        get(change_password_screen).post(change_password),
-    )
+    Router::new()
+        .route("/auth/logout", get(logout))
+        .route(
+            "/auth/change-password",
+            get(change_password_screen).post(change_password),
+        )
+        .route("/auth/mfa", get(mfa_qr).post(mfa_verify))
 }
 
 async fn auth_index() -> impl IntoResponse {
@@ -57,10 +56,16 @@ async fn signin_tab_after_change_password() -> impl IntoResponse {
 
 async fn signin(
     auth_session: AuthSession,
-    State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(auth_session, &shared_state.pool, signin_input).await
+    crate::hypermedia::service::auth::signin(auth_session, signin_input).await
+}
+
+async fn mfa_qr(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::mfa_qr(auth_session, &shared_state.pool).await
 }
 
 async fn mfa_verify(

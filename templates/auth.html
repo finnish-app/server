@@ -5,11 +5,11 @@
 {% block content %}
 
 {% if should_print_message_in_signin == 1 %}
-    <div id="tabs" hx-get="/auth/signin-after-signup" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin-after-signup" hx-trigger="load" hx-target="#tabs" hx-swap="outerHTML"></div>
 {% else if should_print_message_in_signin == 2 %}
-    <div id="tabs" hx-get="/auth/signin-after-change-password" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin-after-change-password" hx-trigger="load" hx-target="#tabs" hx-swap="outerHTML"></div>
 {% else %}
-    <div id="tabs" hx-get="/auth/signin" hx-trigger="load" hx-target="#tabs" hx-swap="innerHTML"></div>
+    <div id="tabs" hx-get="/auth/signin" hx-trigger="load" hx-target="#tabs" hx-swap="outerHTML"></div>
 {% endif %}
 
 {% endblock %}
