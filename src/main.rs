@@ -23,7 +23,7 @@
 mod auth;
 mod client;
 mod constant;
-mod data;
+//mod data;
 mod data_structs;
 mod hypermedia;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
@@ -130,7 +130,7 @@ async fn axum(
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
-        .merge(data::router::data_router())
+        //.merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(
             Backend,

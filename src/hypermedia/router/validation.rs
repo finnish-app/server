@@ -28,12 +28,8 @@ async fn validate_email(
     crate::hypermedia::service::validation::validate_email(&shared_state.pool, &input_email).await
 }
 
-async fn validate_username(
-    State(shared_state): State<Arc<AppState>>,
-    Form(input_username): Form<UsernameInput>,
-) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_username(&shared_state.pool, &input_username)
-        .await
+async fn validate_username(Form(input_username): Form<UsernameInput>) -> impl IntoResponse {
+    crate::hypermedia::service::validation::validate_username(&input_username)
 }
 
 async fn validate_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {

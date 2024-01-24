@@ -75,10 +75,10 @@ macro_rules! SIGN_IN_TAB {
                 <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-target=\"#signin-article\" hx-target-error=\"#message\">
                     <input
                       type=\"text\"
-                      name=\"username\"
-                      placeholder=\"Username\"
-                      aria-label=\"Login\"
-                      autocomplete=\"nickname\"
+                      name=\"email\"
+                      placeholder=\"Email\"
+                      aria-label=\"Email\"
+                      autocomplete=\"email\"
                       required
                     />
                     <input
@@ -328,33 +328,6 @@ macro_rules! INVALID_USERNAME {
     };
 }
 
-macro_rules! USERNAME_TAKEN {
-    () => {
-        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
-            <div class=\"grid\">
-            <label for=\"username\">Username</label>
-            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-            </div>
-            <input
-              type=\"text\"
-              name=\"username\"
-              placeholder=\"Username\"
-              aria-label=\"Login\"
-              aria-invalid=\"true\"
-              autocomplete=\"nickname\"
-              pattern=\"[0-9a-z]{{3,20}}\"
-              title=\"3 to 20 characters, lowercase letters or numbers only\"
-              hx-post=\"/validate/username\"
-              hx-sync=\"closest form:abort\"
-              hx-indicator=\"#ind\"
-              value=\"{}\"
-              required
-            />
-            <div class='error-message' style=\"color:red;\">That username is already taken.  Please enter another username.</div>
-        </div>"
-    };
-}
-
 macro_rules! MATCHING_PASSWORDS {
     () => {
         "<div hx-target=\"this\" hx-swap=\"outerHTML\">
@@ -585,7 +558,6 @@ pub(crate) use SIGN_UP_TAB;
 pub(crate) use STRONG_NEW_PASSWORD;
 pub(crate) use STRONG_PASSWORD;
 pub(crate) use TABLE_ROW;
-pub(crate) use USERNAME_TAKEN;
 pub(crate) use VALID_EMAIL;
 pub(crate) use VALID_USERNAME;
 pub(crate) use WEAK_NEW_PASSWORD;

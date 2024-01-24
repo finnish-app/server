@@ -6,7 +6,7 @@ use crate::{
     constant::{
         EMAIL_TAKEN, INVALID_EMAIL, INVALID_USERNAME, MATCHING_NEW_PASSWORDS, MATCHING_PASSWORDS,
         MISMATCHING_NEW_PASSWORDS, MISMATCHING_PASSWORDS, STRONG_NEW_PASSWORD, STRONG_PASSWORD,
-        USERNAME_TAKEN, VALID_EMAIL, VALID_USERNAME, WEAK_NEW_PASSWORD, WEAK_PASSWORD,
+        VALID_EMAIL, VALID_USERNAME, WEAK_NEW_PASSWORD, WEAK_PASSWORD,
     },
     hypermedia::schema::validation::{EmailInput, PasswordInput, PasswordsInput, UsernameInput},
 };
@@ -46,32 +46,10 @@ struct Exists {
     exists: Option<bool>,
 }
 
-/// Validate that username is not taken.
-/// If it is taken, returns a message to the user
-/// If it is not taken, allows the user to continue
-pub async fn validate_username(db_pool: &Pool<Postgres>, input: &UsernameInput) -> Html<String> {
+/// Validate that username is valid format.
+pub fn validate_username(input: &UsernameInput) -> Html<String> {
     match input.validate() {
-        Ok(()) => {
-            match sqlx::query_as!(
-                Exists,
-                r#"SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)"#,
-                input.username
-            )
-            .fetch_one(db_pool)
-            .await
-            {
-                Ok(exists) => {
-                    if exists.exists.unwrap() {
-                        return Html(format!(USERNAME_TAKEN!(), input.username));
-                    }
-                    return Html(format!(VALID_USERNAME!(), input.username));
-                }
-                Err(e) => {
-                    tracing::error!("Error checking username: {}", e);
-                    return Html("Error checking username".to_owned());
-                }
-            }
-        }
+        Ok(()) => return Html(format!(VALID_USERNAME!(), input.username)),
         Err(_) => return Html(format!(INVALID_USERNAME!(), input.username)),
     }
 }

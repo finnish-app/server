@@ -1,8 +1,11 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials, SignUpCredentials},
+    auth::{AuthSession, LoginCredentials},
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
-    hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
+    hypermedia::schema::{
+        auth::{ChangePasswordInput, MailToUser},
+        validation::SignUpInput,
+    },
     templates::{AuthTemplate, MfaTemplate, VerificationTemplate},
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
 };
@@ -16,6 +19,7 @@ use password_auth::generate_hash;
 use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
+use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
@@ -39,7 +43,7 @@ pub async fn signin(
         Ok(None) => {
             return (
                 StatusCode::NOT_FOUND,
-                Html("<p style=\"color:red;\">Invalid username or password</p>"),
+                Html("<p style=\"color:red;\">Invalid email or password</p>"),
             )
                 .into_response()
         }
@@ -203,8 +207,16 @@ pub const fn signup_tab() -> Html<&'static str> {
 pub async fn signup(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    signup_input: SignUpCredentials,
+    signup_input: SignUpInput,
 ) -> impl IntoResponse {
+    match signup_input.validate() {
+        Ok(()) => (),
+        Err(e) => {
+            tracing::error!("Error validating signup input: {}", e);
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    }
+
     let hashed_pass = generate_hash(&signup_input.password);
     let mut transaction = db_pool.begin().await.unwrap();
 
@@ -264,16 +276,17 @@ pub async fn signup(
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    username: String,
+    email: String,
 ) -> impl IntoResponse {
+    let mut transaction = db_pool.begin().await.unwrap();
     match sqlx::query_as!(
         MailToUser,
-        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE username = $3 RETURNING email, verification_code"#,
+        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
         now_plus_24_hours(),
-        username
+        email
     )
-    .fetch_one(db_pool)
+    .fetch_one(&mut *transaction)
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
@@ -281,12 +294,17 @@ pub async fn resend_verification_email(
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
-            Ok(_) => tracing::info!("Verification mail resent successfully"),
+            Ok(_) => {
+                transaction.commit().await.unwrap();
+                tracing::info!("Verification mail resent successfully");
+            }
             Err(e) => {
+                transaction.rollback().await.unwrap();
                 tracing::error!("Error resending verification mail: {}", e);
             }
         },
         Err(e) => {
+            transaction.rollback().await.unwrap();
             tracing::error!("Error updating verification code and expiration in db: {}", e);
         }
     }
@@ -406,7 +424,7 @@ pub async fn change_password(
     };
 
     let creds = LoginCredentials {
-        username: user.username.clone(),
+        email: user.username.clone(),
         password: change_password_input.old_password,
     };
     match auth_session.authenticate(creds).await {

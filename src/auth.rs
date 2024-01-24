@@ -58,15 +58,8 @@ impl AuthUser for User {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct LoginCredentials {
-    pub username: String,
-    pub password: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct SignUpCredentials {
-    pub username: String,
     pub email: String,
     pub password: String,
 }
@@ -97,9 +90,9 @@ impl AuthnBackend for Backend {
             r#"
             select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret
             from users
-            where username = $1
+            where email = $1
             "#,
-            creds.username
+            creds.email
         )
         .fetch_optional(&self.db)
         .await?;

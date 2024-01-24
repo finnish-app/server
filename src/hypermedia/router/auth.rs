@@ -1,6 +1,9 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    hypermedia::schema::auth::{ChangePasswordInput, MfaTokenForm},
+    auth::{AuthSession, LoginCredentials},
+    hypermedia::schema::{
+        auth::{ChangePasswordInput, MfaTokenForm},
+        validation::SignUpInput,
+    },
     templates::{AuthTemplate, ChangePasswordTemplate},
     AppState,
 };
@@ -83,7 +86,7 @@ async fn signup_tab() -> impl IntoResponse {
 
 async fn signup(
     State(shared_state): State<Arc<AppState>>,
-    Form(signup_input): Form<SignUpCredentials>,
+    Form(signup_input): Form<SignUpInput>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signup(
         &shared_state.pool,
@@ -94,18 +97,18 @@ async fn signup(
 }
 
 #[derive(serde::Deserialize, Debug)]
-pub struct ResendEmailUsername {
-    username: String,
+pub struct ResendEmail {
+    email: String,
 }
 
 async fn resend_verification_email(
     State(shared_state): State<Arc<AppState>>,
-    Query(resend_email_username): Query<ResendEmailUsername>,
+    Query(resend_email): Query<ResendEmail>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::resend_verification_email(
         &shared_state.pool,
         &shared_state.secret_store,
-        resend_email_username.username,
+        resend_email.email,
     )
     .await
 }
