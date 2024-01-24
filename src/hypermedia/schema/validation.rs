@@ -59,3 +59,8 @@ pub struct ChangePasswordInput {
     #[validate(must_match = "password")]
     pub confirm_password: String,
 }
+
+#[derive(sqlx::FromRow)]
+pub struct Exists {
+    pub exists: Option<bool>,
+}

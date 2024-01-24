@@ -250,30 +250,30 @@ macro_rules! INVALID_EMAIL {
     };
 }
 
-macro_rules! EMAIL_TAKEN {
-    () => {
-        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
-            <div class=\"grid\">
-            <label for=\"email\">Email</label>
-            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-            </div>
-            <input
-              type=\"email\"
-              name=\"email\"
-              placeholder=\"email@server.com\"
-              aria-label=\"Email\"
-              aria-invalid=\"true\"
-              autocomplete=\"email\"
-              hx-post=\"/validate/email\"
-              hx-sync=\"closest form:abort\"
-              hx-indicator=\"#ind\"
-              value=\"{}\"
-              required
-            />
-            <div class='error-message' style=\"color:red;\">That email is already taken.  Please enter another email address.</div>
-        </div>"
-    };
-}
+//macro_rules! EMAIL_TAKEN {
+//    () => {
+//        "<div hx-target=\"this\" hx-swap=\"outerHTML\">
+//            <div class=\"grid\">
+//            <label for=\"email\">Email</label>
+//            <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
+//            </div>
+//            <input
+//              type=\"email\"
+//              name=\"email\"
+//              placeholder=\"email@server.com\"
+//              aria-label=\"Email\"
+//              aria-invalid=\"true\"
+//              autocomplete=\"email\"
+//              hx-post=\"/validate/email\"
+//              hx-sync=\"closest form:abort\"
+//              hx-indicator=\"#ind\"
+//              value=\"{}\"
+//              required
+//            />
+//            <div class='error-message' style=\"color:red;\">That email is already taken.  Please enter another email address.</div>
+//        </div>"
+//    };
+//}
 
 macro_rules! VALID_USERNAME {
     () => {
@@ -546,7 +546,7 @@ macro_rules! DELETE_EXPENSE_MODAL {
 
 pub(crate) use DELETE_EXPENSE_MODAL;
 pub(crate) use EDITABLE_TABLE_ROW;
-pub(crate) use EMAIL_TAKEN;
+//pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
 pub(crate) use MATCHING_NEW_PASSWORDS;

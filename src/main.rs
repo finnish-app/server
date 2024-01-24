@@ -45,7 +45,7 @@ use axum_helmet::{
 };
 use axum_login::{
     permission_required,
-    tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
+    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
 use shuttle_runtime::CustomError;
@@ -53,6 +53,7 @@ use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// The application state to be shared in axum.
@@ -83,6 +84,13 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
+
+    // TODO: create a way to run this task
+    let _deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
