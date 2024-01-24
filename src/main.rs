@@ -148,6 +148,8 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
+        .layer(helmet_layer)
+        .layer(auth_layer)
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| {
@@ -165,8 +167,6 @@ async fn axum(
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
-        .layer(helmet_layer)
-        .layer(auth_layer)
         .with_state(shared_state);
 
     tracing::debug!("Server started");
