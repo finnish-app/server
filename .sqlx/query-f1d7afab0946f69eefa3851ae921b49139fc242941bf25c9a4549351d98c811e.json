@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT email, verification_code FROM users WHERE username = $1",
+  "query": "UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code",
   "describe": {
     "columns": [
       {
@@ -16,6 +16,8 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Timestamptz",
         "Text"
       ]
     },
@@ -24,5 +26,5 @@
       true
     ]
   },
-  "hash": "4f7a030dbcf7d22ff5ef5a4fc46f2934010ddf6e6d7e8d9fb7f6f67fd0608242"
+  "hash": "f1d7afab0946f69eefa3851ae921b49139fc242941bf25c9a4549351d98c811e"
 }
