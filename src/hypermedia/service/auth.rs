@@ -185,7 +185,7 @@ pub fn signin_tab(print_message: u8) -> Html<String> {
         }
         std::cmp::Ordering::Equal => Html(format!(
             SIGN_IN_TAB!(),
-            "Account created successfully. Please confirm your email and sign in."
+            "Check your email. Instructions on how to proceed have been sent to you."
         )),
         std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")),
     }
