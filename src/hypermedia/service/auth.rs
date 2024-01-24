@@ -3,8 +3,8 @@ use crate::{
     client::mail::send_sign_up_confirmation_mail,
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::{
-        auth::{ChangePasswordInput, MailToUser},
-        validation::SignUpInput,
+        auth::MailToUser,
+        validation::{ChangePasswordInput, SignUpInput},
     },
     templates::{AuthTemplate, MfaTemplate, VerificationTemplate},
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
@@ -418,13 +418,21 @@ pub async fn change_password(
     db_pool: &Pool<Postgres>,
     change_password_input: ChangePasswordInput,
 ) -> impl IntoResponse {
+    match change_password_input.validate() {
+        Ok(()) => (),
+        Err(e) => {
+            tracing::error!("Error validating change password input: {}", e);
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    }
+
     let maybe_user = &auth_session.user;
     let Some(user) = maybe_user else {
         return StatusCode::UNAUTHORIZED.into_response();
     };
 
     let creds = LoginCredentials {
-        email: user.username.clone(),
+        email: user.email.clone(),
         password: change_password_input.old_password,
     };
     match auth_session.authenticate(creds).await {

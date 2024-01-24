@@ -1,8 +1,8 @@
 use crate::{
     auth::{AuthSession, LoginCredentials},
     hypermedia::schema::{
-        auth::{ChangePasswordInput, MfaTokenForm},
-        validation::SignUpInput,
+        auth::MfaTokenForm,
+        validation::{ChangePasswordInput, SignUpInput},
     },
     templates::{AuthTemplate, ChangePasswordTemplate},
     AppState,

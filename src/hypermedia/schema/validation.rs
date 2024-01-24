@@ -51,3 +51,11 @@ pub struct SignUpInput {
     #[validate(must_match = "password")]
     pub confirm_password: String,
 }
+
+#[derive(Deserialize, Validate)]
+pub struct ChangePasswordInput {
+    pub old_password: String,
+    pub password: String,
+    #[validate(must_match = "password")]
+    pub confirm_password: String,
+}
