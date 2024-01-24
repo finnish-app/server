@@ -39,3 +39,29 @@ pub struct PasswordsInput {
     #[validate(must_match = "password")]
     pub confirm_password: String,
 }
+
+#[derive(Deserialize, Validate)]
+pub struct SignUpInput {
+    #[validate(regex = "RE_USERNAME")]
+    pub username: String,
+    #[validate(email)]
+    pub email: String,
+    #[validate(custom = "validate_password_strength")]
+    pub password: String,
+    #[validate(must_match = "password")]
+    pub confirm_password: String,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct ChangePasswordInput {
+    pub old_password: String,
+    #[validate(custom = "validate_password_strength")]
+    pub password: String,
+    #[validate(must_match = "password")]
+    pub confirm_password: String,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct Exists {
+    pub exists: Option<bool>,
+}

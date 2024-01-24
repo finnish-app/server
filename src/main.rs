@@ -23,7 +23,7 @@
 mod auth;
 mod client;
 mod constant;
-mod data;
+//mod data;
 mod data_structs;
 mod hypermedia;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
@@ -45,7 +45,7 @@ use axum_helmet::{
 };
 use axum_login::{
     permission_required,
-    tower_sessions::{Expiry, PostgresStore, SessionManagerLayer},
+    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
 use shuttle_runtime::CustomError;
@@ -53,6 +53,7 @@ use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// The application state to be shared in axum.
@@ -83,6 +84,13 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
+
+    // TODO: create a way to run this task
+    let _deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
@@ -130,7 +138,7 @@ async fn axum(
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
-        .merge(data::router::data_router())
+        //.merge(data::router::data_router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(
             Backend,
@@ -148,6 +156,8 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
+        .layer(helmet_layer)
+        .layer(auth_layer)
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| {
@@ -165,8 +175,6 @@ async fn axum(
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
-        .layer(helmet_layer)
-        .layer(auth_layer)
         .with_state(shared_state);
 
     tracing::debug!("Server started");

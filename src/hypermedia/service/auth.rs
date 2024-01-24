@@ -1,8 +1,11 @@
 use crate::{
-    auth::{AuthSession, LoginCredentials, SignUpCredentials},
-    client::mail::send_sign_up_confirmation_mail,
+    auth::{AuthSession, LoginCredentials},
+    client::mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
     constant::{SIGN_IN_TAB, SIGN_UP_TAB},
-    hypermedia::schema::auth::{ChangePasswordInput, MailToUser},
+    hypermedia::schema::{
+        auth::MailToUser,
+        validation::{ChangePasswordInput, Exists, SignUpInput},
+    },
     templates::{AuthTemplate, MfaTemplate, VerificationTemplate},
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
 };
@@ -16,6 +19,7 @@ use password_auth::generate_hash;
 use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
+use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
@@ -39,7 +43,7 @@ pub async fn signin(
         Ok(None) => {
             return (
                 StatusCode::NOT_FOUND,
-                Html("<p style=\"color:red;\">Invalid username or password</p>"),
+                Html("<p style=\"color:red;\">Invalid email or password</p>"),
             )
                 .into_response()
         }
@@ -110,20 +114,11 @@ pub async fn mfa_verify(
     db_pool: &Pool<Postgres>,
     mfa_token: String,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
-    let record = sqlx::query!(
-        r#"
-        SELECT email, otp_secret
-        FROM users
-        WHERE id = $1
-        "#,
-        user_id
-    )
-    .fetch_one(db_pool)
-    .await
-    .unwrap();
+    let Some(user) = auth_session.user else {
+        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth")]).into_response();
+    };
 
-    let secret = Secret::Encoded(record.otp_secret.unwrap());
+    let secret = Secret::Encoded(user.otp_secret.unwrap());
     let totp = TOTP::new(
         Algorithm::SHA1,
         6,
@@ -131,7 +126,7 @@ pub async fn mfa_verify(
         30,
         secret.to_bytes().unwrap(),
         Some("Finnish".to_owned()),
-        record.email.clone(),
+        user.email,
     )
     .unwrap();
 
@@ -156,7 +151,7 @@ pub async fn mfa_verify(
         r#"
         UPDATE users SET otp_enabled = true, otp_verified = true WHERE id = $1
         "#,
-        user_id
+        user.id
     )
     .execute(&mut *transaction)
     .await
@@ -167,13 +162,13 @@ pub async fn mfa_verify(
                 INSERT INTO users_groups (user_id, group_id)
                 VALUES ($1, (SELECT id FROM groups WHERE name = 'user'))
                 "#,
-                user_id
+                user.id
             )
             .execute(&mut *transaction)
             .await
             .unwrap();
             transaction.commit().await.unwrap();
-            return (StatusCode::OK, [("HX-Redirect", "/auth")]).into_response();
+            return (StatusCode::OK, [("HX-Redirect", "/")]).into_response();
         }
         Err(e) => {
             transaction.rollback().await.unwrap();
@@ -190,7 +185,7 @@ pub fn signin_tab(print_message: u8) -> Html<String> {
         }
         std::cmp::Ordering::Equal => Html(format!(
             SIGN_IN_TAB!(),
-            "Account created successfully. Please confirm your email and sign in."
+            "Check your email. Instructions on how to proceed have been sent to you."
         )),
         std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")),
     }
@@ -203,8 +198,46 @@ pub const fn signup_tab() -> Html<&'static str> {
 pub async fn signup(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    signup_input: SignUpCredentials,
+    signup_input: SignUpInput,
 ) -> impl IntoResponse {
+    if let Err(e) = signup_input.validate() {
+        tracing::error!("Error validating signup input: {}", e);
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    if let Ok(record) = sqlx::query_as!(
+        Exists,
+        r#"SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"#,
+        signup_input.email
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        if record.exists.unwrap() {
+            match send_forgot_password_mail(
+                secret_store,
+                &signup_input.email,
+                &signup_input.username,
+            ) {
+                Ok(_) => {
+                    return (
+                        StatusCode::OK,
+                        AuthTemplate {
+                            should_print_message_in_signin: 1,
+                        },
+                    )
+                        .into_response();
+                }
+                Err(e) => {
+                    tracing::error!("Error sending forgot password mail: {}", e);
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                }
+            }
+        }
+    } else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+
     let hashed_pass = generate_hash(&signup_input.password);
     let mut transaction = db_pool.begin().await.unwrap();
 
@@ -213,29 +246,25 @@ pub async fn signup(
         tracing::error!("Error generating expiration date, maybe it overflowed?");
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
-    sqlx::query!(
-        r#"INSERT INTO users (username, email, password, verification_code, code_expires_at) VALUES ($1, $2, $3, $4, $5)"#,
+
+    match sqlx::query!(
+        r#"
+        INSERT INTO users (username, email, password, verification_code, code_expires_at)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING email, verification_code
+        "#,
         signup_input.username,
         signup_input.email,
         hashed_pass,
         generate_verification_token(),
         expiration_date
     )
-    .execute(&mut *transaction)
-    .await
-    .unwrap();
-
-    match sqlx::query_as!(
-        MailToUser,
-        "SELECT email, verification_code FROM users WHERE username = $1",
-        signup_input.username
-    )
     .fetch_one(&mut *transaction)
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
             secret_store,
-            &mail_to_user.email.unwrap(),
+            &mail_to_user.email,
             &mail_to_user.verification_code.unwrap(),
         ) {
             Ok(_) => {
@@ -264,16 +293,17 @@ pub async fn signup(
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    username: String,
+    email: String,
 ) -> impl IntoResponse {
+    let mut transaction = db_pool.begin().await.unwrap();
     match sqlx::query_as!(
         MailToUser,
-        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE username = $3 RETURNING email, verification_code"#,
+        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
         now_plus_24_hours(),
-        username
+        email
     )
-    .fetch_one(db_pool)
+    .fetch_one(&mut *transaction)
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
@@ -281,12 +311,17 @@ pub async fn resend_verification_email(
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
-            Ok(_) => tracing::info!("Verification mail resent successfully"),
+            Ok(_) => {
+                transaction.commit().await.unwrap();
+                tracing::info!("Verification mail resent successfully");
+            }
             Err(e) => {
+                transaction.rollback().await.unwrap();
                 tracing::error!("Error resending verification mail: {}", e);
             }
         },
         Err(e) => {
+            transaction.rollback().await.unwrap();
             tracing::error!("Error updating verification code and expiration in db: {}", e);
         }
     }
@@ -405,8 +440,13 @@ pub async fn change_password(
         return StatusCode::UNAUTHORIZED.into_response();
     };
 
+    if let Err(e) = change_password_input.validate() {
+        tracing::error!("Error validating change password input: {}", e);
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
     let creds = LoginCredentials {
-        username: user.username.clone(),
+        email: user.email.clone(),
         password: change_password_input.old_password,
     };
     match auth_session.authenticate(creds).await {
@@ -430,7 +470,7 @@ pub async fn change_password(
                 .into_response()
         }
         Ok(None) => (
-            StatusCode::NOT_FOUND,
+            StatusCode::UNAUTHORIZED,
             Html("<p style=\"color:red;\">Incorrect password</p>"),
         )
             .into_response(),

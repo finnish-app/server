@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE username = $3 RETURNING email, verification_code",
+  "query": "\n        INSERT INTO users (username, email, password, verification_code, code_expires_at)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING email, verification_code\n        ",
   "describe": {
     "columns": [
       {
@@ -16,9 +16,11 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
+        "Text",
         "Varchar",
-        "Timestamptz",
-        "Text"
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -26,5 +28,5 @@
       true
     ]
   },
-  "hash": "1a556b27a871c55f0c79f8237c86c4920a6418406988d8c98e5bedbfe2c2b85b"
+  "hash": "648ab115381b3a0346518ab5b951dab6e6109d77bd35d42d8955063b2fa90a0d"
 }

@@ -6,12 +6,6 @@ pub struct MailToUser {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct ChangePasswordInput {
-    pub old_password: String,
-    pub password: String,
-}
-
-#[derive(Deserialize, Debug)]
 pub struct MfaTokenForm {
     pub token: String,
 }

@@ -5,7 +5,7 @@ use crate::{
 use std::sync::Arc;
 
 use askama_axum::IntoResponse;
-use axum::{extract::State, routing::post, Form, Router};
+use axum::{routing::post, Form, Router};
 
 // VALIDATION
 pub fn router() -> Router<Arc<AppState>> {
@@ -21,19 +21,12 @@ pub fn router() -> Router<Arc<AppState>> {
         )
 }
 
-async fn validate_email(
-    State(shared_state): State<Arc<AppState>>,
-    Form(input_email): Form<EmailInput>,
-) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_email(&shared_state.pool, &input_email).await
+async fn validate_email(Form(input_email): Form<EmailInput>) -> impl IntoResponse {
+    crate::hypermedia::service::validation::validate_email(&input_email)
 }
 
-async fn validate_username(
-    State(shared_state): State<Arc<AppState>>,
-    Form(input_username): Form<UsernameInput>,
-) -> impl IntoResponse {
-    crate::hypermedia::service::validation::validate_username(&shared_state.pool, &input_username)
-        .await
+async fn validate_username(Form(input_username): Form<UsernameInput>) -> impl IntoResponse {
+    crate::hypermedia::service::validation::validate_username(&input_username)
 }
 
 async fn validate_passwords(Form(input_passwords): Form<PasswordsInput>) -> impl IntoResponse {

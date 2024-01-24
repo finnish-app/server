@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret\n            from users\n            where username = $1\n            ",
+  "query": "\n            select id, username, email, password, created_at, verified, verification_code, code_expires_at, otp_enabled, otp_verified, otp_secret\n            from users\n            where email = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -78,5 +78,5 @@
       true
     ]
   },
-  "hash": "96e81e67b974b4d5f25db33dc87f6f3f4d9dcb1ad49275b91e3bb81a5705980e"
+  "hash": "069ad9db5a2fd56ed581d2d17541c69599cc5b04ed4d6d56a209bec92c1931ac"
 }
