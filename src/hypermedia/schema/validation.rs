@@ -55,6 +55,7 @@ pub struct SignUpInput {
 #[derive(Deserialize, Validate)]
 pub struct ChangePasswordInput {
     pub old_password: String,
+    #[validate(custom = "validate_password_strength")]
     pub password: String,
     #[validate(must_match = "password")]
     pub confirm_password: String,
