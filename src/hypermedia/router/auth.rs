@@ -4,7 +4,7 @@ use crate::{
         auth::MfaTokenForm,
         validation::{ChangePasswordInput, SignUpInput},
     },
-    templates::{AuthTemplate, ChangePasswordTemplate},
+    templates::{ChangePasswordTemplate, SignInTemplate},
     AppState,
 };
 use std::sync::Arc;
@@ -21,11 +21,11 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth", get(auth_index))
         .route("/auth/signin", get(signin_tab).post(signin))
         .route("/auth/signup", get(signup_tab).post(signup))
-        .route("/auth/signin-after-signup", get(signin_tab_after_signup))
         .route(
             "/auth/signin-after-change-password",
             get(signin_tab_after_change_password),
         )
+        .route("/auth/email-confirmation", get(email_confirmation))
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", get(resend_verification_email))
         .route("/auth/forgot-password", get(forgot_password))
@@ -42,19 +42,15 @@ pub fn private_router() -> Router<Arc<AppState>> {
 }
 
 async fn auth_index() -> impl IntoResponse {
-    AuthTemplate::default()
+    SignInTemplate::default()
 }
 
 async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(0)
-}
-
-async fn signin_tab_after_signup() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(1)
+    crate::hypermedia::service::auth::signin_tab(false)
 }
 
 async fn signin_tab_after_change_password() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(2)
+    crate::hypermedia::service::auth::signin_tab(true)
 }
 
 async fn signin(
@@ -62,6 +58,10 @@ async fn signin(
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::signin(auth_session, signin_input).await
+}
+
+async fn email_confirmation() -> impl IntoResponse {
+    crate::hypermedia::service::auth::email_confirmation()
 }
 
 async fn mfa_qr(

@@ -64,6 +64,18 @@ pub struct AuthTemplate {
 }
 
 #[derive(Template, Default)]
+#[template(path = "signin.html")]
+/// The askama template for the signup page.
+pub struct SignInTemplate {
+    pub message: String,
+}
+
+#[derive(Template, Default)]
+#[template(path = "signup.html")]
+/// The askama template for the signup page.
+pub struct SignUpTemplate {}
+
+#[derive(Template, Default)]
 #[template(path = "verify.html")]
 /// The askama template for the verification page.
 pub struct VerificationTemplate {
@@ -91,4 +103,13 @@ pub struct MfaTemplate {
     /// The url of the qr code.
     /// So that users in mobile can click it, since scanning is not an option.
     pub otp_auth_url: String,
+}
+
+#[derive(Template, Default)]
+#[template(path = "confirmation.html")]
+pub struct ConfirmationTemplate {
+    /// The url to GET a new confirmation code and send it to the user.
+    pub resend_url: String,
+    /// The url of the login page.
+    pub login_url: String,
 }

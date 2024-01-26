@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="/js/response-targets.js"></script>
+<script
+  type="module"
+  src="/js/widget.module.min.js"
+></script>
+<script nomodule src="/js/widget.min.js" ></script>
+{% endblock %}
+
+{% block title %}Email Confirmation{% endblock %}
+
+{% block content %}
+
+<article>
+    <h1>Email Confirmation</h1>
+
+    <div id="return-from-signup">
+        <p>
+            Thank you for signing up.
+            Please Check your email.
+            Instructions on how to proceed have been sent to you.
+        </p>
+    </div>
+
+    <div id="resend-confirmation">
+        <p>
+            If you did not receive the email, you can request a new one.
+        </p>
+        <form hx-get="{{ resend_url }}">
+            <input type="text" name="email" placeholder="Email"/>
+            <button type="submit">Resend Confirmation Email</button>
+            <div class="frc-captcha" data-sitekey="FCMMG3TSQ5VK7UK4"></div>
+        </form>
+    </div>
+
+    <footer><a href="{{ login_url }}">Go To Login Page</a></footer>
+</article>
+
+{% endblock %}

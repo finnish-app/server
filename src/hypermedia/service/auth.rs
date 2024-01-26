@@ -1,12 +1,14 @@
 use crate::{
     auth::{AuthSession, LoginCredentials},
     client::mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
-    constant::{SIGN_IN_TAB, SIGN_UP_TAB},
     hypermedia::schema::{
         auth::MailToUser,
         validation::{ChangePasswordInput, Exists, SignUpInput},
     },
-    templates::{AuthTemplate, MfaTemplate, VerificationTemplate},
+    templates::{
+        AuthTemplate, ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate,
+        VerificationTemplate,
+    },
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
 };
 
@@ -25,6 +27,14 @@ pub async fn signin(
     mut auth_session: AuthSession,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
+    if signin_input.frc_captcha_solution == ".UNFINISHED" {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+
     let user = match auth_session.authenticate(signin_input).await {
         Ok(Some(user)) => {
             if !user.verified {
@@ -178,21 +188,19 @@ pub async fn mfa_verify(
     }
 }
 
-pub fn signin_tab(print_message: u8) -> Html<String> {
-    match print_message.cmp(&1) {
-        std::cmp::Ordering::Greater => {
-            Html(format!(SIGN_IN_TAB!(), "Password changed successfully."))
-        }
-        std::cmp::Ordering::Equal => Html(format!(
-            SIGN_IN_TAB!(),
-            "Check your email. Instructions on how to proceed have been sent to you."
-        )),
-        std::cmp::Ordering::Less => Html(format!(SIGN_IN_TAB!(), "")),
+pub fn signin_tab(print_message: bool) -> SignInTemplate {
+    if print_message {
+        return SignInTemplate {
+            message: "Password changed successfully".to_owned(),
+        };
     }
+    return SignInTemplate {
+        message: String::new(),
+    };
 }
 
-pub const fn signup_tab() -> Html<&'static str> {
-    Html(SIGN_UP_TAB!())
+pub const fn signup_tab() -> SignUpTemplate {
+    SignUpTemplate {}
 }
 
 pub async fn signup(
@@ -200,6 +208,14 @@ pub async fn signup(
     secret_store: &SecretStore,
     signup_input: SignUpInput,
 ) -> impl IntoResponse {
+    if signup_input.frc_captcha_solution == ".UNFINISHED" {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+
     if let Err(e) = signup_input.validate() {
         tracing::error!("Error validating signup input: {}", e);
         return StatusCode::BAD_REQUEST.into_response();
@@ -222,11 +238,9 @@ pub async fn signup(
                 Ok(_) => {
                     return (
                         StatusCode::OK,
-                        AuthTemplate {
-                            should_print_message_in_signin: 1,
-                        },
+                        [("HX-Redirect", "/auth/email-confirmation")],
                     )
-                        .into_response();
+                        .into_response()
                 }
                 Err(e) => {
                     tracing::error!("Error sending forgot password mail: {}", e);
@@ -262,32 +276,40 @@ pub async fn signup(
     .fetch_one(&mut *transaction)
     .await
     {
-        Ok(mail_to_user) => match send_sign_up_confirmation_mail(
-            secret_store,
-            &mail_to_user.email,
-            &mail_to_user.verification_code.unwrap(),
-        ) {
-            Ok(_) => {
-                transaction.commit().await.unwrap();
-                (
-                    StatusCode::OK,
-                    AuthTemplate {
-                        should_print_message_in_signin: 1,
-                    },
-                )
-                    .into_response()
+        Ok(mail_to_user) => {
+            match send_sign_up_confirmation_mail(
+                secret_store,
+                &mail_to_user.email,
+                &mail_to_user.verification_code.unwrap(),
+            ) {
+                Ok(_) => {
+                    transaction.commit().await.unwrap();
+                    (
+                        StatusCode::OK,
+                        [("HX-Redirect", "/auth/email-confirmation")],
+                    )
+                        .into_response()
+                }
+                Err(e) => {
+                    transaction.rollback().await.unwrap();
+                    tracing::error!("Error sending sign up confirmation mail: {}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                }
             }
-            Err(e) => {
-                transaction.rollback().await.unwrap();
-                tracing::error!("Error sending sign up confirmation mail: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        },
+        }
         Err(e) => {
             tracing::error!("Error signing up: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+}
+
+pub fn email_confirmation() -> impl IntoResponse {
+    ConfirmationTemplate {
+        login_url: "/auth".to_owned(),
+        resend_url: "/auth/resend-verification".to_owned(),
+    }
+    .into_response()
 }
 
 pub async fn resend_verification_email(
@@ -448,6 +470,7 @@ pub async fn change_password(
     let creds = LoginCredentials {
         email: user.email.clone(),
         password: change_password_input.old_password,
+        frc_captcha_solution: String::new(),
     };
     match auth_session.authenticate(creds).await {
         Ok(Some(user)) => {

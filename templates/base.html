@@ -1,15 +1,12 @@
-<!-- htmx base document -->
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <!-- Allow any inheriting page to set it's own title -->
         <title>{% block title %}{{ title }}{% endblock %}</title>
 
         <link rel="stylesheet" href="/static/pico.min.css">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="/js/htmx.min.js"></script>
 
-        <!-- Allow any inheriting page to extend head with additional assets -->
         {% block head %}{% endblock %}
     </head>
     <body>
@@ -28,7 +25,6 @@
         </nav>
 
         <main class="container" id="content">
-            <!-- Inheriting pages will have their content rendered here, similar to app root in React, Angular, etc. -->
             {% block content %}{% endblock %}
         </main>
     </body>

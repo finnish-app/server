@@ -5,7 +5,7 @@ pub struct MailToUser {
     pub verification_code: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct MfaTokenForm {
     pub token: String,
 }

@@ -50,6 +50,8 @@ pub struct SignUpInput {
     pub password: String,
     #[validate(must_match = "password")]
     pub confirm_password: String,
+    #[serde(rename = "frc-captcha-solution")]
+    pub frc_captcha_solution: String,
 }
 
 #[derive(Deserialize, Validate)]

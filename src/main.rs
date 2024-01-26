@@ -107,13 +107,15 @@ async fn axum(
         .frame_ancestors(vec!["'self'"])
         .img_src(vec!["'self'", "data:"])
         .object_src(vec!["'none'"])
-        .script_src(vec!["'self'"])
+        .script_src(vec!["'self'", "'wasm-unsafe-eval'"])
         .script_src_attr(vec!["'self'"])
         .script_src_elem(vec!["'self'", "https:", "'unsafe-inline'"]) // currently breaks without unsafe-inline in htmx.min
         // this is somehow related to
         // plotting with plotly, but
         // rest of app works normally
         .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
+        .child_src(vec!["blob:"])
+        .worker_src(vec!["blob:"])
         .upgrade_insecure_requests();
 
     let helmet_layer = HelmetLayer::new(
