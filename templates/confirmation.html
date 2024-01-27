@@ -31,7 +31,7 @@
         <form hx-get="{{ resend_url }}">
             <input type="text" name="email" placeholder="Email"/>
             <button type="submit">Resend Confirmation Email</button>
-            <div class="frc-captcha" data-sitekey="FCMMG3TSQ5VK7UK4"></div>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}"></div>
         </form>
     </div>
 

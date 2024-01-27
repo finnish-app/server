@@ -4,7 +4,7 @@ use crate::{
         auth::MfaTokenForm,
         validation::{ChangePasswordInput, SignUpInput},
     },
-    templates::{ChangePasswordTemplate, SignInTemplate},
+    templates::ChangePasswordTemplate,
     AppState,
 };
 use std::sync::Arc;
@@ -18,7 +18,6 @@ use axum::{
 
 pub fn public_router() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/auth", get(auth_index))
         .route("/auth/signin", get(signin_tab).post(signin))
         .route("/auth/signup", get(signup_tab).post(signup))
         .route(
@@ -41,16 +40,14 @@ pub fn private_router() -> Router<Arc<AppState>> {
         .route("/auth/mfa", get(mfa_qr).post(mfa_verify))
 }
 
-async fn auth_index() -> impl IntoResponse {
-    SignInTemplate::default()
+async fn signin_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signin_tab(&shared_state.secret_store, false)
 }
 
-async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(false)
-}
-
-async fn signin_tab_after_change_password() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(true)
+async fn signin_tab_after_change_password(
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signin_tab(&shared_state.secret_store, true)
 }
 
 async fn signin(
@@ -60,8 +57,8 @@ async fn signin(
     crate::hypermedia::service::auth::signin(auth_session, signin_input).await
 }
 
-async fn email_confirmation() -> impl IntoResponse {
-    crate::hypermedia::service::auth::email_confirmation()
+async fn email_confirmation(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::email_confirmation(&shared_state.secret_store)
 }
 
 async fn mfa_qr(
@@ -80,8 +77,8 @@ async fn mfa_verify(
         .await
 }
 
-async fn signup_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup_tab()
+async fn signup_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signup_tab(&shared_state.secret_store)
 }
 
 async fn signup(

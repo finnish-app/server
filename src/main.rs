@@ -72,7 +72,7 @@ async fn axum(
 ) -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            return "finnish=debug,tower_http=debug,axum::rejection=trace".into();
+            return "finnish=debug,tower_http=debug,axum::rejection=trace,axum_login=debug,tower_sessions=debug,sqlx=warn".into();
         }))
         .with(fmt::layer())
         .init();
@@ -150,7 +150,7 @@ async fn axum(
         .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
-            login_url = "/auth",
+            login_url = "/auth/signin",
             "protected:read",
         ))
         .merge(hypermedia::router::auth::public_router())

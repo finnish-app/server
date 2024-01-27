@@ -67,13 +67,19 @@ pub struct AuthTemplate {
 #[template(path = "signin.html")]
 /// The askama template for the signup page.
 pub struct SignInTemplate {
+    /// Message to be displayed to the user.
     pub message: String,
+    /// friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
 }
 
 #[derive(Template, Default)]
 #[template(path = "signup.html")]
 /// The askama template for the signup page.
-pub struct SignUpTemplate {}
+pub struct SignUpTemplate {
+    /// Friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
+}
 
 #[derive(Template, Default)]
 #[template(path = "verify.html")]
@@ -112,4 +118,6 @@ pub struct ConfirmationTemplate {
     pub resend_url: String,
     /// The url of the login page.
     pub login_url: String,
+    /// friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
 }
