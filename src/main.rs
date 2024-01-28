@@ -36,7 +36,11 @@ mod util;
 use crate::{auth::Backend, data_structs::Months};
 use std::{sync::Arc, time::Duration};
 
-use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
+use axum::{
+    error_handling::HandleErrorLayer,
+    http::{Request, StatusCode},
+    Router,
+};
 use axum_helmet::{
     ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
     OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
@@ -54,6 +58,7 @@ use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
+use tracing::Span;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// The application state to be shared in axum.
@@ -84,16 +89,14 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
-
-    // TODO: create a way to run this task
     let _deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
+    ); // TODO: create a way to run this task
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(false)
+        //.with_secure(false)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
@@ -118,7 +121,7 @@ async fn axum(
         .worker_src(vec!["blob:"])
         .upgrade_insecure_requests();
 
-    let helmet_layer = HelmetLayer::new(
+    let _helmet_layer = HelmetLayer::new(
         Helmet::new()
             .add(content_sec_policy)
             .add(CrossOriginOpenerPolicy::same_origin())
@@ -158,7 +161,7 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
-        .layer(helmet_layer)
+        //.layer(helmet_layer)
         .layer(auth_layer)
         .layer(
             ServiceBuilder::new()
@@ -174,7 +177,17 @@ async fn axum(
                     };
                 }))
                 .timeout(Duration::from_secs(10))
-                .layer(TraceLayer::new_for_http())
+                .layer(TraceLayer::new_for_http().on_request(
+                    |request: &Request<_>, span: &Span| {
+                        // print the entire span
+                        span.in_scope(|| {
+                            tracing::debug!("request: {:?}", request);
+                        });
+                        tracing::debug!("{:?}", span);
+                        // TODO log user_id if logged in
+                        //tracing::debug!("started {} {}", request.method(), request.uri().path());
+                    },
+                ))
                 .into_inner(),
         )
         .with_state(shared_state);

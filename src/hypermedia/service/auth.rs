@@ -1,6 +1,9 @@
 use crate::{
     auth::{AuthSession, LoginCredentials},
-    client::mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
+    client::{
+        frc::validate_frc,
+        mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
+    },
     hypermedia::schema::{
         auth::MailToUser,
         validation::{ChangePasswordInput, Exists, SignUpInput},
@@ -27,7 +30,7 @@ pub async fn signin(
     mut auth_session: AuthSession,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
-    if signin_input.frc_captcha_solution == ".UNFINISHED" {
+    if !validate_frc(&signin_input.frc_captcha_solution) {
         return (
             StatusCode::BAD_REQUEST,
             Html("<p style=\"color:red;\">Please complete the captcha</p>"),
@@ -42,8 +45,8 @@ pub async fn signin(
                     StatusCode::UNAUTHORIZED,
                     Html(format!(
                         "<p style=\"color:red;\">Please verify your email before signing in</p>
-                         <a href=\"/auth/resend-verification?username={}\">Resend verification email</a>",
-                        user.username
+                         <a href=\"/auth/resend-verification?email={}\">Resend verification email</a>",
+                        user.email
                     )),
                 )
                     .into_response();
