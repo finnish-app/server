@@ -36,11 +36,7 @@ mod util;
 use crate::{auth::Backend, data_structs::Months};
 use std::{sync::Arc, time::Duration};
 
-use axum::{
-    error_handling::HandleErrorLayer,
-    http::{Request, StatusCode},
-    Router,
-};
+use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use axum_helmet::{
     ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
     OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
@@ -58,7 +54,6 @@ use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
-use tracing::Span;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// The application state to be shared in axum.
@@ -77,7 +72,7 @@ async fn axum(
 ) -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            return "finnish=debug,tower_http=debug,axum::rejection=trace,axum_login=debug,tower_sessions=debug,sqlx=warn".into();
+            return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
         }))
         .with(fmt::layer())
         .init();
@@ -177,17 +172,7 @@ async fn axum(
                     };
                 }))
                 .timeout(Duration::from_secs(10))
-                .layer(TraceLayer::new_for_http().on_request(
-                    |request: &Request<_>, span: &Span| {
-                        // print the entire span
-                        span.in_scope(|| {
-                            tracing::debug!("request: {:?}", request);
-                        });
-                        tracing::debug!("{:?}", span);
-                        // TODO log user_id if logged in
-                        //tracing::debug!("started {} {}", request.method(), request.uri().path());
-                    },
-                ))
+                .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
         .with_state(shared_state);

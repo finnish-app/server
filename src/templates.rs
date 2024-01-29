@@ -55,15 +55,6 @@ pub struct ChangePasswordTemplate {
 }
 
 #[derive(Template, Default)]
-#[template(path = "auth.html")]
-/// The askama template for the login page.
-pub struct AuthTemplate {
-    /// Triggers a message to be displayed to the user, after a failed signin or a successful signup.
-    /// Or no message at all.
-    pub should_print_message_in_signin: u8,
-}
-
-#[derive(Template, Default)]
 #[template(path = "signin.html")]
 /// The askama template for the signup page.
 pub struct SignInTemplate {

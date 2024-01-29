@@ -9,8 +9,7 @@ use crate::{
         validation::{ChangePasswordInput, Exists, SignUpInput},
     },
     templates::{
-        AuthTemplate, ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate,
-        VerificationTemplate,
+        ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
     },
     util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
 };
@@ -78,6 +77,7 @@ pub async fn mfa_qr(auth_session: AuthSession, db_pool: &Pool<Postgres>) -> impl
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
     let user_id = user.id;
+    tracing::debug!("User logged in");
     if user.otp_enabled {
         // TODO
         todo!("Create logic for changing MFA method");
@@ -130,6 +130,7 @@ pub async fn mfa_verify(
     let Some(user) = auth_session.user else {
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
+    tracing::debug!("User logged in");
 
     let secret = Secret::Encoded(user.otp_secret.unwrap());
     let totp = TOTP::new(
@@ -192,17 +193,12 @@ pub async fn mfa_verify(
 }
 
 pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> SignInTemplate {
-    if print_message {
-        return SignInTemplate {
-            message: "Password changed successfully".to_owned(),
-            frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-                tracing::error!("Error getting FRC_SITEKEY from secret store");
-                String::new()
-            }),
-        };
-    }
     return SignInTemplate {
-        message: String::new(),
+        message: if print_message {
+            "Password changed successfully".to_owned()
+        } else {
+            String::new()
+        },
         frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
             tracing::error!("Error getting FRC_SITEKEY from secret store");
             String::new()
@@ -505,10 +501,7 @@ pub async fn change_password(
 
             (
                 StatusCode::OK,
-                [("HX-Push-Url", "/auth/signin")],
-                AuthTemplate {
-                    should_print_message_in_signin: 2,
-                },
+                [("HX-Redirect", "/auth/signin-after-change-password")],
             )
                 .into_response()
         }
