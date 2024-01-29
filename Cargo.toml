@@ -15,7 +15,7 @@ axum-helmet = "0.1.0"
 axum-login = "0.13.1"
 chrono = { version = "0.4.31", features = ["serde"] }
 lazy_static = "1.4.0"
-lettre = "0.11.3"
+lettre = "0.11.4"
 password-auth = "1.0.0"
 plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 rand = "0.8.5"
