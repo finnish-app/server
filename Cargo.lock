@@ -1162,7 +1162,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.11",
- "indexmap 2.2.0",
+ "indexmap 2.2.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -1181,7 +1181,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 1.0.0",
- "indexmap 2.2.0",
+ "indexmap 2.2.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -1559,9 +1559,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.0"
+version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf2a4f498956c7723dc280afc6a37d0dec50b39a29e232c6187ce4503703e8c2"
+checksum = "433de089bd45971eecf4668ee0ee8f4cec17db4f8bd8f7bc3197a6ce37aa7d9b"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
@@ -1982,7 +1982,7 @@ checksum = "1e32339a5dc40459130b3bd269e9892439f55b33e772d2a9d402a789baaf4e8a"
 dependencies = [
  "futures-core",
  "futures-sink",
- "indexmap 2.2.0",
+ "indexmap 2.2.1",
  "js-sys",
  "once_cell",
  "pin-project-lite",
@@ -3160,7 +3160,7 @@ dependencies = [
  "futures-util",
  "hashlink",
  "hex",
- "indexmap 2.2.0",
+ "indexmap 2.2.1",
  "log",
  "memchr",
  "once_cell",
