@@ -54,153 +54,6 @@ macro_rules! EDITABLE_TABLE_ROW {
     };
 }
 
-macro_rules! SIGN_IN_TAB {
-    () => {
-        "<article id=\"signin-article\" class=\"grid\" hx-ext=\"response-targets\">
-            <div>
-                <nav class=\"tab-list\" role=\"tablist\">
-                  <ul>
-                    <li>Sign In</li>
-                    <li><a hx-get=\"/auth/signup\" hx-target=\"#signin-article\" hx-swap=\"outerHTML\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign Up</a></li>
-                  </ul>
-                </nav>
-
-                <hgroup>
-                <h1>Sign in</h1>
-                <h2>Enter your user credentials</h2>
-                </hgroup>
-            </div>
-
-            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signin-form\" hx-post=\"/auth/signin\" hx-target=\"#signin-article\" hx-target-error=\"#message\">
-                    <input
-                      type=\"text\"
-                      name=\"email\"
-                      placeholder=\"Email\"
-                      aria-label=\"Email\"
-                      autocomplete=\"email\"
-                      required
-                    />
-                    <input
-                      type=\"password\"
-                      name=\"password\"
-                      placeholder=\"Password\"
-                      aria-label=\"Password\"
-                      autocomplete=\"current-password\"
-                      required
-                    />
-                    <button type=\"submit\" class=\"contrast\">Login</button>
-                    <fieldset>
-                        <label for=\"remember\">
-                            <input type=\"checkbox\" role=\"switch\" id=\"remember\" name=\"remember\" />
-                            Remember me
-                        </label>
-                    </fieldset>
-                </form>
-                <div id=\"message\">{}</div>
-            </div>
-        </article>"
-    };
-}
-
-macro_rules! SIGN_UP_TAB {
-    () => {
-        "<article id=\"signin-article\" class=\"grid\" hx-ext=\"response-targets\">
-            <div>
-                <nav class=\"tab-list\" role=\"tablist\">
-                  <ul>
-                    <li><a hx-get=\"/auth/signin\" hx-target=\"#signin-article\" hx-swap=\"outerHTML\" role=\"tab\" aria-selected=\"false\" aria-controls=\"tab-content\">Sign In</a></li>
-                    <li>Sign Up</li>
-                  </ul>
-                </nav>
-
-                <hgroup>
-                <h1>Sign Up</h1>
-                <h2>Create an account for Finnish</h2>
-                </hgroup>
-            </div>
-
-            <div id=\"tab-content\" role=\"tabpanel\" class=\"tab-content\">
-                <form id=\"signup-form\" hx-post=\"/auth/signup\" hx-swap=\"outerHTML\" hx-target=\"body\">
-                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                        <div class=\"grid\">
-                        <label for=\"username\">Username</label>
-                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-                        </div>
-                        <input
-                          type=\"text\"
-                          name=\"username\"
-                          placeholder=\"Username\"
-                          aria-label=\"Login\"
-                          autocomplete=\"nickname\"
-                          pattern=\"[0-9a-z]{3,20}\"
-                          title=\"3 to 20 characters, lowercase letters or numbers only\"
-                          hx-post=\"/validate/username\"
-                          hx-sync=\"closest form:abort\"
-                          hx-indicator=\"#ind\"
-                          required
-                        />
-                    </div>
-                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                        <div class=\"grid\">
-                        <label for=\"email\">Email</label>
-                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-                        </div>
-                        <input
-                          type=\"email\"
-                          name=\"email\"
-                          placeholder=\"email@server.com\"
-                          aria-label=\"Email\"
-                          autocomplete=\"email\"
-                          hx-post=\"/validate/email\"
-                          hx-sync=\"closest form:abort\"
-                          hx-indicator=\"#ind\"
-                          required
-                        />
-                    </div>
-                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                        <div class=\"grid\">
-                        <label for=\"password\">Password</label>
-                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-                        </div>
-                        <input
-                            type=\"password\"
-                            name=\"password\"
-                            placeholder=\"Password\"
-                            aria-label=\"Password\"
-                            autocomplete=\"new-password\"
-                            id=\"password\"
-                            hx-post=\"/validate/password-strength\"
-                            hx-sync=\"closest form:abort\"
-                            hx-indicator=\"#ind\"
-                            required
-                        />
-                    </div>
-                    <div hx-target=\"this\" hx-swap=\"outerHTML\">
-                        <div class=\"grid\">
-                        <label for=\"confirm_password\">Confirm Password</label>
-                        <img id=\"ind\" src=\"/img/bars.svg\" class=\"htmx-indicator\"/>
-                        </div>
-                        <input
-                          type=\"password\"
-                          name=\"confirm_password\"
-                          placeholder=\"Password\"
-                          aria-label=\"Password\"
-                          id=\"confirm_password\"
-                          hx-post=\"/validate/passwords\"
-                          hx-sync=\"closest form:abort\"
-                          hx-indicator=\"#ind\"
-                          hx-include=\"#password\"
-                          required
-                        />
-                    </div>
-                    <button type=\"submit\" class=\"contrast\">Sign up</button>
-                </form>
-            </div>
-        </article>"
-    };
-}
-
 macro_rules! VALID_EMAIL {
     () => {
         "<div hx-target=\"this\" hx-swap=\"outerHTML\">
@@ -546,15 +399,12 @@ macro_rules! DELETE_EXPENSE_MODAL {
 
 pub(crate) use DELETE_EXPENSE_MODAL;
 pub(crate) use EDITABLE_TABLE_ROW;
-//pub(crate) use EMAIL_TAKEN;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
 pub(crate) use MATCHING_NEW_PASSWORDS;
 pub(crate) use MATCHING_PASSWORDS;
 pub(crate) use MISMATCHING_NEW_PASSWORDS;
 pub(crate) use MISMATCHING_PASSWORDS;
-pub(crate) use SIGN_IN_TAB;
-pub(crate) use SIGN_UP_TAB;
 pub(crate) use STRONG_NEW_PASSWORD;
 pub(crate) use STRONG_PASSWORD;
 pub(crate) use TABLE_ROW;

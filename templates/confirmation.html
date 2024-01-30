@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block nonce %}Nonce{% endblock %}
+
+{% block head %}
+<script src="/js/response-targets.js"></script>
+<script
+  type="module"
+  src="/js/widget.module.min.js"
+></script>
+<script nomodule src="/js/widget.min.js" ></script>
+{% endblock %}
+
+{% block title %}Email Confirmation{% endblock %}
+
+{% block content %}
+
+<article>
+    <h1>Email Confirmation</h1>
+
+    <div id="return-from-signup">
+        <p>
+            Thank you for signing up.
+            Please Check your email.
+            Instructions on how to proceed have been sent to you.
+        </p>
+    </div>
+
+    <div id="resend-confirmation">
+        <p>
+            If you did not receive the email, you can request a new one.
+        </p>
+        <form hx-post="{{ resend_url }}" hx-target="#resend-confirmation-response">
+            <input type="text" name="email" placeholder="Email" required />
+            <button id="submit-resend-button" type="submit" disabled>Resend Confirmation Email</button>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
+        </form>
+
+        <div id="resend-confirmation-response"></div>
+    </div>
+
+    <footer><a href="{{ login_url }}">Go To Login Page</a></footer>
+</article>
+
+<script>
+    function onCaptcha(solution) {
+        document.getElementById('submit-resend-button').disabled = false;
+    }
+</script>
+
+{% endblock %}

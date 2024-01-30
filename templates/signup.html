@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block nonce %}Nonce{% endblock %}
+
+{% block head %}
+<script
+  type="module"
+  src="/js/widget.module.min.js"
+></script>
+<script nomodule src="/js/widget.min.js" ></script>
+{% endblock %}
+
+{% block title %}Auth{% endblock %}
+
+{% block content %}
+
+<article id="signup-article" class="grid" hx-ext="response-targets">
+    <div>
+        <nav class="tab-list" role="tablist">
+          <ul>
+            <li><a role="tab" aria-selected="false" aria-controls="tab-content" href="/auth/signin">Sign In</a></li>
+            <li>Sign Up</li>
+          </ul>
+        </nav>
+
+        <hgroup>
+        <h1>Sign Up</h1>
+        <h2>Create an account for Finnish</h2>
+        </hgroup>
+    </div>
+
+    <div id="tab-content" role="tabpanel" class="tab-content">
+        <form id="signup-form" hx-post="/auth/signup" hx-swap="outerHTML" hx-target="body">
+            <div hx-target="this" hx-swap="outerHTML">
+                <div class="grid">
+                <label for="username">Username</label>
+                <img id="ind" src="/img/bars.svg" class="htmx-indicator"/>
+                </div>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  aria-label="Login"
+                  autocomplete="nickname"
+                  pattern="[0-9a-z]{3,20}"
+                  title="3 to 20 characters, lowercase letters or numbers only"
+                  hx-post="/validate/username"
+                  hx-sync="closest form:abort"
+                  hx-indicator="#ind"
+                  required
+                />
+            </div>
+            <div hx-target="this" hx-swap="outerHTML">
+                <div class="grid">
+                <label for="email">Email</label>
+                <img id="ind" src="/img/bars.svg" class="htmx-indicator"/>
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="email@server.com"
+                  aria-label="Email"
+                  autocomplete="email"
+                  hx-post="/validate/email"
+                  hx-sync="closest form:abort"
+                  hx-indicator="#ind"
+                  required
+                />
+            </div>
+            <div hx-target="this" hx-swap="outerHTML">
+                <div class="grid">
+                <label for="password">Password</label>
+                <img id="ind" src="/img/bars.svg" class="htmx-indicator"/>
+                </div>
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    aria-label="Password"
+                    autocomplete="new-password"
+                    id="password"
+                    hx-post="/validate/password-strength"
+                    hx-sync="closest form:abort"
+                    hx-indicator="#ind"
+                    required
+                />
+            </div>
+            <div hx-target="this" hx-swap="outerHTML">
+                <div class="grid">
+                <label for="confirm_password">Confirm Password</label>
+                <img id="ind" src="/img/bars.svg" class="htmx-indicator"/>
+                </div>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  placeholder="Password"
+                  aria-label="Password"
+                  id="confirm_password"
+                  hx-post="/validate/passwords"
+                  hx-sync="closest form:abort"
+                  hx-indicator="#ind"
+                  hx-include="#password"
+                  required
+                />
+            </div>
+            <button id="submit-signup-button" type="submit" class="contrast" disabled>Sign up</button>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
+        </form>
+    </div>
+</article>
+
+<script>
+    function onCaptcha(solution) {
+        document.getElementById('submit-signup-button').disabled = false;
+    }
+</script>
+
+{% endblock %}

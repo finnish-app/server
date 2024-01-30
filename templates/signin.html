@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Auth{% endblock %}
+
+{% block nonce %}{{ nonce }}{% endblock %}
+
+{% block head %}
+<script nonce="{{ nonce }}" src="/js/hyperscript.min.js"></script>
+<script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
+<script
+  nonce="{{ nonce }}"
+  type="module"
+  src="/js/widget.module.min.js"
+></script>
+<script nonce="{{ nonce }}" nomodule src="/js/widget.min.js" ></script>
+{% endblock %}
+
+{% block content %}
+
+<article id="signin-article" class="grid" hx-ext="response-targets">
+    <div>
+        <nav class="tab-list" role="tablist">
+          <ul>
+            <li>Sign In</li>
+            <li><a role="tab" aria-selected="false" aria-controls="tab-content" href="/auth/signup">Sign Up</a></li>
+          </ul>
+        </nav>
+
+        <hgroup>
+        <h1>Sign in</h1>
+        <h2>Enter your user credentials</h2>
+        </hgroup>
+    </div>
+
+    <div id="tab-content" role="tabpanel" class="tab-content">
+        <form id="signin-form" hx-post="/auth/signin" hx-target="#signin-article" hx-target-error="#message">
+            <input
+              type="text"
+              name="email"
+              placeholder="Email"
+              aria-label="Email"
+              autocomplete="email"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              aria-label="Password"
+              autocomplete="current-password"
+              required
+            />
+            <button type="submit" class="contrast" disabled>Login</button>
+            <fieldset>
+                <label for="remember">
+                    <input type="checkbox" role="switch" id="remember" name="remember" />
+                    Remember me
+                </label>
+            </fieldset>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
+        </form>
+        <div id="message">{{ message }}</div>
+    </div>
+</article>
+
+<script type="text/hyperscript">
+    def onCaptcha(solution)
+        if solution
+            document.querySelector('#signin-form button').removeAttribute('disabled')
+        else
+            document.querySelector('#signin-form button').setAttribute('disabled', '')
+        end
+    end
+</script>
+
+{% endblock %}

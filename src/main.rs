@@ -38,10 +38,9 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use axum_helmet::{
-    ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
-    OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
-    XDNSPrefetchControl, XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies,
-    XXSSProtection,
+    CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer, OriginAgentCluster,
+    ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions, XDNSPrefetchControl,
+    XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies, XXSSProtection,
 };
 use axum_login::{
     permission_required,
@@ -72,7 +71,7 @@ async fn axum(
 ) -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            return "finnish=debug,tower_http=debug,axum::rejection=trace".into();
+            return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
         }))
         .with(fmt::layer())
         .init();
@@ -84,41 +83,21 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
-
-    // TODO: create a way to run this task
     let _deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
+    ); // TODO: create a way to run this task
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(false)
+        //.with_secure(false)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-    let content_sec_policy = ContentSecurityPolicy::new()
-        .default_src(vec!["'self'"])
-        .base_uri(vec!["'self'"])
-        .font_src(vec!["'self'", "https:", "data:"])
-        .form_action(vec!["'self'"])
-        .frame_ancestors(vec!["'self'"])
-        .img_src(vec!["'self'", "data:"])
-        .object_src(vec!["'none'"])
-        .script_src(vec!["'self'"])
-        .script_src_attr(vec!["'self'"])
-        .script_src_elem(vec!["'self'", "https:", "'unsafe-inline'"]) // currently breaks without unsafe-inline in htmx.min
-        // this is somehow related to
-        // plotting with plotly, but
-        // rest of app works normally
-        .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
-        .upgrade_insecure_requests();
-
     let helmet_layer = HelmetLayer::new(
         Helmet::new()
-            .add(content_sec_policy)
             .add(CrossOriginOpenerPolicy::same_origin())
             .add(CrossOriginResourcePolicy::same_origin())
             .add(OriginAgentCluster::new(true))
@@ -148,7 +127,7 @@ async fn axum(
         .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
-            login_url = "/auth",
+            login_url = "/auth/signin",
             "protected:read",
         ))
         .merge(hypermedia::router::auth::public_router())

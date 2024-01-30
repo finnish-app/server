@@ -62,6 +62,8 @@ impl AuthUser for User {
 pub struct LoginCredentials {
     pub email: String,
     pub password: String,
+    #[serde(rename = "frc-captcha-solution")]
+    pub frc_captcha_solution: String,
 }
 
 #[derive(Clone)]
