@@ -1,7 +1,9 @@
+use crate::data_structs::Months;
+
+use askama_axum::IntoResponse;
+use axum_helmet::ContentSecurityPolicy;
 use chrono::{Datelike, NaiveDate, Utc};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-
-use crate::data_structs::Months;
 
 /// Returns the first day of a month passed as an unsigned integer as a `NaiveDate`.
 /// Example: `get_first_day_from_month(1)` returns 2023-01-01.
@@ -82,4 +84,28 @@ pub fn generate_otp_token() -> String {
 /// This is used to set the expiration time of the email verification token.
 pub fn now_plus_24_hours() -> Option<chrono::DateTime<chrono::Utc>> {
     return chrono::Utc::now().checked_add_signed(chrono::Duration::hours(24));
+}
+
+/// Receives something that implements `IntoResponse` and adds a CSP header to it.
+pub fn add_csp_to_response(response: impl IntoResponse, nonce_str: &str) -> impl IntoResponse {
+    let csp = ContentSecurityPolicy::new()
+        .default_src(vec!["'self'", "https://api.friendlycaptcha.com"])
+        .base_uri(vec!["'none'"])
+        .font_src(vec!["'none'"])
+        .form_action(vec!["'none'"])
+        .frame_src(vec!["'none'"])
+        .frame_ancestors(vec!["'none'"])
+        .img_src(vec!["'self'"])
+        .object_src(vec!["'none'"])
+        .script_src(vec!["'strict-dynamic'", nonce_str])
+        .style_src(vec!["'self'"])
+        .worker_src(vec!["blob:"])
+        .upgrade_insecure_requests();
+
+    let mut response = response.into_response();
+    response
+        .headers_mut()
+        .insert("Content-Security-Policy", csp.to_string().parse().unwrap());
+
+    return response;
 }

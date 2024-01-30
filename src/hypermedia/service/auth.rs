@@ -1,15 +1,22 @@
 use crate::{
     auth::{AuthSession, LoginCredentials},
-    client::mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
-    hypermedia::schema::{
-        auth::MailToUser,
-        validation::{ChangePasswordInput, Exists, SignUpInput},
+    client::{
+        frc::{validate_frc, verify_frc_solution},
+        mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
+    },
+    hypermedia::{
+        router::auth::ResendEmail,
+        schema::{
+            auth::MailToUser,
+            validation::{ChangePasswordInput, Exists, SignUpInput},
+        },
     },
     templates::{
-        AuthTemplate, ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate,
-        VerificationTemplate,
+        ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
     },
-    util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
+    util::{
+        add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
+    },
 };
 
 use askama_axum::IntoResponse;
@@ -25,12 +32,21 @@ use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
+    secret_store: &SecretStore,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
-    if signin_input.frc_captcha_solution == ".UNFINISHED" {
+    if !validate_frc(&signin_input.frc_captcha_solution) {
         return (
             StatusCode::BAD_REQUEST,
             Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&signin_input.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
         )
             .into_response();
     }
@@ -42,8 +58,8 @@ pub async fn signin(
                     StatusCode::UNAUTHORIZED,
                     Html(format!(
                         "<p style=\"color:red;\">Please verify your email before signing in</p>
-                         <a href=\"/auth/resend-verification?username={}\">Resend verification email</a>",
-                        user.username
+                         <a href=\"/auth/resend-verification?email={}\">Resend verification email</a>",
+                        user.email
                     )),
                 )
                     .into_response();
@@ -72,9 +88,10 @@ pub async fn signin(
 
 pub async fn mfa_qr(auth_session: AuthSession, db_pool: &Pool<Postgres>) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
-        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth")]).into_response();
+        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
     let user_id = user.id;
+    tracing::debug!("User logged in");
     if user.otp_enabled {
         // TODO
         todo!("Create logic for changing MFA method");
@@ -125,8 +142,9 @@ pub async fn mfa_verify(
     mfa_token: String,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
-        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth")]).into_response();
+        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
+    tracing::debug!("User logged in");
 
     let secret = Secret::Encoded(user.otp_secret.unwrap());
     let totp = TOTP::new(
@@ -188,19 +206,33 @@ pub async fn mfa_verify(
     }
 }
 
-pub fn signin_tab(print_message: bool) -> SignInTemplate {
-    if print_message {
-        return SignInTemplate {
-            message: "Password changed successfully".to_owned(),
-        };
-    }
-    return SignInTemplate {
-        message: String::new(),
+pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoResponse {
+    let nonce = generate_otp_token();
+    let nonce_str = format!("'nonce-{nonce}'");
+
+    let template = SignInTemplate {
+        nonce,
+        message: if print_message {
+            "Password changed successfully".to_owned()
+        } else {
+            String::new()
+        },
+        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+            tracing::error!("Error getting FRC_SITEKEY from secret store");
+            String::new()
+        }),
     };
+
+    return add_csp_to_response(template, &nonce_str);
 }
 
-pub const fn signup_tab() -> SignUpTemplate {
-    SignUpTemplate {}
+pub fn signup_tab(secret_store: &SecretStore) -> SignUpTemplate {
+    SignUpTemplate {
+        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+            tracing::error!("Error getting FRC_SITEKEY from secret store");
+            String::new()
+        }),
+    }
 }
 
 pub async fn signup(
@@ -208,10 +240,18 @@ pub async fn signup(
     secret_store: &SecretStore,
     signup_input: SignUpInput,
 ) -> impl IntoResponse {
-    if signup_input.frc_captcha_solution == ".UNFINISHED" {
+    if !validate_frc(&signup_input.frc_captcha_solution) {
         return (
             StatusCode::BAD_REQUEST,
             Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&signup_input.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
         )
             .into_response();
     }
@@ -304,10 +344,14 @@ pub async fn signup(
     }
 }
 
-pub fn email_confirmation() -> impl IntoResponse {
+pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
     ConfirmationTemplate {
-        login_url: "/auth".to_owned(),
+        login_url: "/auth/signin".to_owned(),
         resend_url: "/auth/resend-verification".to_owned(),
+        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+            tracing::error!("Error getting FRC_SITEKEY from secret store");
+            String::new()
+        }),
     }
     .into_response()
 }
@@ -315,15 +359,31 @@ pub fn email_confirmation() -> impl IntoResponse {
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    email: String,
+    resend_email: ResendEmail,
 ) -> impl IntoResponse {
+    if !validate_frc(&resend_email.frc_captcha_solution) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&resend_email.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
+        )
+            .into_response();
+    }
+
     let mut transaction = db_pool.begin().await.unwrap();
     match sqlx::query_as!(
         MailToUser,
         r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
         now_plus_24_hours(),
-        email
+        resend_email.email
     )
     .fetch_one(&mut *transaction)
     .await
@@ -350,11 +410,7 @@ pub async fn resend_verification_email(
 
     (
         StatusCode::OK,
-        VerificationTemplate {
-            message: "Check your inbox for your verification email".to_owned(),
-            login_url: "/auth".to_owned(),
-            ..Default::default()
-        },
+        Html("<p style=\"color:green;\">Verification email resent successfully</p>"),
     )
         .into_response()
 }
@@ -394,7 +450,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                                 StatusCode::OK,
                                 VerificationTemplate {
                                     message: "Email verified successfully. You can now sign in.".to_owned(),
-                                    login_url: "/auth".to_owned(),
+                                    login_url: "/auth/signin".to_owned(),
                                     ..Default::default()
                                 },
                             )
@@ -407,7 +463,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                                 StatusCode::INTERNAL_SERVER_ERROR,
                                 VerificationTemplate {
                                     message: "Error verifying email. Please try again later.".to_owned(),
-                                    login_url: "/auth".to_owned(),
+                                    login_url: "/auth/signin".to_owned(),
                                     ..Default::default()
                                 },
                             )
@@ -422,7 +478,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                         StatusCode::INTERNAL_SERVER_ERROR,
                         VerificationTemplate {
                             message: "Error verifying email. Please try again later.".to_owned(),
-                            login_url: "/auth".to_owned(),
+                            login_url: "/auth/signin".to_owned(),
                             ..Default::default()
                         },
                     ).into_response()
@@ -434,7 +490,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
             (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
-                    login_url: "/auth".to_owned(),
+                    login_url: "/auth/signin".to_owned(),
                     message: "User already verified or verification code expired".to_owned(),
                     should_print_resend_link: true,
                     resend_url: "/auth/resend-verification".to_owned(),
@@ -447,7 +503,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
 
 pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
     match auth_session.logout().await {
-        Ok(_) => Redirect::to("/auth").into_response(),
+        Ok(_) => Redirect::to("/auth/signin").into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -485,10 +541,7 @@ pub async fn change_password(
 
             (
                 StatusCode::OK,
-                [("HX-Push-Url", "/auth")],
-                AuthTemplate {
-                    should_print_message_in_signin: 2,
-                },
+                [("HX-Redirect", "/auth/signin-after-change-password")],
             )
                 .into_response()
         }

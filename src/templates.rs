@@ -55,25 +55,24 @@ pub struct ChangePasswordTemplate {
 }
 
 #[derive(Template, Default)]
-#[template(path = "auth.html")]
-/// The askama template for the login page.
-pub struct AuthTemplate {
-    /// Triggers a message to be displayed to the user, after a failed signin or a successful signup.
-    /// Or no message at all.
-    pub should_print_message_in_signin: u8,
-}
-
-#[derive(Template, Default)]
 #[template(path = "signin.html")]
 /// The askama template for the signup page.
 pub struct SignInTemplate {
+    /// Message to be displayed to the user.
     pub message: String,
+    /// friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
+    /// CSP nonce
+    pub nonce: String,
 }
 
 #[derive(Template, Default)]
 #[template(path = "signup.html")]
 /// The askama template for the signup page.
-pub struct SignUpTemplate {}
+pub struct SignUpTemplate {
+    /// Friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
+}
 
 #[derive(Template, Default)]
 #[template(path = "verify.html")]
@@ -112,4 +111,6 @@ pub struct ConfirmationTemplate {
     pub resend_url: String,
     /// The url of the login page.
     pub login_url: String,
+    /// friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
 }

@@ -143,6 +143,7 @@ workflows:
             - build-and-test
             - format
             - lint
+            - security
           filters:
             branches:
               only: main

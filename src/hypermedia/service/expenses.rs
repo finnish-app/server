@@ -17,7 +17,13 @@ pub async fn get_expenses(
     db_pool: &Pool<Postgres>,
     get_expense_input: GetExpense,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
 
     let first_day_of_month = match get_first_day_from_month_or_none(get_expense_input.month.clone())
     {
@@ -96,7 +102,14 @@ pub async fn edit_expense(
     db_pool: &Pool<Postgres>,
     id: i32,
 ) -> Html<String> {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Html(String::new());
+    };
+
     let expense = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
@@ -124,7 +137,14 @@ pub async fn get_expense(
     db_pool: &Pool<Postgres>,
     id: i32,
 ) -> Html<String> {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Html(String::new());
+    };
+
     let expense = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
@@ -153,7 +173,13 @@ pub async fn update_expense(
     id: i32,
     update_expense: UpdateExpense,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
 
     match sqlx::query_as!(
         Expense,
@@ -205,7 +231,14 @@ pub async fn delete_expense(
     db_pool: &Pool<Postgres>,
     id: i32,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
+
     match sqlx::query!(
         r#"
         DELETE FROM expenses
@@ -230,7 +263,14 @@ pub async fn remove_expense_modal(
     db_pool: &Pool<Postgres>,
     id: i32,
 ) -> Html<String> {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Html(String::new());
+    };
+
     let expense = sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
@@ -250,7 +290,14 @@ pub async fn insert_expense(
     db_pool: &Pool<Postgres>,
     create_expense: UpdateExpense,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
+
     match sqlx::query_as!(
         Expense,
         r#"
@@ -284,7 +331,13 @@ pub async fn plot_expenses(
     db_pool: &Pool<Postgres>,
     get_expense_input: GetExpense,
 ) -> impl IntoResponse {
-    let user_id = auth_session.user.expect("User not logged in").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return StatusCode::UNAUTHORIZED.into_response();
+    };
 
     let first_day_of_month = match get_first_day_from_month_or_none(get_expense_input.month.clone())
     {

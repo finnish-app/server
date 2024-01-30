@@ -37,6 +37,11 @@ use crate::{auth::Backend, data_structs::Months};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
+use axum_helmet::{
+    CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer, OriginAgentCluster,
+    ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions, XDNSPrefetchControl,
+    XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies, XXSSProtection,
+};
 use axum_login::{
     permission_required,
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
@@ -67,7 +72,7 @@ async fn axum(
 ) -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            return "finnish=debug,tower_http=debug,axum::rejection=trace".into();
+            return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
         }))
         .with(fmt::layer())
         .init();
@@ -79,15 +84,15 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
-
+  
     let deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
+    ); // TODO: create a way to run this task
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(false)
+        //.with_secure(false)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
@@ -103,6 +108,25 @@ async fn axum(
         }
     });
 
+    let helmet_layer = HelmetLayer::new(
+        Helmet::new()
+            .add(CrossOriginOpenerPolicy::same_origin())
+            .add(CrossOriginResourcePolicy::same_origin())
+            .add(OriginAgentCluster::new(true))
+            .add(ReferrerPolicy::no_referrer())
+            .add(
+                StrictTransportSecurity::new()
+                    .max_age(15_552_000)
+                    .include_sub_domains(),
+            )
+            .add(XContentTypeOptions::nosniff())
+            .add(XDNSPrefetchControl::off())
+            .add(XDownloadOptions::noopen())
+            .add(XFrameOptions::Deny)
+            .add(XPermittedCrossDomainPolicies::none())
+            .add(XXSSProtection::off()),
+    );
+
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
         //.merge(data::router::data_router())
@@ -115,7 +139,7 @@ async fn axum(
         .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
-            login_url = "/auth",
+            login_url = "/auth/signin",
             "protected:read",
         ))
         .merge(hypermedia::router::auth::public_router())
@@ -127,6 +151,7 @@ async fn axum(
             // We can leak this because it is created once and then
             config: Box::leak(gov_conf),
         })
+        .layer(helmet_layer)
         .layer(auth_layer)
         .layer(
             ServiceBuilder::new()

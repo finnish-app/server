@@ -4,21 +4,20 @@ use crate::{
         auth::MfaTokenForm,
         validation::{ChangePasswordInput, SignUpInput},
     },
-    templates::{ChangePasswordTemplate, SignInTemplate},
+    templates::ChangePasswordTemplate,
     AppState,
 };
 use std::sync::Arc;
 
 use askama_axum::IntoResponse;
 use axum::{
-    extract::{Path, Query, State},
-    routing::get,
+    extract::{Path, State},
+    routing::{get, post},
     Form, Router,
 };
 
 pub fn public_router() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/auth", get(auth_index))
         .route("/auth/signin", get(signin_tab).post(signin))
         .route("/auth/signup", get(signup_tab).post(signup))
         .route(
@@ -27,7 +26,7 @@ pub fn public_router() -> Router<Arc<AppState>> {
         )
         .route("/auth/email-confirmation", get(email_confirmation))
         .route("/auth/verify-email/:token", get(verify_email))
-        .route("/auth/resend-verification", get(resend_verification_email))
+        .route("/auth/resend-verification", post(resend_verification_email))
         .route("/auth/forgot-password", get(forgot_password))
 }
 
@@ -41,27 +40,27 @@ pub fn private_router() -> Router<Arc<AppState>> {
         .route("/auth/mfa", get(mfa_qr).post(mfa_verify))
 }
 
-async fn auth_index() -> impl IntoResponse {
-    SignInTemplate::default()
+async fn signin_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signin_tab(&shared_state.secret_store, false)
 }
 
-async fn signin_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(false)
-}
-
-async fn signin_tab_after_change_password() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(true)
+async fn signin_tab_after_change_password(
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signin_tab(&shared_state.secret_store, true)
 }
 
 async fn signin(
     auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(auth_session, signin_input).await
+    crate::hypermedia::service::auth::signin(auth_session, &shared_state.secret_store, signin_input)
+        .await
 }
 
-async fn email_confirmation() -> impl IntoResponse {
-    crate::hypermedia::service::auth::email_confirmation()
+async fn email_confirmation(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::email_confirmation(&shared_state.secret_store)
 }
 
 async fn mfa_qr(
@@ -80,8 +79,8 @@ async fn mfa_verify(
         .await
 }
 
-async fn signup_tab() -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup_tab()
+async fn signup_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::signup_tab(&shared_state.secret_store)
 }
 
 async fn signup(
@@ -96,19 +95,21 @@ async fn signup(
     .await
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize)]
 pub struct ResendEmail {
-    email: String,
+    pub email: String,
+    #[serde(rename = "frc-captcha-solution")]
+    pub frc_captcha_solution: String,
 }
 
 async fn resend_verification_email(
     State(shared_state): State<Arc<AppState>>,
-    Query(resend_email): Query<ResendEmail>,
+    Form(resend_email): Form<ResendEmail>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::resend_verification_email(
         &shared_state.pool,
         &shared_state.secret_store,
-        resend_email.email,
+        resend_email,
     )
     .await
 }
