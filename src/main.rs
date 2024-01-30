@@ -34,15 +34,9 @@ mod templates;
 mod util;
 
 use crate::{auth::Backend, data_structs::Months};
-use std::{sync::Arc, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
-use axum_helmet::{
-    ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
-    OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
-    XDNSPrefetchControl, XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies,
-    XXSSProtection,
-};
 use axum_login::{
     permission_required,
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
@@ -70,7 +64,7 @@ struct AppState {
 async fn axum(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
     #[shuttle_shared_db::Postgres] pool: PgPool,
-) -> shuttle_axum::ShuttleAxum {
+) -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             return "finnish=debug,tower_http=debug,axum::rejection=trace".into();
@@ -86,8 +80,7 @@ async fn axum(
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
 
-    // TODO: create a way to run this task
-    let _deletion_task = tokio::task::spawn(
+    let deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
@@ -99,45 +92,6 @@ async fn axum(
 
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
-
-    let content_sec_policy = ContentSecurityPolicy::new()
-        .default_src(vec!["'self'"])
-        .base_uri(vec!["'self'"])
-        .font_src(vec!["'self'", "https:", "data:"])
-        .form_action(vec!["'self'"])
-        .frame_ancestors(vec!["'self'"])
-        .img_src(vec!["'self'", "data:"])
-        .object_src(vec!["'none'"])
-        .script_src(vec!["'self'", "'wasm-unsafe-eval'"])
-        .script_src_attr(vec!["'self'"])
-        .script_src_elem(vec!["'self'", "https:", "'unsafe-inline'"]) // currently breaks without unsafe-inline in htmx.min
-        // this is somehow related to
-        // plotting with plotly, but
-        // rest of app works normally
-        .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
-        .child_src(vec!["blob:"])
-        .worker_src(vec!["blob:"])
-        .upgrade_insecure_requests();
-
-    let _helmet_layer = HelmetLayer::new(
-        Helmet::new()
-            .add(content_sec_policy)
-            .add(CrossOriginOpenerPolicy::same_origin())
-            .add(CrossOriginResourcePolicy::same_origin())
-            .add(OriginAgentCluster::new(true))
-            .add(ReferrerPolicy::no_referrer())
-            .add(
-                StrictTransportSecurity::new()
-                    .max_age(15_552_000)
-                    .include_sub_domains(),
-            )
-            .add(XContentTypeOptions::nosniff())
-            .add(XDNSPrefetchControl::off())
-            .add(XDownloadOptions::noopen())
-            .add(XFrameOptions::Deny)
-            .add(XPermittedCrossDomainPolicies::none())
-            .add(XXSSProtection::off()),
-    );
 
     let gov_conf = Box::new(GovernorConfigBuilder::default().finish().unwrap());
     let governor_limiter = gov_conf.limiter().clone();
@@ -169,7 +123,6 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
-        //.layer(helmet_layer)
         .layer(GovernorLayer {
             // We can leak this because it is created once and then
             config: Box::leak(gov_conf),
@@ -195,5 +148,34 @@ async fn axum(
         .with_state(shared_state);
 
     tracing::debug!("Server started");
-    Ok(router.into())
+    Ok(CustomService {
+        router,
+        deletion_task,
+    })
+}
+
+#[derive(Debug)]
+pub struct CustomService {
+    router: Router,
+    deletion_task:
+        tokio::task::JoinHandle<Result<(), axum_login::tower_sessions::session_store::Error>>,
+}
+
+#[shuttle_runtime::async_trait]
+impl shuttle_runtime::Service for CustomService {
+    async fn bind(mut self, addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
+        axum::serve(
+            shuttle_runtime::tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(CustomError::new)?,
+            self.router
+                .into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .map_err(CustomError::new)?;
+
+        let _deletion = tokio::join!(self.deletion_task);
+
+        Ok(())
+    }
 }
