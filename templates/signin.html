@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 
+{% block title %}Auth{% endblock %}
+
+{% block nonce %}{{ nonce }}{% endblock %}
+
 {% block head %}
-<script src="/js/response-targets.js"></script>
+<script nonce="{{ nonce }}" src="/js/hyperscript.min.js"></script>
+<script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
 <script
+  nonce="{{ nonce }}"
   type="module"
   src="/js/widget.module.min.js"
 ></script>
-<script nomodule src="/js/widget.min.js" ></script>
+<script nonce="{{ nonce }}" nomodule src="/js/widget.min.js" ></script>
 {% endblock %}
-
-{% block title %}Auth{% endblock %}
 
 {% block content %}
 
@@ -46,17 +50,27 @@
               autocomplete="current-password"
               required
             />
-            <button type="submit" class="contrast">Login</button>
+            <button type="submit" class="contrast" disabled>Login</button>
             <fieldset>
                 <label for="remember">
                     <input type="checkbox" role="switch" id="remember" name="remember" />
                     Remember me
                 </label>
             </fieldset>
-            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}"></div>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
         </form>
         <div id="message">{{ message }}</div>
     </div>
 </article>
+
+<script type="text/hyperscript">
+    def onCaptcha(solution)
+        if solution
+            document.querySelector('#signin-form button').removeAttribute('disabled')
+        else
+            document.querySelector('#signin-form button').setAttribute('disabled', '')
+        end
+    end
+</script>
 
 {% endblock %}

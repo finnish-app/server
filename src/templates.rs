@@ -62,6 +62,8 @@ pub struct SignInTemplate {
     pub message: String,
     /// friendly captcha secret key for getting the captcha problem
     pub frc_sitekey: String,
+    /// CSP nonce
+    pub nonce: String,
 }
 
 #[derive(Template, Default)]

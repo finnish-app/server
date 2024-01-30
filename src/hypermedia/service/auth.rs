@@ -1,12 +1,15 @@
 use crate::{
     auth::{AuthSession, LoginCredentials},
     client::{
-        frc::validate_frc,
+        frc::{validate_frc, verify_frc_solution},
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
     },
-    hypermedia::schema::{
-        auth::MailToUser,
-        validation::{ChangePasswordInput, Exists, SignUpInput},
+    hypermedia::{
+        router::auth::ResendEmail,
+        schema::{
+            auth::MailToUser,
+            validation::{ChangePasswordInput, Exists, SignUpInput},
+        },
     },
     templates::{
         ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
@@ -19,6 +22,7 @@ use axum::{
     http::StatusCode,
     response::{Html, Redirect},
 };
+use axum_helmet::ContentSecurityPolicy;
 use password_auth::generate_hash;
 use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
@@ -27,12 +31,21 @@ use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
+    secret_store: &SecretStore,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
     if !validate_frc(&signin_input.frc_captcha_solution) {
         return (
             StatusCode::BAD_REQUEST,
             Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&signin_input.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
         )
             .into_response();
     }
@@ -192,8 +205,25 @@ pub async fn mfa_verify(
     }
 }
 
-pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> SignInTemplate {
-    return SignInTemplate {
+pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoResponse {
+    let nonce = generate_otp_token();
+    let nonce_str = format!("'nonce-{nonce}'");
+
+    let content_sec_policy = ContentSecurityPolicy::new()
+        .default_src(vec!["'strict-dynamic'", &nonce_str])
+        .base_uri(vec!["'none'"])
+        .font_src(vec!["'none'"])
+        .form_action(vec!["'none'"])
+        .frame_ancestors(vec!["'none'"])
+        .img_src(vec!["'self'"])
+        .object_src(vec!["'none'"])
+        .script_src(vec!["'strict-dynamic'", &nonce_str])
+        .child_src(vec!["'none'"])
+        .worker_src(vec!["blob:"])
+        .upgrade_insecure_requests();
+
+    let template = SignInTemplate {
+        nonce,
         message: if print_message {
             "Password changed successfully".to_owned()
         } else {
@@ -204,6 +234,14 @@ pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> SignInTemp
             String::new()
         }),
     };
+
+    let mut response = template.into_response();
+    response.headers_mut().insert(
+        "content-security-policy",
+        content_sec_policy.to_string().parse().unwrap(),
+    );
+
+    response
 }
 
 pub fn signup_tab(secret_store: &SecretStore) -> SignUpTemplate {
@@ -220,10 +258,18 @@ pub async fn signup(
     secret_store: &SecretStore,
     signup_input: SignUpInput,
 ) -> impl IntoResponse {
-    if signup_input.frc_captcha_solution == ".UNFINISHED" {
+    if !validate_frc(&signup_input.frc_captcha_solution) {
         return (
             StatusCode::BAD_REQUEST,
             Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&signup_input.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
         )
             .into_response();
     }
@@ -331,15 +377,31 @@ pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
     secret_store: &SecretStore,
-    email: String,
+    resend_email: ResendEmail,
 ) -> impl IntoResponse {
+    if !validate_frc(&resend_email.frc_captcha_solution) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&resend_email.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
+        )
+            .into_response();
+    }
+
     let mut transaction = db_pool.begin().await.unwrap();
     match sqlx::query_as!(
         MailToUser,
         r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
         now_plus_24_hours(),
-        email
+        resend_email.email
     )
     .fetch_one(&mut *transaction)
     .await
@@ -366,11 +428,7 @@ pub async fn resend_verification_email(
 
     (
         StatusCode::OK,
-        VerificationTemplate {
-            message: "Check your inbox for your verification email".to_owned(),
-            login_url: "/auth/signin".to_owned(),
-            ..Default::default()
-        },
+        Html("<p style=\"color:green;\">Verification email resent successfully</p>"),
     )
         .into_response()
 }

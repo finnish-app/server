@@ -11,8 +11,8 @@ use std::sync::Arc;
 
 use askama_axum::IntoResponse;
 use axum::{
-    extract::{Path, Query, State},
-    routing::get,
+    extract::{Path, State},
+    routing::{get, post},
     Form, Router,
 };
 
@@ -26,7 +26,7 @@ pub fn public_router() -> Router<Arc<AppState>> {
         )
         .route("/auth/email-confirmation", get(email_confirmation))
         .route("/auth/verify-email/:token", get(verify_email))
-        .route("/auth/resend-verification", get(resend_verification_email))
+        .route("/auth/resend-verification", post(resend_verification_email))
         .route("/auth/forgot-password", get(forgot_password))
 }
 
@@ -52,9 +52,11 @@ async fn signin_tab_after_change_password(
 
 async fn signin(
     auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(auth_session, signin_input).await
+    crate::hypermedia::service::auth::signin(auth_session, &shared_state.secret_store, signin_input)
+        .await
 }
 
 async fn email_confirmation(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
@@ -93,19 +95,21 @@ async fn signup(
     .await
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize)]
 pub struct ResendEmail {
-    email: String,
+    pub email: String,
+    #[serde(rename = "frc-captcha-solution")]
+    pub frc_captcha_solution: String,
 }
 
 async fn resend_verification_email(
     State(shared_state): State<Arc<AppState>>,
-    Query(resend_email): Query<ResendEmail>,
+    Form(resend_email): Form<ResendEmail>,
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::resend_verification_email(
         &shared_state.pool,
         &shared_state.secret_store,
-        resend_email.email,
+        resend_email,
     )
     .await
 }

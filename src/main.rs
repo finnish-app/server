@@ -38,10 +38,9 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use axum_helmet::{
-    ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
-    OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
-    XDNSPrefetchControl, XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies,
-    XXSSProtection,
+    CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer, OriginAgentCluster,
+    ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions, XDNSPrefetchControl,
+    XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies, XXSSProtection,
 };
 use axum_login::{
     permission_required,
@@ -97,28 +96,8 @@ async fn axum(
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-    let content_sec_policy = ContentSecurityPolicy::new()
-        .default_src(vec!["'self'"])
-        .base_uri(vec!["'self'"])
-        .font_src(vec!["'self'", "https:", "data:"])
-        .form_action(vec!["'self'"])
-        .frame_ancestors(vec!["'self'"])
-        .img_src(vec!["'self'", "data:"])
-        .object_src(vec!["'none'"])
-        .script_src(vec!["'self'", "'wasm-unsafe-eval'"])
-        .script_src_attr(vec!["'self'"])
-        .script_src_elem(vec!["'self'", "https:", "'unsafe-inline'"]) // currently breaks without unsafe-inline in htmx.min
-        // this is somehow related to
-        // plotting with plotly, but
-        // rest of app works normally
-        .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
-        .child_src(vec!["blob:"])
-        .worker_src(vec!["blob:"])
-        .upgrade_insecure_requests();
-
-    let _helmet_layer = HelmetLayer::new(
+    let helmet_layer = HelmetLayer::new(
         Helmet::new()
-            .add(content_sec_policy)
             .add(CrossOriginOpenerPolicy::same_origin())
             .add(CrossOriginResourcePolicy::same_origin())
             .add(OriginAgentCluster::new(true))
@@ -156,7 +135,7 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
-        //.layer(helmet_layer)
+        .layer(helmet_layer)
         .layer(auth_layer)
         .layer(
             ServiceBuilder::new()

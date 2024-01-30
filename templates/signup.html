@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block nonce %}Nonce{% endblock %}
+
 {% block head %}
 <script
   type="module"
@@ -101,10 +103,16 @@
                   required
                 />
             </div>
-            <button type="submit" class="contrast">Sign up</button>
-            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}"></div>
+            <button id="submit-signup-button" type="submit" class="contrast" disabled>Sign up</button>
+            <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
         </form>
     </div>
 </article>
+
+<script>
+    function onCaptcha(solution) {
+        document.getElementById('submit-signup-button').disabled = false;
+    }
+</script>
 
 {% endblock %}
