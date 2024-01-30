@@ -14,7 +14,9 @@ use crate::{
     templates::{
         ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
     },
-    util::{generate_otp_token, generate_verification_token, now_plus_24_hours},
+    util::{
+        add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
+    },
 };
 
 use askama_axum::IntoResponse;
@@ -22,7 +24,6 @@ use axum::{
     http::StatusCode,
     response::{Html, Redirect},
 };
-use axum_helmet::ContentSecurityPolicy;
 use password_auth::generate_hash;
 use shuttle_secrets::SecretStore;
 use sqlx::{Pool, Postgres};
@@ -209,19 +210,6 @@ pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoR
     let nonce = generate_otp_token();
     let nonce_str = format!("'nonce-{nonce}'");
 
-    let content_sec_policy = ContentSecurityPolicy::new()
-        .default_src(vec!["'strict-dynamic'", &nonce_str])
-        .base_uri(vec!["'none'"])
-        .font_src(vec!["'none'"])
-        .form_action(vec!["'none'"])
-        .frame_ancestors(vec!["'none'"])
-        .img_src(vec!["'self'"])
-        .object_src(vec!["'none'"])
-        .script_src(vec!["'strict-dynamic'", &nonce_str])
-        .child_src(vec!["'none'"])
-        .worker_src(vec!["blob:"])
-        .upgrade_insecure_requests();
-
     let template = SignInTemplate {
         nonce,
         message: if print_message {
@@ -235,13 +223,7 @@ pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoR
         }),
     };
 
-    let mut response = template.into_response();
-    response.headers_mut().insert(
-        "content-security-policy",
-        content_sec_policy.to_string().parse().unwrap(),
-    );
-
-    response
+    return add_csp_to_response(template, &nonce_str);
 }
 
 pub fn signup_tab(secret_store: &SecretStore) -> SignUpTemplate {
