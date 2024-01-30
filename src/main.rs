@@ -34,7 +34,7 @@ mod templates;
 mod util;
 
 use crate::{auth::Backend, data_structs::Months};
-use std::{sync::Arc, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
 use axum_helmet::{
@@ -51,6 +51,7 @@ use shuttle_runtime::CustomError;
 use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -68,7 +69,7 @@ struct AppState {
 async fn axum(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
     #[shuttle_shared_db::Postgres] pool: PgPool,
-) -> shuttle_axum::ShuttleAxum {
+) -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
@@ -83,18 +84,28 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
-    let _deletion_task = tokio::task::spawn(
+
+    let deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    ); // TODO: create a way to run this task
+    );
 
     let session_layer = SessionManagerLayer::new(session_store)
-        //.with_secure(false)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+
+    let gov_conf = Box::new(GovernorConfigBuilder::default().finish().unwrap());
+    let governor_limiter = gov_conf.limiter().clone();
+    tokio::task::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(60)).await;
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
+        }
+    });
 
     let helmet_layer = HelmetLayer::new(
         Helmet::new()
@@ -135,6 +146,9 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
+        .layer(GovernorLayer {
+            config: Box::leak(gov_conf),
+        })
         .layer(helmet_layer)
         .layer(auth_layer)
         .layer(
@@ -157,5 +171,34 @@ async fn axum(
         .with_state(shared_state);
 
     tracing::debug!("Server started");
-    Ok(router.into())
+    Ok(CustomService {
+        router,
+        deletion_task,
+    })
+}
+
+#[derive(Debug)]
+pub struct CustomService {
+    router: Router,
+    deletion_task:
+        tokio::task::JoinHandle<Result<(), axum_login::tower_sessions::session_store::Error>>,
+}
+
+#[shuttle_runtime::async_trait]
+impl shuttle_runtime::Service for CustomService {
+    async fn bind(mut self, addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
+        axum::serve(
+            shuttle_runtime::tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(CustomError::new)?,
+            self.router
+                .into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .map_err(CustomError::new)?;
+
+        let _deletion = tokio::join!(self.deletion_task);
+
+        Ok(())
+    }
 }
