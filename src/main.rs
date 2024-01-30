@@ -84,7 +84,7 @@ async fn axum(
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
-  
+
     let deletion_task = tokio::task::spawn(
         session_store
             .clone()
