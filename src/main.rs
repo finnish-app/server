@@ -52,6 +52,7 @@ use shuttle_runtime::CustomError;
 use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -118,7 +119,7 @@ async fn axum(
         .worker_src(vec!["blob:"])
         .upgrade_insecure_requests();
 
-    let helmet_layer = HelmetLayer::new(
+    let _helmet_layer = HelmetLayer::new(
         Helmet::new()
             .add(content_sec_policy)
             .add(CrossOriginOpenerPolicy::same_origin())
@@ -137,6 +138,16 @@ async fn axum(
             .add(XPermittedCrossDomainPolicies::none())
             .add(XXSSProtection::off()),
     );
+
+    let gov_conf = Box::new(GovernorConfigBuilder::default().finish().unwrap());
+    let governor_limiter = gov_conf.limiter().clone();
+    tokio::task::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(60)).await;
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
+        }
+    });
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
@@ -158,7 +169,11 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
-        .layer(helmet_layer)
+        //.layer(helmet_layer)
+        .layer(GovernorLayer {
+            // We can leak this because it is created once and then
+            config: Box::leak(gov_conf),
+        })
         .layer(auth_layer)
         .layer(
             ServiceBuilder::new()
