@@ -89,10 +89,9 @@ async fn axum(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    ); // TODO: create a way to run this task
+    );
 
     let session_layer = SessionManagerLayer::new(session_store)
-        //.with_secure(false)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
     let backend = Backend::new(pool.clone());
@@ -148,7 +147,6 @@ async fn axum(
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
         .layer(GovernorLayer {
-            // We can leak this because it is created once and then
             config: Box::leak(gov_conf),
         })
         .layer(helmet_layer)
