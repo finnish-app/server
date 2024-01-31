@@ -34,13 +34,14 @@ and uses `#![forbid(unsafe_code)]` to ensure everything is implemented in 100% s
 
 Current security status:
 - [x] Basic stuff: redacted password in inputs, completion from browser
-- [x] Password strengh validation and enforcement
-- [x] Password encryption with Argon2
+- [x] Password strengh validation and enforcement, encryption with Argon2
 - [x] Expiring sessions
 - [x] Email confirmation
 - [x] Secure Multi-Factor Authentication (no SMS or email)
+- [x] Captcha and Rate limiting
+- [x] HTTP sec headers
+- [ ] CSP [#72](https://github.com/nicolasauler/finnish/pull/72)
 - [ ] MFA sessions and management
-- [ ] Captcha and spam avoidance
 
 Current financial features status:
 - [x] Basic expenses managing (manual insert, editing and removal)
