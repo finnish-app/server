@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
-{% block nonce %}Nonce{% endblock %}
+{% block nonce %}{{ nonce }}{% endblock %}
 
 {% block head %}
-<script src="/js/response-targets.js"></script>
+<script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
 <script
+  nonce="{{ nonce }}"
   type="module"
   src="/js/widget.module.min.js"
 ></script>
-<script nomodule src="/js/widget.min.js" ></script>
+<script nonce="{{ nonce }}" nomodule src="/js/widget.min.js" ></script>
 {% endblock %}
 
 {% block title %}Email Confirmation{% endblock %}

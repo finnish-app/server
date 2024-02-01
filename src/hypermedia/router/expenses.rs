@@ -30,10 +30,10 @@ pub fn router() -> Router<Arc<AppState>> {
 async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
     match auth_session.user {
         Some(user) => ExpensesTemplate {
-            username: &user.username,
+            username: user.username.clone(),
             ..Default::default()
         }
-        .into_response(),
+        .into_response_with_nonce(),
         None => StatusCode::UNAUTHORIZED.into_response(),
     }
 }

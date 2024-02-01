@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
-{% block nonce %}Nonce{% endblock %}
+{% block title %}Auth{% endblock %}
+
+{% block nonce %}{{ nonce }}{% endblock %}
 
 {% block head %}
 <script
+  nonce="{{ nonce }}"
   type="module"
   src="/js/widget.module.min.js"
 ></script>
-<script nomodule src="/js/widget.min.js" ></script>
+<script nonce="{{ nonce }}" nomodule src="/js/widget.min.js" ></script>
 {% endblock %}
-
-{% block title %}Auth{% endblock %}
 
 {% block content %}
 
@@ -109,7 +110,7 @@
     </div>
 </article>
 
-<script>
+<script nonce="{{ nonce }}">
     function onCaptcha(solution) {
         document.getElementById('submit-signup-button').disabled = false;
     }

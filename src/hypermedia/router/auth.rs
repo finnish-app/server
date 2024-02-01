@@ -131,11 +131,13 @@ async fn logout(auth_session: AuthSession) -> impl IntoResponse {
 }
 
 async fn change_password_screen() -> impl IntoResponse {
-    ChangePasswordTemplate {
+    return ChangePasswordTemplate {
         change_password: "/auth/change-password".to_owned(),
         passwords_match: "/validate/new-passwords".to_owned(),
         password_strength: "/validate/new-password-strength".to_owned(),
+        ..Default::default()
     }
+    .into_response_with_nonce();
 }
 
 async fn change_password(

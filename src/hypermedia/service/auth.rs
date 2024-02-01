@@ -132,8 +132,9 @@ pub async fn mfa_qr(auth_session: AuthSession, db_pool: &Pool<Postgres>) -> impl
         mfa_url: "/auth/mfa".to_owned(),
         qr_code: format!("data:image/png;base64,{qr_code}"),
         otp_auth_url: otp_url,
+        ..Default::default()
     }
-    .into_response();
+    .into_response_with_nonce();
 }
 
 pub async fn mfa_verify(
@@ -207,11 +208,7 @@ pub async fn mfa_verify(
 }
 
 pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoResponse {
-    let nonce = generate_otp_token();
-    let nonce_str = format!("'nonce-{nonce}'");
-
-    let template = SignInTemplate {
-        nonce,
+    return SignInTemplate {
         message: if print_message {
             "Password changed successfully".to_owned()
         } else {
@@ -221,18 +218,20 @@ pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoR
             tracing::error!("Error getting FRC_SITEKEY from secret store");
             String::new()
         }),
-    };
-
-    return add_csp_to_response(template, &nonce_str);
+        ..Default::default()
+    }
+    .into_response_with_nonce();
 }
 
-pub fn signup_tab(secret_store: &SecretStore) -> SignUpTemplate {
-    SignUpTemplate {
+pub fn signup_tab(secret_store: &SecretStore) -> impl IntoResponse {
+    return SignUpTemplate {
         frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
             tracing::error!("Error getting FRC_SITEKEY from secret store");
             String::new()
         }),
+        ..Default::default()
     }
+    .into_response_with_nonce();
 }
 
 pub async fn signup(
@@ -345,15 +344,16 @@ pub async fn signup(
 }
 
 pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
-    ConfirmationTemplate {
+    return ConfirmationTemplate {
         login_url: "/auth/signin".to_owned(),
         resend_url: "/auth/resend-verification".to_owned(),
         frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
             tracing::error!("Error getting FRC_SITEKEY from secret store");
             String::new()
         }),
+        ..Default::default()
     }
-    .into_response()
+    .into_response_with_nonce();
 }
 
 pub async fn resend_verification_email(
@@ -446,7 +446,10 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                     {
                         Ok(_) => {
                             transaction.commit().await.unwrap();
-                            return (
+                            let nonce = generate_otp_token();
+                            let nonce_str = format!("'nonce-{nonce}'");
+
+                            let mut response = (
                                 StatusCode::OK,
                                 VerificationTemplate {
                                     message: "Email verified successfully. You can now sign in.".to_owned(),
@@ -454,12 +457,20 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                                     ..Default::default()
                                 },
                             )
-                                .into_response()
+                                .into_response();
+
+                            add_csp_to_response(&mut response, &nonce_str);
+                            return response;
                         },
                         Err(e) => {
                             transaction.rollback().await.unwrap();
                             tracing::error!("Error updating db: {}", e);
-                            return (
+
+                            let nonce = generate_otp_token();
+                            let nonce_str = format!("'nonce-{nonce}'");
+
+
+                            let mut response = (
                                 StatusCode::INTERNAL_SERVER_ERROR,
                                 VerificationTemplate {
                                     message: "Error verifying email. Please try again later.".to_owned(),
@@ -467,36 +478,52 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                                     ..Default::default()
                                 },
                             )
-                                .into_response()
+                                .into_response();
+
+                            add_csp_to_response(&mut response, &nonce_str);
+                            return response;
                         }
                     }
                 },
                 Err(e) => {
                     transaction.rollback().await.unwrap();
                     tracing::error!("Error updating db: {}", e);
-                    (
+                    let nonce = generate_otp_token();
+                    let nonce_str = format!("'nonce-{nonce}'");
+
+                    let mut response = (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         VerificationTemplate {
                             message: "Error verifying email. Please try again later.".to_owned(),
                             login_url: "/auth/signin".to_owned(),
                             ..Default::default()
                         },
-                    ).into_response()
+                    ).into_response();
+
+                    add_csp_to_response(&mut response, &nonce_str);
+                    return response;
                 }
             }
         }
         Err(e) => {
             tracing::error!("Error verifying email: {}", e);
-            (
+            let nonce = generate_otp_token();
+            let nonce_str = format!("'nonce-{nonce}'");
+
+            let mut response = (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
                     login_url: "/auth/signin".to_owned(),
                     message: "User already verified or verification code expired".to_owned(),
                     should_print_resend_link: true,
                     resend_url: "/auth/resend-verification".to_owned(),
+                    nonce,
                 },
             )
-                .into_response()
+                .into_response();
+
+            add_csp_to_response(&mut response, &nonce_str);
+            return response;
         }
     }
 }

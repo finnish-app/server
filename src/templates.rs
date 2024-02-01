@@ -1,16 +1,18 @@
 use crate::{
     data_structs::{Months, MonthsIter},
     schema::{ExpenseCategory, ExpenseCategoryIter},
+    util::{add_csp_to_response, generate_otp_token},
 };
 
-use askama_axum::Template;
+use askama_axum::{IntoResponse, Template};
+use axum::body::Body;
 use chrono::{Datelike, Month, Utc};
 use strum::IntoEnumIterator;
 
 #[derive(Template)]
 #[template(path = "expenses.html")]
 /// The askama template for the expenses page.
-pub struct ExpensesTemplate<'a> {
+pub struct ExpensesTemplate {
     /// The current month to be displayed in English in the dropdown.
     pub current_month: Months,
     /// The expense types to be displayed in the dropdown.
@@ -18,10 +20,12 @@ pub struct ExpensesTemplate<'a> {
     /// The months to be displayed in the dropdown.
     pub months: MonthsIter,
     /// The username of the logged in user.
-    pub username: &'a str,
+    pub username: String,
+    /// CSP nonce
+    pub nonce: String,
 }
 
-impl Default for ExpensesTemplate<'_> {
+impl Default for ExpensesTemplate {
     fn default() -> Self {
         return Self {
             current_month: {
@@ -37,8 +41,28 @@ impl Default for ExpensesTemplate<'_> {
             },
             expense_categories: ExpenseCategory::iter(),
             months: Months::iter(),
-            username: "",
+            username: "".to_owned(),
+            nonce: "".to_owned(),
         };
+    }
+}
+
+impl ExpensesTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = ExpensesTemplate {
+            current_month: self.current_month,
+            expense_categories: self.expense_categories,
+            months: self.months,
+            username: self.username,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
     }
 }
 
@@ -52,6 +76,26 @@ pub struct ChangePasswordTemplate {
     pub passwords_match: String,
     /// The url to validate password strength with zxcvbn.
     pub password_strength: String,
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl ChangePasswordTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = ChangePasswordTemplate {
+            change_password: self.change_password,
+            passwords_match: self.passwords_match,
+            password_strength: self.password_strength,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
 }
 
 #[derive(Template, Default)]
@@ -66,12 +110,47 @@ pub struct SignInTemplate {
     pub nonce: String,
 }
 
+impl SignInTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = SignInTemplate {
+            message: self.message,
+            frc_sitekey: self.frc_sitekey,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
+}
+
 #[derive(Template, Default)]
 #[template(path = "signup.html")]
 /// The askama template for the signup page.
 pub struct SignUpTemplate {
     /// Friendly captcha secret key for getting the captcha problem
     pub frc_sitekey: String,
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl SignUpTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = SignUpTemplate {
+            frc_sitekey: self.frc_sitekey,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
 }
 
 #[derive(Template, Default)]
@@ -87,6 +166,8 @@ pub struct VerificationTemplate {
     pub resend_url: String,
     /// Whether to print the resend link or not, is only printed when there is an error.
     pub should_print_resend_link: bool,
+    /// CSP nonce
+    pub nonce: String,
 }
 
 #[derive(Template, Default)]
@@ -102,6 +183,26 @@ pub struct MfaTemplate {
     /// The url of the qr code.
     /// So that users in mobile can click it, since scanning is not an option.
     pub otp_auth_url: String,
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl MfaTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = MfaTemplate {
+            mfa_url: self.mfa_url,
+            qr_code: self.qr_code,
+            otp_auth_url: self.otp_auth_url,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
 }
 
 #[derive(Template, Default)]
@@ -113,4 +214,24 @@ pub struct ConfirmationTemplate {
     pub login_url: String,
     /// friendly captcha secret key for getting the captcha problem
     pub frc_sitekey: String,
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl ConfirmationTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = ConfirmationTemplate {
+            resend_url: self.resend_url,
+            login_url: self.login_url,
+            frc_sitekey: self.frc_sitekey,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
 }
