@@ -5,6 +5,7 @@
 {% block nonce %}{{ nonce }}{% endblock %}
 
 {% block head %}
+<script nonce="{{ nonce }}" type="text/hyperscript" src="/js/functions._hs"></script>
 <script nonce="{{ nonce }}" src="/js/hyperscript.min.js"></script>
 <script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
 <script
@@ -33,7 +34,7 @@
     </div>
 
     <div id="tab-content" role="tabpanel" class="tab-content">
-        <form id="signin-form" hx-post="/auth/signin" hx-target="#signin-article" hx-target-error="#message">
+        <form id="signin-form" hx-post="/auth/signin" hx-target="#signin-article" hx-target-error="#message" _="on htmx:afterOnLoad call resetCaptcha()">
             <input
               type="text"
               name="email"
@@ -50,7 +51,7 @@
               autocomplete="current-password"
               required
             />
-            <button type="submit" class="contrast" disabled>Login</button>
+            <button id="form-button-submit" type="submit" class="contrast" disabled>Login</button>
             <fieldset>
                 <label for="remember">
                     <input type="checkbox" role="switch" id="remember" name="remember" />
@@ -62,15 +63,5 @@
         <div id="message">{{ message }}</div>
     </div>
 </article>
-
-<script type="text/hyperscript">
-    def onCaptcha(solution)
-        if solution
-            document.querySelector('#signin-form button').removeAttribute('disabled')
-        else
-            document.querySelector('#signin-form button').setAttribute('disabled', '')
-        end
-    end
-</script>
 
 {% endblock %}

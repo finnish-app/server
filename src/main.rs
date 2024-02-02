@@ -36,11 +36,17 @@ mod util;
 use crate::{auth::Backend, data_structs::Months};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use axum::{error_handling::HandleErrorLayer, http::StatusCode, Router};
+use axum::{
+    body::Body,
+    error_handling::HandleErrorLayer,
+    http::{Response, StatusCode},
+    Router,
+};
 use axum_helmet::{
-    CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer, OriginAgentCluster,
-    ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions, XDNSPrefetchControl,
-    XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies, XXSSProtection,
+    ContentSecurityPolicy, CrossOriginOpenerPolicy, CrossOriginResourcePolicy, Helmet, HelmetLayer,
+    OriginAgentCluster, ReferrerPolicy, StrictTransportSecurity, XContentTypeOptions,
+    XDNSPrefetchControl, XDownloadOptions, XFrameOptions, XPermittedCrossDomainPolicies,
+    XXSSProtection,
 };
 use axum_login::{
     permission_required,
@@ -107,24 +113,7 @@ async fn axum(
         }
     });
 
-    let helmet_layer = HelmetLayer::new(
-        Helmet::new()
-            .add(CrossOriginOpenerPolicy::same_origin())
-            .add(CrossOriginResourcePolicy::same_origin())
-            .add(OriginAgentCluster::new(true))
-            .add(ReferrerPolicy::no_referrer())
-            .add(
-                StrictTransportSecurity::new()
-                    .max_age(15_552_000)
-                    .include_sub_domains(),
-            )
-            .add(XContentTypeOptions::nosniff())
-            .add(XDNSPrefetchControl::off())
-            .add(XDownloadOptions::noopen())
-            .add(XFrameOptions::Deny)
-            .add(XPermittedCrossDomainPolicies::none())
-            .add(XXSSProtection::off()),
-    );
+    let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
@@ -146,11 +135,6 @@ async fn axum(
         .nest_service("/static", ServeDir::new("./css"))
         .nest_service("/js", ServeDir::new("./js"))
         .nest_service("/img", ServeDir::new("./img"))
-        .layer(GovernorLayer {
-            config: Box::leak(gov_conf),
-        })
-        .layer(helmet_layer)
-        .layer(auth_layer)
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| {
@@ -166,6 +150,20 @@ async fn axum(
                 }))
                 .timeout(Duration::from_secs(10))
                 .layer(TraceLayer::new_for_http())
+                .layer(GovernorLayer {
+                    config: Box::leak(gov_conf),
+                })
+                .layer(auth_layer)
+                .layer(helmet_layer)
+                .map_response(|mut res: Response<Body>| {
+                    if res.headers().get("content-security-policy").is_none() {
+                        res.headers_mut().insert(
+                            "content-security-policy",
+                            generate_defaut_csp().to_string().parse().unwrap(),
+                        );
+                    }
+                    return res;
+                })
                 .into_inner(),
         )
         .with_state(shared_state);
@@ -201,4 +199,39 @@ impl shuttle_runtime::Service for CustomService {
 
         Ok(())
     }
+}
+
+fn generate_general_helmet_headers() -> Helmet {
+    return Helmet::new()
+        .add(CrossOriginOpenerPolicy::same_origin())
+        .add(CrossOriginResourcePolicy::same_origin())
+        .add(OriginAgentCluster::new(true))
+        .add(ReferrerPolicy::no_referrer())
+        .add(
+            StrictTransportSecurity::new()
+                .max_age(15_552_000)
+                .include_sub_domains(),
+        )
+        .add(XContentTypeOptions::nosniff())
+        .add(XDNSPrefetchControl::off())
+        .add(XDownloadOptions::noopen())
+        .add(XFrameOptions::Deny)
+        .add(XPermittedCrossDomainPolicies::none())
+        .add(XXSSProtection::off());
+}
+
+fn generate_defaut_csp() -> ContentSecurityPolicy<'static> {
+    return ContentSecurityPolicy::new()
+        .default_src(vec!["'self'"])
+        .base_uri(vec!["'none'"])
+        .font_src(vec!["'none'"])
+        .form_action(vec!["'none'"])
+        .frame_src(vec!["'none'"])
+        .frame_ancestors(vec!["'none'"])
+        .img_src(vec!["'none'"])
+        .object_src(vec!["'none'"])
+        .script_src(vec!["'none'"])
+        .style_src(vec!["'none'"])
+        .worker_src(vec!["'none'"])
+        .upgrade_insecure_requests();
 }

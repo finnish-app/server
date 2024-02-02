@@ -41,8 +41,8 @@ impl Default for ExpensesTemplate {
             },
             expense_categories: ExpenseCategory::iter(),
             months: Months::iter(),
-            username: "".to_owned(),
-            nonce: "".to_owned(),
+            username: String::new(),
+            nonce: String::new(),
         };
     }
 }
@@ -52,7 +52,7 @@ impl ExpensesTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = ExpensesTemplate {
+        let mut response = Self {
             current_month: self.current_month,
             expense_categories: self.expense_categories,
             months: self.months,
@@ -85,7 +85,7 @@ impl ChangePasswordTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = ChangePasswordTemplate {
+        let mut response = Self {
             change_password: self.change_password,
             passwords_match: self.passwords_match,
             password_strength: self.password_strength,
@@ -115,7 +115,7 @@ impl SignInTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = SignInTemplate {
+        let mut response = Self {
             message: self.message,
             frc_sitekey: self.frc_sitekey,
             nonce,
@@ -142,7 +142,7 @@ impl SignUpTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = SignUpTemplate {
+        let mut response = Self {
             frc_sitekey: self.frc_sitekey,
             nonce,
         }
@@ -168,6 +168,8 @@ pub struct VerificationTemplate {
     pub should_print_resend_link: bool,
     /// CSP nonce
     pub nonce: String,
+    /// Friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
 }
 
 #[derive(Template, Default)]
@@ -192,7 +194,7 @@ impl MfaTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = MfaTemplate {
+        let mut response = Self {
             mfa_url: self.mfa_url,
             qr_code: self.qr_code,
             otp_auth_url: self.otp_auth_url,
@@ -223,7 +225,7 @@ impl ConfirmationTemplate {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
-        let mut response = ConfirmationTemplate {
+        let mut response = Self {
             resend_url: self.resend_url,
             login_url: self.login_url,
             frc_sitekey: self.frc_sitekey,

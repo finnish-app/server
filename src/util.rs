@@ -105,5 +105,5 @@ pub fn add_csp_to_response(response: &mut Response<Body>, nonce_str: &str) {
     //let mut response = response.into_response();
     response
         .headers_mut()
-        .insert("Content-Security-Policy", csp.to_string().parse().unwrap());
+        .insert("content-security-policy", csp.to_string().parse().unwrap());
 }
