@@ -2,7 +2,7 @@ use crate::{
     auth::{AuthSession, LoginCredentials},
     hypermedia::schema::{
         auth::MfaTokenForm,
-        validation::{ChangePasswordInput, SignUpInput},
+        validation::{ChangePasswordInput, ResendEmail, SignUpInput},
     },
     templates::ChangePasswordTemplate,
     AppState,
@@ -95,13 +95,6 @@ async fn signup(
     .await
 }
 
-#[derive(serde::Deserialize)]
-pub struct ResendEmail {
-    pub email: String,
-    #[serde(rename = "frc-captcha-solution")]
-    pub frc_captcha_solution: String,
-}
-
 async fn resend_verification_email(
     State(shared_state): State<Arc<AppState>>,
     Form(resend_email): Form<ResendEmail>,
@@ -118,7 +111,12 @@ async fn verify_email(
     State(shared_state): State<Arc<AppState>>,
     Path(token): Path<String>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::verify_email(&shared_state.pool, token).await
+    crate::hypermedia::service::auth::verify_email(
+        &shared_state.pool,
+        &shared_state.secret_store,
+        token,
+    )
+    .await
 }
 
 async fn forgot_password() -> impl IntoResponse {

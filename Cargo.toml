@@ -29,7 +29,7 @@ shuttle-secrets = "0.37.0"
 shuttle-shared-db = { version = "0.37.0", features = ["postgres", "sqlx"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "chrono"] }
 strum = { version = "0.26.1", features = ["strum_macros", "derive"] }
-time = "0.3.31"
+time = "0.3.32"
 tokio = { version = "1.35.1", features = ["full"] }
 totp-rs = { version = "5.4.0", features = ["qr"] }
 tower = "0.4.13"

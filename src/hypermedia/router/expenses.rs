@@ -30,7 +30,7 @@ pub fn router() -> Router<Arc<AppState>> {
 async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
     match auth_session.user {
         Some(user) => ExpensesTemplate {
-            username: user.username.clone(),
+            username: user.username,
             ..Default::default()
         }
         .into_response_with_nonce(),

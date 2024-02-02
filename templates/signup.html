@@ -5,6 +5,7 @@
 {% block nonce %}{{ nonce }}{% endblock %}
 
 {% block head %}
+<script nonce="{{ nonce }}" src="/js/disable-button-oncaptcha.js"></script>
 <script
   nonce="{{ nonce }}"
   type="module"
@@ -104,16 +105,10 @@
                   required
                 />
             </div>
-            <button id="submit-signup-button" type="submit" class="contrast" disabled>Sign up</button>
+            <button id="submit-button" type="submit" class="contrast" disabled>Sign up</button>
             <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
         </form>
     </div>
 </article>
-
-<script nonce="{{ nonce }}">
-    function onCaptcha(solution) {
-        document.getElementById('submit-signup-button').disabled = false;
-    }
-</script>
 
 {% endblock %}

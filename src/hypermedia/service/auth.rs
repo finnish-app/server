@@ -4,12 +4,9 @@ use crate::{
         frc::{validate_frc, verify_frc_solution},
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
     },
-    hypermedia::{
-        router::auth::ResendEmail,
-        schema::{
-            auth::MailToUser,
-            validation::{ChangePasswordInput, Exists, SignUpInput},
-        },
+    hypermedia::schema::{
+        auth::MailToUser,
+        validation::{ChangePasswordInput, Exists, ResendEmail, SignUpInput},
     },
     templates::{
         ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
@@ -21,7 +18,8 @@ use crate::{
 
 use askama_axum::IntoResponse;
 use axum::{
-    http::StatusCode,
+    body::Body,
+    http::{Response, StatusCode},
     response::{Html, Redirect},
 };
 use password_auth::generate_hash;
@@ -55,12 +53,8 @@ pub async fn signin(
         Ok(Some(user)) => {
             if !user.verified {
                 return (
-                    StatusCode::UNAUTHORIZED,
-                    Html(format!(
-                        "<p style=\"color:red;\">Please verify your email before signing in</p>
-                         <a href=\"/auth/resend-verification?email={}\">Resend verification email</a>",
-                        user.email
-                    )),
+                    StatusCode::OK,
+                    [("HX-Redirect", "/auth/email-confirmation")],
                 )
                     .into_response();
             }
@@ -345,12 +339,12 @@ pub async fn signup(
 
 pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
     return ConfirmationTemplate {
-        login_url: "/auth/signin".to_owned(),
-        resend_url: "/auth/resend-verification".to_owned(),
         frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
             tracing::error!("Error getting FRC_SITEKEY from secret store");
             String::new()
         }),
+        login_url: "/auth/signin".to_owned(),
+        resend_url: "/auth/resend-verification".to_owned(),
         ..Default::default()
     }
     .into_response_with_nonce();
@@ -377,6 +371,26 @@ pub async fn resend_verification_email(
             .into_response();
     }
 
+    if let Err(e) = resend_email.validate() {
+        tracing::error!("Error validating signup input: {}", e);
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    if let Ok(_record) = sqlx::query_as!(
+        Exists,
+        r#"SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND verified = true)"#,
+        resend_email.email
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        return (
+            StatusCode::OK,
+            Html("<p style=\"color:green;\">Verification email resent successfully</p>"),
+        )
+            .into_response();
+    }
+
     let mut transaction = db_pool.begin().await.unwrap();
     match sqlx::query_as!(
         MailToUser,
@@ -396,6 +410,11 @@ pub async fn resend_verification_email(
             Ok(_) => {
                 transaction.commit().await.unwrap();
                 tracing::info!("Verification mail resent successfully");
+                return (
+                    StatusCode::OK,
+                    Html("<p style=\"color:green;\">Verification email resent successfully</p>"),
+                )
+                    .into_response();
             }
             Err(e) => {
                 transaction.rollback().await.unwrap();
@@ -408,14 +427,18 @@ pub async fn resend_verification_email(
         }
     }
 
-    (
-        StatusCode::OK,
-        Html("<p style=\"color:green;\">Verification email resent successfully</p>"),
+    return (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Html("<p style=\"color:red;\">Error resending verification email</p>"),
     )
-        .into_response()
+        .into_response();
 }
 
-pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoResponse {
+pub async fn verify_email(
+    db_pool: &Pool<Postgres>,
+    secret_store: &SecretStore,
+    token: String,
+) -> impl IntoResponse {
     match sqlx::query!(
         "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
         token,
@@ -452,8 +475,14 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                             let mut response = (
                                 StatusCode::OK,
                                 VerificationTemplate {
-                                    message: "Email verified successfully. You can now sign in.".to_owned(),
+                                    frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+                                        tracing::error!("Error getting FRC_SITEKEY from secret store");
+                                        String::new()
+                                    }),
                                     login_url: "/auth/signin".to_owned(),
+                                    message: "Email verified successfully. You can now sign in.".to_owned(),
+                                    nonce,
+                                    resend_url: "/auth/resend-verification".to_owned(),
                                     ..Default::default()
                                 },
                             )
@@ -464,44 +493,13 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
                         },
                         Err(e) => {
                             transaction.rollback().await.unwrap();
-                            tracing::error!("Error updating db: {}", e);
-
-                            let nonce = generate_otp_token();
-                            let nonce_str = format!("'nonce-{nonce}'");
-
-
-                            let mut response = (
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                VerificationTemplate {
-                                    message: "Error verifying email. Please try again later.".to_owned(),
-                                    login_url: "/auth/signin".to_owned(),
-                                    ..Default::default()
-                                },
-                            )
-                                .into_response();
-
-                            add_csp_to_response(&mut response, &nonce_str);
-                            return response;
+                            return return_error_from_email_verification(&e, secret_store);
                         }
                     }
                 },
                 Err(e) => {
                     transaction.rollback().await.unwrap();
-                    tracing::error!("Error updating db: {}", e);
-                    let nonce = generate_otp_token();
-                    let nonce_str = format!("'nonce-{nonce}'");
-
-                    let mut response = (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        VerificationTemplate {
-                            message: "Error verifying email. Please try again later.".to_owned(),
-                            login_url: "/auth/signin".to_owned(),
-                            ..Default::default()
-                        },
-                    ).into_response();
-
-                    add_csp_to_response(&mut response, &nonce_str);
-                    return response;
+                    return return_error_from_email_verification(&e, secret_store);
                 }
             }
         }
@@ -513,11 +511,15 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
             let mut response = (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
+                    frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+                        tracing::error!("Error getting FRC_SITEKEY from secret store");
+                        String::new()
+                    }),
                     login_url: "/auth/signin".to_owned(),
-                    message: "User already verified or verification code expired".to_owned(),
-                    should_print_resend_link: true,
-                    resend_url: "/auth/resend-verification".to_owned(),
+                    message: "User already verified or verification code expired.".to_owned(),
                     nonce,
+                    resend_url: "/auth/resend-verification".to_owned(),
+                    should_print_resend_link: true,
                 },
             )
                 .into_response();
@@ -526,6 +528,34 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, token: String) -> impl IntoR
             return response;
         }
     }
+}
+
+fn return_error_from_email_verification(
+    e: &sqlx::Error,
+    secret_store: &SecretStore,
+) -> Response<Body> {
+    tracing::error!("Error updating db: {}", e);
+    let nonce = generate_otp_token();
+    let nonce_str = format!("'nonce-{nonce}'");
+
+    let mut response = (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        VerificationTemplate {
+            frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+                tracing::error!("Error getting FRC_SITEKEY from secret store");
+                String::new()
+            }),
+            login_url: "/auth/signin".to_owned(),
+            message: "Error verifying email. Please try again later.".to_owned(),
+            nonce,
+            resend_url: "/auth/resend-verification".to_owned(),
+            ..Default::default()
+        },
+    )
+        .into_response();
+
+    add_csp_to_response(&mut response, &nonce_str);
+    return response;
 }
 
 pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
