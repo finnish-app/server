@@ -6,13 +6,15 @@ use crate::{
     },
     hypermedia::schema::{
         auth::MailToUser,
-        validation::{ChangePasswordInput, Exists, ResendEmail, SignUpInput},
+        validation::{ChangePasswordInput, Exists, ForgotPasswordInput, ResendEmail, SignUpInput},
     },
     templates::{
-        ConfirmationTemplate, MfaTemplate, SignInTemplate, SignUpTemplate, VerificationTemplate,
+        ChangePasswordTemplate, ConfirmationTemplate, ForgotPasswordTemplate, MfaTemplate,
+        SignInTemplate, SignUpTemplate, VerificationTemplate,
     },
     util::{
         add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
+        now_plus_30_minutes,
     },
 };
 
@@ -608,5 +610,166 @@ pub async fn change_password(
         )
             .into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+pub fn forgot_password_screen(secret_store: &SecretStore) -> impl IntoResponse {
+    return ForgotPasswordTemplate {
+        forgot_url: "/auth/forgot-password".to_owned(),
+        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
+            tracing::error!("Error getting FRC_SITEKEY from secret store");
+            String::new()
+        }),
+        login_url: "/auth/signin".to_owned(),
+        ..Default::default()
+    }
+    .into_response_with_nonce();
+}
+
+pub async fn forgot_password(
+    db_pool: &Pool<Postgres>,
+    secret_store: &SecretStore,
+    email_input: ResendEmail,
+) -> impl IntoResponse {
+    if !validate_frc(&email_input.frc_captcha_solution) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response();
+    }
+    if let Err(e) = verify_frc_solution(&email_input.frc_captcha_solution, secret_store).await {
+        tracing::error!("Error verifying frc solution: {}", e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = email_input.validate() {
+        tracing::error!("Error validating forgot_password input: {}", e);
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    match sqlx::query_as!(
+        Exists,
+        r#"SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"#,
+        email_input.email
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        Ok(record) => {
+            if !record.exists.unwrap() {
+                tracing::warn!("User with email {} does not exist", email_input.email);
+                return (
+                    StatusCode::OK,
+                    Html("<p style=\"color:green;\">Please check your email for a link to reset your password</p>"),
+                )
+                    .into_response();
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error checking if user with email exists: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+
+    let mut transaction = db_pool.begin().await.unwrap();
+    match sqlx::query_as!(
+        MailToUser,
+        r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
+        generate_verification_token(),
+        now_plus_30_minutes(),
+        email_input.email
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    {
+        Ok(mail_to_user) => match send_forgot_password_mail(
+            secret_store,
+            &mail_to_user.email.unwrap(),
+            &mail_to_user.verification_code.unwrap(),
+        ) {
+            Ok(_) => {
+                transaction.commit().await.unwrap();
+                tracing::info!("Forgot password mail sent successfully");
+            }
+            Err(e) => {
+                transaction.rollback().await.unwrap();
+                tracing::error!("Error resending forgot password mail: {}", e);
+            }
+        },
+        Err(e) => {
+            transaction.rollback().await.unwrap();
+            tracing::error!("Error updating verification code and expiration in db: {}", e);
+        }
+    }
+
+    return (
+        StatusCode::OK,
+        Html("<p style=\"color:green;\">Please check your email for a link to reset your password</p>"),
+    )
+        .into_response();
+}
+
+pub fn change_forgotten_password_screen(secret_code: &str) -> impl IntoResponse {
+    return ChangePasswordTemplate {
+        change_password: format!("/auth/reset-password/{secret_code}"),
+        passwords_match: "/validate/new-passwords".to_owned(),
+        password_strength: "/validate/new-password-strength".to_owned(),
+        forgot_password: true,
+        ..Default::default()
+    }
+    .into_response_with_nonce();
+}
+
+pub async fn change_forgotten_password(
+    db_pool: &Pool<Postgres>,
+    forgot_password_input: ForgotPasswordInput,
+    secret_code: String,
+) -> impl IntoResponse {
+    match sqlx::query!(
+        "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
+        secret_code,
+        chrono::Utc::now()
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        Ok(returned_value) => {
+            match sqlx::query!(
+                "UPDATE users SET password = $1, verification_code = NULL, code_expires_at = NULL WHERE id = $2",
+                generate_hash(&forgot_password_input.password),
+                returned_value.id
+            )
+            .execute(db_pool)
+            .await
+            {
+                Ok(_) => {
+                    tracing::info!("Password changed successfully");
+                    return (
+                        StatusCode::OK,
+                        [("HX-Redirect", "/auth/signin-after-change-password")],
+                    )
+                        .into_response();
+                }
+                Err(e) => {
+                    tracing::error!("Error updating db: {}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
+                    ).into_response();
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error changing forgotten password: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
+            ).into_response();
+        }
     }
 }

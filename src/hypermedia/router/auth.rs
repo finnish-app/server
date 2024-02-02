@@ -2,7 +2,7 @@ use crate::{
     auth::{AuthSession, LoginCredentials},
     hypermedia::schema::{
         auth::MfaTokenForm,
-        validation::{ChangePasswordInput, ResendEmail, SignUpInput},
+        validation::{ChangePasswordInput, ForgotPasswordInput, ResendEmail, SignUpInput},
     },
     templates::ChangePasswordTemplate,
     AppState,
@@ -27,7 +27,14 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/email-confirmation", get(email_confirmation))
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", post(resend_verification_email))
-        .route("/auth/forgot-password", get(forgot_password))
+        .route(
+            "/auth/forgot-password",
+            get(forgot_password_screen).post(forgot_password),
+        )
+        .route(
+            "/auth/reset-password/:token",
+            get(change_forgotten_password_screen).post(change_forgotten_password),
+        )
 }
 
 pub fn private_router() -> Router<Arc<AppState>> {
@@ -119,9 +126,20 @@ async fn verify_email(
     .await
 }
 
-async fn forgot_password() -> impl IntoResponse {
-    //crate::hypermedia::service::auth::forgot_password().await
-    todo!()
+async fn forgot_password_screen(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::forgot_password_screen(&shared_state.secret_store)
+}
+
+async fn forgot_password(
+    State(shared_state): State<Arc<AppState>>,
+    Form(email): Form<ResendEmail>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::forgot_password(
+        &shared_state.pool,
+        &shared_state.secret_store,
+        email,
+    )
+    .await
 }
 
 async fn logout(auth_session: AuthSession) -> impl IntoResponse {
@@ -133,6 +151,7 @@ async fn change_password_screen() -> impl IntoResponse {
         change_password: "/auth/change-password".to_owned(),
         passwords_match: "/validate/new-passwords".to_owned(),
         password_strength: "/validate/new-password-strength".to_owned(),
+        forgot_password: false,
         ..Default::default()
     }
     .into_response_with_nonce();
@@ -147,6 +166,23 @@ async fn change_password(
         auth_session,
         &shared_state.pool,
         change_password_input,
+    )
+    .await
+}
+
+async fn change_forgotten_password_screen(Path(token): Path<String>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::change_forgotten_password_screen(&token)
+}
+
+async fn change_forgotten_password(
+    State(shared_state): State<Arc<AppState>>,
+    Path(token): Path<String>,
+    Form(change_password_input): Form<ForgotPasswordInput>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::change_forgotten_password(
+        &shared_state.pool,
+        change_password_input,
+        token,
     )
     .await
 }
