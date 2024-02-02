@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            category = COALESCE($3 :: expense_category, category),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE id = $6 AND user_id = $7\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        ",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses WHERE uuid = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
@@ -46,30 +46,16 @@
         "ordinal": 5,
         "name": "date",
         "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "uuid",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Float4",
-        {
-          "Custom": {
-            "name": "expense_category",
-            "kind": {
-              "Enum": [
-                "food",
-                "transport",
-                "health",
-                "education",
-                "entertainment",
-                "other"
-              ]
-            }
-          }
-        },
-        "Bool",
-        "Date",
-        "Int4",
+        "Uuid",
         "Int4"
       ]
     },
@@ -79,8 +65,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "509b9d3a7045e2663e357f46d6458503f578955fa635364aa1e09006571a2f01"
+  "hash": "464e88875aee2328e04c3617bd9cc85f7b5389f117a38ea678b5d623a88fe998"
 }

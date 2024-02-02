@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        ORDER BY date ASC",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        ORDER BY date ASC",
   "describe": {
     "columns": [
       {
@@ -46,6 +46,11 @@
         "ordinal": 5,
         "name": "date",
         "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "uuid",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -61,8 +66,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "6f05dd9cfd72887b8ba8dd4c22477c286c8053507d965dadcc7d2aa9cd26b9b3"
+  "hash": "d0f241c6ce1214787fffd9c26b97d13bfa3fb8b2734ec1a423813c26e37d2bb5"
 }
