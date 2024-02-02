@@ -1,6 +1,6 @@
 use crate::data_structs::Months;
 
-use askama_axum::IntoResponse;
+use axum::{body::Body, http::Response};
 use axum_helmet::ContentSecurityPolicy;
 use chrono::{Datelike, NaiveDate, Utc};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
@@ -87,7 +87,7 @@ pub fn now_plus_24_hours() -> Option<chrono::DateTime<chrono::Utc>> {
 }
 
 /// Receives something that implements `IntoResponse` and adds a CSP header to it.
-pub fn add_csp_to_response(response: impl IntoResponse, nonce_str: &str) -> impl IntoResponse {
+pub fn add_csp_to_response(response: &mut Response<Body>, nonce_str: &str) {
     let csp = ContentSecurityPolicy::new()
         .default_src(vec!["'self'", "https://api.friendlycaptcha.com"])
         .base_uri(vec!["'none'"])
@@ -95,17 +95,15 @@ pub fn add_csp_to_response(response: impl IntoResponse, nonce_str: &str) -> impl
         .form_action(vec!["'none'"])
         .frame_src(vec!["'none'"])
         .frame_ancestors(vec!["'none'"])
-        .img_src(vec!["'self'"])
+        .img_src(vec!["'self'", "data:"])
         .object_src(vec!["'none'"])
-        .script_src(vec!["'strict-dynamic'", nonce_str])
-        .style_src(vec!["'self'"])
+        .script_src(vec!["'wasm-unsafe-eval'", "'strict-dynamic'", nonce_str])
+        .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
         .worker_src(vec!["blob:"])
         .upgrade_insecure_requests();
 
-    let mut response = response.into_response();
+    //let mut response = response.into_response();
     response
         .headers_mut()
-        .insert("Content-Security-Policy", csp.to_string().parse().unwrap());
-
-    return response;
+        .insert("content-security-policy", csp.to_string().parse().unwrap());
 }

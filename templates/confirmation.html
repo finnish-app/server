@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 
-{% block nonce %}Nonce{% endblock %}
+{% block nonce %}{{ nonce }}{% endblock %}
 
 {% block head %}
-<script src="/js/response-targets.js"></script>
+<script nonce="{{ nonce }}" type="text/hyperscript" src="/js/functions._hs"></script>
+<script nonce="{{ nonce }}" src="/js/hyperscript.min.js"></script>
+<script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
 <script
+  nonce="{{ nonce }}"
   type="module"
   src="/js/widget.module.min.js"
 ></script>
-<script nomodule src="/js/widget.min.js" ></script>
+<script nonce="{{ nonce }}" nomodule src="/js/widget.min.js" ></script>
 {% endblock %}
 
 {% block title %}Email Confirmation{% endblock %}
@@ -21,7 +24,7 @@
     <div id="return-from-signup">
         <p>
             Thank you for signing up.
-            Please Check your email.
+            Please check your email.
             Instructions on how to proceed have been sent to you.
         </p>
     </div>
@@ -30,9 +33,24 @@
         <p>
             If you did not receive the email, you can request a new one.
         </p>
-        <form hx-post="{{ resend_url }}" hx-target="#resend-confirmation-response">
-            <input type="text" name="email" placeholder="Email" required />
-            <button id="submit-resend-button" type="submit" disabled>Resend Confirmation Email</button>
+        <form hx-post="{{ resend_url }}" hx-target="#resend-confirmation-response" hx-target-error="#resend-confirmation-response" _="on htmx:afterOnLoad call resetCaptcha()">
+            <div hx-target="this" hx-swap="outerHTML">
+                <div class="grid">
+                <img id="ind" src="/img/bars.svg" class="htmx-indicator"/>
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="email@server.com"
+                  aria-label="Email"
+                  autocomplete="email"
+                  hx-post="/validate/email"
+                  hx-sync="closest form:abort"
+                  hx-indicator="#ind"
+                  required
+                />
+            </div>
+            <button id="form-button-submit" type="submit" disabled>Resend Confirmation Email</button>
             <div class="frc-captcha" data-sitekey="{{ frc_sitekey }}" data-callback="onCaptcha"></div>
         </form>
 
@@ -41,11 +59,5 @@
 
     <footer><a href="{{ login_url }}">Go To Login Page</a></footer>
 </article>
-
-<script>
-    function onCaptcha(solution) {
-        document.getElementById('submit-resend-button').disabled = false;
-    }
-</script>
 
 {% endblock %}

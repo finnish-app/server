@@ -67,3 +67,11 @@ pub struct ChangePasswordInput {
 pub struct Exists {
     pub exists: Option<bool>,
 }
+
+#[derive(Deserialize, Validate)]
+pub struct ResendEmail {
+    #[validate(email)]
+    pub email: String,
+    #[serde(rename = "frc-captcha-solution")]
+    pub frc_captcha_solution: String,
+}

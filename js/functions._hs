@@ -1,0 +1,13 @@
+def onCaptcha(solution)
+    if solution
+        document.getElementById('form-button-submit').removeAttribute('disabled')
+    else
+        document.getElementById('form-button-submit').setAttribute('disabled', '')
+    end
+end
+
+def resetCaptcha()
+    friendlyChallenge.autoWidget.reset()
+    finally
+        add @disabled to #form-button-submit
+end
