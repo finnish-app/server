@@ -1,7 +1,8 @@
 use crate::{
     auth::AuthSession,
-    constant::{DELETE_EXPENSE_MODAL, EDITABLE_TABLE_ROW, TABLE_ROW},
+    constant::{DELETE_EXPENSE_MODAL, TABLE_ROW},
     schema::{Expense, ExpenseCategory, GetExpense, UpdateExpense},
+    templates::{EditableExpenseRowTemplate, ExpenseRowTemplate},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
 
@@ -10,7 +11,7 @@ use axum::{http::StatusCode, response::Html};
 use chrono::NaiveDate;
 use plotly::{common::Title, Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
-use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 pub async fn get_expenses(
     auth_session: AuthSession,
@@ -42,7 +43,7 @@ pub async fn get_expenses(
     };
     let expenses = sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         FROM expenses
         WHERE ((date >= $1) OR ($1 IS NULL))
         AND ((date <= $2) OR ($2 IS NULL))
@@ -70,7 +71,7 @@ pub async fn get_expenses(
                         expense.price,
                         expense.category,
                         expense.is_essential,
-                        expense.id
+                        expense.uuid
                     )
                 })
                 .collect::<Vec<String>>()
@@ -80,97 +81,81 @@ pub async fn get_expenses(
         .into_response();
 }
 
-fn select_category(category: &ExpenseCategory) -> String {
-    let mut options = String::new();
-    for category_option in ExpenseCategory::iter() {
-        options.push_str(&format!(
-            r#"<option value='{}' {}>{}</option>"#,
-            category_option,
-            if *category == category_option {
-                "selected"
-            } else {
-                ""
-            },
-            category_option
-        ));
-    }
-    options
-}
-
 pub async fn edit_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    id: i32,
-) -> Html<String> {
+    uuid: Uuid,
+) -> impl IntoResponse {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
         user.id
     } else {
         tracing::error!("User not logged in");
-        return Html(String::new());
+        return StatusCode::UNAUTHORIZED.into_response();
     };
 
     let expense = sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
-        FROM expenses WHERE id = $1 AND user_id = $2"#,
-        id,
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        FROM expenses WHERE uuid = $1 AND user_id = $2"#,
+        uuid,
         user_id
     )
         .fetch_one(db_pool)
         .await
         .unwrap();
 
-    Html(format!(
-        EDITABLE_TABLE_ROW!(),
-        id = expense.id,
-        date = expense.date,
-        description = expense.description,
-        price = expense.price,
-        is_essential = if expense.is_essential { "checked" } else { "" },
-        category = select_category(&expense.category)
-    ))
+    return EditableExpenseRowTemplate {
+        uuid: expense.uuid,
+        date: expense.date,
+        description: expense.description,
+        price: expense.price,
+        is_essential: if expense.is_essential { "checked" } else { "" },
+        current_category: expense.category,
+        ..Default::default()
+    }
+    .into_response();
 }
 
 pub async fn get_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    id: i32,
-) -> Html<String> {
+    uuid: Uuid,
+) -> impl IntoResponse {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
         user.id
     } else {
         tracing::error!("User not logged in");
-        return Html(String::new());
+        return StatusCode::UNAUTHORIZED.into_response();
     };
 
     let expense = sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
-        FROM expenses WHERE id = $1 AND user_id = $2"#,
-        id,
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        FROM expenses WHERE uuid = $1 AND user_id = $2"#,
+        uuid,
         user_id
     )
     .fetch_one(db_pool)
     .await
     .unwrap();
 
-    Html(format!(
-        TABLE_ROW!(),
-        expense.date,
-        expense.description,
-        expense.price,
-        expense.category,
-        expense.is_essential,
-        expense.id
-    ))
+    return ExpenseRowTemplate {
+        date: expense.date,
+        description: expense.description,
+        price: expense.price,
+        category: expense.category,
+        is_essential: expense.is_essential,
+        uuid: expense.uuid,
+    }
+    .into_response();
 }
 
 pub async fn update_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    id: i32,
+    uuid: Uuid,
     update_expense: UpdateExpense,
 ) -> impl IntoResponse {
     let user_id = if let Some(user) = auth_session.user {
@@ -190,15 +175,15 @@ pub async fn update_expense(
             category = COALESCE($3 :: expense_category, category),
             is_essential = COALESCE($4, is_essential),
             date = COALESCE($5, date)
-        WHERE id = $6 AND user_id = $7
-        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date
+        WHERE uuid = $6 AND user_id = $7
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         "#,
         update_expense.description,
         update_expense.price,
         update_expense.category as Option<ExpenseCategory>,
         update_expense.is_essential,
         update_expense.date,
-        id,
+        uuid,
         user_id
     )
     .fetch_one(db_pool)
@@ -207,16 +192,14 @@ pub async fn update_expense(
             (
                 StatusCode::OK,
                 [("HX-Trigger", "refresh-plots")],
-                Html(format!(
-                    TABLE_ROW!(),
-                    expense.date,
-                    expense.description,
-                    expense.price,
-                    expense.category,
-                    expense.is_essential,
-                    expense.id
-                    )
-                ),
+                ExpenseRowTemplate {
+                    date: expense.date,
+                    description: expense.description,
+                    price: expense.price,
+                    category: expense.category,
+                    is_essential: expense.is_essential,
+                    uuid: expense.uuid
+                }
             ).into_response()
         },
         Err(e) => {
@@ -229,7 +212,7 @@ pub async fn update_expense(
 pub async fn delete_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    id: i32,
+    uuid: Uuid,
 ) -> impl IntoResponse {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
@@ -242,9 +225,9 @@ pub async fn delete_expense(
     match sqlx::query!(
         r#"
         DELETE FROM expenses
-        WHERE id = $1 AND user_id = $2
+        WHERE uuid = $1 AND user_id = $2
         "#,
-        id,
+        uuid,
         user_id
     )
     .execute(db_pool)
@@ -261,7 +244,7 @@ pub async fn delete_expense(
 pub async fn remove_expense_modal(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    id: i32,
+    uuid: Uuid,
 ) -> Html<String> {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
@@ -273,16 +256,16 @@ pub async fn remove_expense_modal(
 
     let expense = sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
-        FROM expenses WHERE id = $1 AND user_id = $2"#,
-        id,
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        FROM expenses WHERE uuid = $1 AND user_id = $2"#,
+        uuid,
         user_id
     )
         .fetch_one(db_pool)
         .await
         .unwrap();
 
-    Html(format!(DELETE_EXPENSE_MODAL!(), expense.id))
+    Html(format!(DELETE_EXPENSE_MODAL!(), expense.uuid))
 }
 
 pub async fn insert_expense(
@@ -301,15 +284,16 @@ pub async fn insert_expense(
     match sqlx::query_as!(
         Expense,
         r#"
-        INSERT INTO expenses (description, price, category, is_essential, date, user_id)
-        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6)
-        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date
+        INSERT INTO expenses (description, price, category, is_essential, date, uuid, user_id)
+        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7)
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         "#,
         create_expense.description,
         create_expense.price,
         create_expense.category as Option<ExpenseCategory>,
         create_expense.is_essential,
         create_expense.date,
+        Uuid::new_v4(),
         user_id
     )
     .fetch_one(db_pool)
@@ -356,7 +340,7 @@ pub async fn plot_expenses(
     };
     let expenses = sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         FROM expenses
         WHERE ((date >= $1) OR ($1 IS NULL))
         AND ((date <= $2) OR ($2 IS NULL))

@@ -6,8 +6,9 @@ use crate::{
 
 use askama_axum::{IntoResponse, Template};
 use axum::body::Body;
-use chrono::{Datelike, Month, Utc};
+use chrono::{Datelike, Month, NaiveDate, Utc};
 use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 #[derive(Template)]
 #[template(path = "expenses.html")]
@@ -271,4 +272,41 @@ impl ForgotPasswordTemplate {
         add_csp_to_response(&mut response, &nonce_str);
         return response;
     }
+}
+
+#[derive(Template)]
+#[template(path = "editable_expense_row.html")]
+pub struct EditableExpenseRowTemplate {
+    pub is_essential: &'static str,
+    pub uuid: Uuid,
+    pub current_category: ExpenseCategory,
+    pub expense_categories: ExpenseCategoryIter,
+    pub price: f32,
+    pub description: String,
+    pub date: NaiveDate,
+}
+
+impl Default for EditableExpenseRowTemplate {
+    fn default() -> Self {
+        return Self {
+            is_essential: "false",
+            uuid: Uuid::default(),
+            current_category: ExpenseCategory::default(),
+            expense_categories: ExpenseCategory::iter(),
+            price: 0.0,
+            description: String::new(),
+            date: NaiveDate::default(),
+        };
+    }
+}
+
+#[derive(Template, Default)]
+#[template(path = "expense_row.html")]
+pub struct ExpenseRowTemplate {
+    pub date: NaiveDate,
+    pub description: String,
+    pub price: f32,
+    pub category: ExpenseCategory,
+    pub is_essential: bool,
+    pub uuid: Uuid,
 }

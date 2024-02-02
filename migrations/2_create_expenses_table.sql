@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS expenses (
     category expense_category NOT NULL,
     is_essential boolean NOT NULL,
     date date NOT NULL DEFAULT CURRENT_DATE,
+    uuid uuid NOT NULL,
     user_id integer REFERENCES users (id) ON DELETE RESTRICT
 );

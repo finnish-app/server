@@ -8,6 +8,7 @@ use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize};
 use sqlx::FromRow;
 use strum::EnumIter;
+use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
@@ -62,6 +63,7 @@ pub struct Expense {
     pub category: ExpenseCategory,
     pub is_essential: bool,
     pub date: NaiveDate,
+    pub uuid: Uuid,
 }
 
 #[derive(Deserialize, Debug)]
