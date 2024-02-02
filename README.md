@@ -40,7 +40,7 @@ Current security status:
 - [x] Secure Multi-Factor Authentication (no SMS or email)
 - [x] Captcha and Rate limiting
 - [x] HTTP sec headers
-- [ ] CSP [#72](https://github.com/nicolasauler/finnish/pull/72)
+- [x] CSP
 - [ ] MFA sessions and management
 
 Current financial features status:
