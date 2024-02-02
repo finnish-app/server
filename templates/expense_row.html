@@ -1,0 +1,26 @@
+<tr>
+    <td>{{ date }}</td>
+    <td>{{ description }}</td>
+    <td>{{ price }}</td>
+    <td>{{ category }}</td>
+    <td>{{ is_essential }}</td>
+    <td>
+        <button class="btn btn-danger"
+        hx-get="/expenses/{{ uuid }}/edit"
+        hx-trigger="edit"
+        _="on click
+           if .editing is not empty
+               Swal.fire({title: 'Already Editing',
+                          showCancelButton: true,
+                          confirmButtonText: 'Yep, Edit This Row!',
+                          text:'Hey!  You are already editing a row!  Do you want to cancel that edit and continue?'})
+               if the result's isConfirmed is false
+                 halt
+               end
+               send cancel to .editing
+             end
+             trigger edit">
+            Edit
+        </button>
+    </td>
+</tr>

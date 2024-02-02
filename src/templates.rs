@@ -5,9 +5,10 @@ use crate::{
 };
 
 use askama_axum::{IntoResponse, Template};
-use axum::body::Body;
-use chrono::{Datelike, Month, Utc};
+use axum::{body::Body, http::Response};
+use chrono::{Datelike, Month, NaiveDate, Utc};
 use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 #[derive(Template)]
 #[template(path = "expenses.html")]
@@ -48,7 +49,9 @@ impl Default for ExpensesTemplate {
 }
 
 impl ExpensesTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -83,7 +86,9 @@ pub struct ChangePasswordTemplate {
 }
 
 impl ChangePasswordTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -114,7 +119,9 @@ pub struct SignInTemplate {
 }
 
 impl SignInTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -141,7 +148,9 @@ pub struct SignUpTemplate {
 }
 
 impl SignUpTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -193,7 +202,9 @@ pub struct MfaTemplate {
 }
 
 impl MfaTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -212,6 +223,7 @@ impl MfaTemplate {
 
 #[derive(Template, Default)]
 #[template(path = "confirmation.html")]
+/// The askama template for the email confirmation page.
 pub struct ConfirmationTemplate {
     /// The url to GET a new confirmation code and send it to the user.
     pub resend_url: String,
@@ -224,7 +236,9 @@ pub struct ConfirmationTemplate {
 }
 
 impl ConfirmationTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -243,6 +257,7 @@ impl ConfirmationTemplate {
 
 #[derive(Template, Default)]
 #[template(path = "forgot_password.html")]
+/// The askama template for the forgot password page.
 pub struct ForgotPasswordTemplate {
     /// The url to POST the email to.
     /// If the email is found, a reset token will be sent to the user.
@@ -256,7 +271,9 @@ pub struct ForgotPasswordTemplate {
 }
 
 impl ForgotPasswordTemplate {
-    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce(self) -> Response<Body> {
         let nonce = generate_otp_token();
         let nonce_str = format!("'nonce-{nonce}'");
 
@@ -271,4 +288,56 @@ impl ForgotPasswordTemplate {
         add_csp_to_response(&mut response, &nonce_str);
         return response;
     }
+}
+
+#[derive(Template)]
+#[template(path = "editable_expense_row.html")]
+/// The askama template for a row in the expenses table in editable mode.
+pub struct EditableExpenseRowTemplate {
+    /// Whether the expense is essential or not, if it is, return it checked.
+    pub is_essential: &'static str,
+    /// The uuid of the expense.
+    pub uuid: Uuid,
+    /// The current category of the expense.
+    pub current_category: ExpenseCategory,
+    /// The expense categories to be displayed in the dropdown.
+    pub expense_categories: ExpenseCategoryIter,
+    /// The price of the expense.
+    pub price: f32,
+    /// The description of the expense.
+    pub description: String,
+    /// The date of the expense.
+    pub date: NaiveDate,
+}
+
+impl Default for EditableExpenseRowTemplate {
+    fn default() -> Self {
+        return Self {
+            is_essential: "false",
+            uuid: Uuid::default(),
+            current_category: ExpenseCategory::default(),
+            expense_categories: ExpenseCategory::iter(),
+            price: 0.0,
+            description: String::new(),
+            date: NaiveDate::default(),
+        };
+    }
+}
+
+#[derive(Template, Default)]
+#[template(path = "expense_row.html")]
+/// The askama template for a row in the expenses table.
+pub struct ExpenseRowTemplate {
+    /// The date of the expense.
+    pub date: NaiveDate,
+    /// The description of the expense.
+    pub description: String,
+    /// The price of the expense.
+    pub price: f32,
+    /// The category of the expense.
+    pub category: ExpenseCategory,
+    /// Whether the expense is essential or not.
+    pub is_essential: bool,
+    /// The uuid of the expense.
+    pub uuid: Uuid,
 }

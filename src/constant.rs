@@ -29,31 +29,6 @@ macro_rules! TABLE_ROW {
     };
 }
 
-macro_rules! EDITABLE_TABLE_ROW {
-    () => {
-        "<tr hx-trigger='cancel' class='editing' hx-get=\"/expenses/{id}\">
-            <td><input type='date' name='date' value='{date}'></td>
-            <td><input type='text' name='description' value='{description}'></td>
-            <td><input type='number' step='0.01' name='price' value='{price}'></td>
-            <td><select name='category'>
-                {category}
-            </select></td>
-            <td><input type='checkbox' name='is_essential' role='switch' value='true' {is_essential}></td>
-            <td>
-                <button class=\"contrast\" hx-get=\"/expenses/{id}/delete-modal\" hx-target=\"#delete-modal-here\" hx-swap=\"innerHTML\">
-                  Delete
-                </button>
-                <button class=\"btn btn-danger\" hx-get=\"/expenses/{id}\">
-                  Cancel
-                </button>
-                <button class=\"btn btn-danger\" hx-put=\"/expenses/{id}\" hx-include=\"closest tr\">
-                  Save
-                </button>
-            </td>
-        </tr>"
-    };
-}
-
 macro_rules! VALID_EMAIL {
     () => {
         "<div hx-target=\"this\" hx-swap=\"outerHTML\">
@@ -398,7 +373,6 @@ macro_rules! DELETE_EXPENSE_MODAL {
 }
 
 pub(crate) use DELETE_EXPENSE_MODAL;
-pub(crate) use EDITABLE_TABLE_ROW;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
 pub(crate) use MATCHING_NEW_PASSWORDS;

@@ -94,7 +94,7 @@ pub fn now_plus_30_minutes() -> Option<chrono::DateTime<chrono::Utc>> {
 
 /// Receives something that implements `IntoResponse` and adds a CSP header to it.
 pub fn add_csp_to_response(response: &mut Response<Body>, nonce_str: &str) {
-    let csp = ContentSecurityPolicy::new()
+    if let Ok(csp) = ContentSecurityPolicy::new()
         .default_src(vec!["'self'", "https://api.friendlycaptcha.com"])
         .base_uri(vec!["'none'"])
         .font_src(vec!["'none'"])
@@ -106,10 +106,12 @@ pub fn add_csp_to_response(response: &mut Response<Body>, nonce_str: &str) {
         .script_src(vec!["'wasm-unsafe-eval'", "'strict-dynamic'", nonce_str])
         .style_src(vec!["'self'", "https:", "'unsafe-inline'"])
         .worker_src(vec!["blob:"])
-        .upgrade_insecure_requests();
-
-    //let mut response = response.into_response();
-    response
-        .headers_mut()
-        .insert("content-security-policy", csp.to_string().parse().unwrap());
+        .upgrade_insecure_requests()
+        .to_string()
+        .parse()
+    {
+        response
+            .headers_mut()
+            .insert("content-security-policy", csp);
+    }
 }
