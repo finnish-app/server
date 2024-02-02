@@ -6,7 +6,7 @@ use crate::{
     },
     hypermedia::schema::{
         auth::MailToUser,
-        validation::{ChangePasswordInput, Exists, ResendEmail, SignUpInput},
+        validation::{ChangePasswordInput, Exists, ForgotPasswordInput, ResendEmail, SignUpInput},
     },
     templates::{
         ChangePasswordTemplate, ConfirmationTemplate, ForgotPasswordTemplate, MfaTemplate,
@@ -719,7 +719,57 @@ pub fn change_forgotten_password_screen(secret_code: &str) -> impl IntoResponse 
         change_password: format!("/auth/reset-password/{secret_code}"),
         passwords_match: "/validate/new-passwords".to_owned(),
         password_strength: "/validate/new-password-strength".to_owned(),
+        forgot_password: true,
         ..Default::default()
     }
     .into_response_with_nonce();
+}
+
+pub async fn change_forgotten_password(
+    db_pool: &Pool<Postgres>,
+    forgot_password_input: ForgotPasswordInput,
+    secret_code: String,
+) -> impl IntoResponse {
+    match sqlx::query!(
+        "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
+        secret_code,
+        chrono::Utc::now()
+    )
+    .fetch_one(db_pool)
+    .await
+    {
+        Ok(returned_value) => {
+            match sqlx::query!(
+                "UPDATE users SET password = $1, verification_code = NULL, code_expires_at = NULL WHERE id = $2",
+                generate_hash(&forgot_password_input.password),
+                returned_value.id
+            )
+            .execute(db_pool)
+            .await
+            {
+                Ok(_) => {
+                    tracing::info!("Password changed successfully");
+                    return (
+                        StatusCode::OK,
+                        [("HX-Redirect", "/auth/signin-after-change-password")],
+                    )
+                        .into_response();
+                }
+                Err(e) => {
+                    tracing::error!("Error updating db: {}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
+                    ).into_response();
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error changing forgotten password: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
+            ).into_response();
+        }
+    }
 }

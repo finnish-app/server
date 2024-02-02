@@ -76,8 +76,10 @@ pub struct ChangePasswordTemplate {
     pub passwords_match: String,
     /// The url to validate password strength with zxcvbn.
     pub password_strength: String,
-    /// CSP nonce
+    /// CSP nonce.
     pub nonce: String,
+    /// If forgot password or just changing password.
+    pub forgot_password: bool,
 }
 
 impl ChangePasswordTemplate {
@@ -89,6 +91,7 @@ impl ChangePasswordTemplate {
             change_password: self.change_password,
             passwords_match: self.passwords_match,
             password_strength: self.password_strength,
+            forgot_password: self.forgot_password,
             nonce,
         }
         .into_response();
