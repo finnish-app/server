@@ -237,3 +237,35 @@ impl ConfirmationTemplate {
         return response;
     }
 }
+
+#[derive(Template, Default)]
+#[template(path = "forgot_password.html")]
+pub struct ForgotPasswordTemplate {
+    /// The url to POST the email to.
+    /// If the email is found, a reset token will be sent to the user.
+    pub forgot_url: String,
+    /// The url of the login page.
+    pub login_url: String,
+    /// friendly captcha secret key for getting the captcha problem
+    pub frc_sitekey: String,
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl ForgotPasswordTemplate {
+    pub fn into_response_with_nonce(self) -> axum::http::Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = Self {
+            forgot_url: self.forgot_url,
+            login_url: self.login_url,
+            frc_sitekey: self.frc_sitekey,
+            nonce,
+        }
+        .into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
+}

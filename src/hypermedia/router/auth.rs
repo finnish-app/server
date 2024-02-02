@@ -27,7 +27,14 @@ pub fn public_router() -> Router<Arc<AppState>> {
         .route("/auth/email-confirmation", get(email_confirmation))
         .route("/auth/verify-email/:token", get(verify_email))
         .route("/auth/resend-verification", post(resend_verification_email))
-        .route("/auth/forgot-password", get(forgot_password))
+        .route(
+            "/auth/forgot-password",
+            get(forgot_password_screen).post(forgot_password),
+        )
+        .route(
+            "/auth/reset-password/:token",
+            get(change_forgotten_password_screen), //.post(change_forgotten_password),
+        )
 }
 
 pub fn private_router() -> Router<Arc<AppState>> {
@@ -119,9 +126,20 @@ async fn verify_email(
     .await
 }
 
-async fn forgot_password() -> impl IntoResponse {
-    //crate::hypermedia::service::auth::forgot_password().await
-    todo!()
+async fn forgot_password_screen(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::forgot_password_screen(&shared_state.secret_store)
+}
+
+async fn forgot_password(
+    State(shared_state): State<Arc<AppState>>,
+    Form(email): Form<ResendEmail>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::auth::forgot_password(
+        &shared_state.pool,
+        &shared_state.secret_store,
+        email,
+    )
+    .await
 }
 
 async fn logout(auth_session: AuthSession) -> impl IntoResponse {
@@ -150,3 +168,21 @@ async fn change_password(
     )
     .await
 }
+
+async fn change_forgotten_password_screen(Path(token): Path<String>) -> impl IntoResponse {
+    crate::hypermedia::service::auth::change_forgotten_password_screen(&token)
+}
+
+//async fn change_forgotten_password(
+//    State(shared_state): State<Arc<AppState>>,
+//    Path(token): Path<String>,
+//    Form(change_password_input): Form<ChangePasswordInput>,
+//) -> impl IntoResponse {
+//    crate::hypermedia::service::auth::change_forgotten_password(
+//        &shared_state.pool,
+//        &shared_state.secret_store,
+//        token,
+//        change_password_input,
+//    )
+//    .await
+//}
