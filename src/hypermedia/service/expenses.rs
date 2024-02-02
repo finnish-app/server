@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
     auth::AuthSession,
     constant::{DELETE_EXPENSE_MODAL, TABLE_ROW},
@@ -310,6 +312,8 @@ pub async fn insert_expense(
     }
 }
 
+/// Plots the expenses of the user.
+/// This plot is a time series of the expenses of the user.
 pub async fn plot_expenses(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
@@ -338,7 +342,7 @@ pub async fn plot_expenses(
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
-    let expenses = sqlx::query_as!(
+    let expenses = match sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         FROM expenses
@@ -352,9 +356,15 @@ pub async fn plot_expenses(
     )
     .fetch_all(db_pool)
     .await
-    .unwrap();
+    {
+        Ok(expenses) => expenses,
+        Err(e) => {
+            tracing::error!("Error getting expenses: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
 
-    let mut expenses_by_date = std::collections::BTreeMap::<NaiveDate, f32>::new();
+    let mut expenses_by_date = BTreeMap::<NaiveDate, f32>::new();
     for expense in expenses {
         let price = expenses_by_date.entry(expense.date).or_insert(0.0);
         *price += expense.price;

@@ -39,7 +39,7 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 use axum::{
     body::Body,
     error_handling::HandleErrorLayer,
-    http::{Response, StatusCode},
+    http::{HeaderValue, Response, StatusCode},
     Router,
 };
 use axum_helmet::{
@@ -50,12 +50,13 @@ use axum_helmet::{
 };
 use axum_login::{
     permission_required,
-    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
+    tower_sessions::{session_store, ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use shuttle_runtime::CustomError;
+use shuttle_runtime::{tokio::net::TcpListener, CustomError};
 use shuttle_secrets::SecretStore;
 use sqlx::PgPool;
+use tokio::task;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -91,7 +92,7 @@ async fn axum(
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
 
-    let deletion_task = tokio::task::spawn(
+    let deletion_task = task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
@@ -103,9 +104,13 @@ async fn axum(
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-    let gov_conf = Box::new(GovernorConfigBuilder::default().finish().unwrap());
+    let gov_conf = Box::new(
+        GovernorConfigBuilder::default()
+            .finish()
+            .unwrap_or_default(),
+    );
     let governor_limiter = gov_conf.limiter().clone();
-    tokio::task::spawn(async move {
+    task::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(60)).await;
             tracing::info!("rate limiting storage size: {}", governor_limiter.len());
@@ -159,7 +164,13 @@ async fn axum(
                     if res.headers().get("content-security-policy").is_none() {
                         res.headers_mut().insert(
                             "content-security-policy",
-                            generate_defaut_csp().to_string().parse().unwrap(),
+                            generate_defaut_csp()
+                                .to_string()
+                                .parse()
+                                .unwrap_or_else(|_| {
+                                    tracing::error!("Failed to parse default CSP");
+                                    return HeaderValue::from_static(fallback_static_str_csp());
+                                }),
                         );
                     }
                     return res;
@@ -176,19 +187,19 @@ async fn axum(
 }
 
 #[derive(Debug)]
+/// The custom service to be used in the shuttle runtime.
 pub struct CustomService {
+    /// The axum router.
     router: Router,
-    deletion_task:
-        tokio::task::JoinHandle<Result<(), axum_login::tower_sessions::session_store::Error>>,
+    /// The task to delete expired sessions.
+    deletion_task: task::JoinHandle<Result<(), session_store::Error>>,
 }
 
 #[shuttle_runtime::async_trait]
 impl shuttle_runtime::Service for CustomService {
-    async fn bind(mut self, addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
+    async fn bind(mut self, addr: SocketAddr) -> Result<(), shuttle_runtime::Error> {
         axum::serve(
-            shuttle_runtime::tokio::net::TcpListener::bind(addr)
-                .await
-                .map_err(CustomError::new)?,
+            TcpListener::bind(addr).await.map_err(CustomError::new)?,
             self.router
                 .into_make_service_with_connect_info::<SocketAddr>(),
         )
@@ -201,6 +212,7 @@ impl shuttle_runtime::Service for CustomService {
     }
 }
 
+/// Returns a default configuration of http security headers.
 fn generate_general_helmet_headers() -> Helmet {
     return Helmet::new()
         .add(CrossOriginOpenerPolicy::same_origin())
@@ -220,6 +232,8 @@ fn generate_general_helmet_headers() -> Helmet {
         .add(XXSSProtection::off());
 }
 
+/// Returns a default strict Content Security Policy.
+/// It's used whenever a custom CSP is not set.
 fn generate_defaut_csp() -> ContentSecurityPolicy<'static> {
     return ContentSecurityPolicy::new()
         .default_src(vec!["'self'"])
@@ -234,4 +248,22 @@ fn generate_defaut_csp() -> ContentSecurityPolicy<'static> {
         .style_src(vec!["'none'"])
         .worker_src(vec!["'none'"])
         .upgrade_insecure_requests();
+}
+
+/// Returns a default strict Content Security Policy as a static string.
+const fn fallback_static_str_csp() -> &'static str {
+    return "
+    default-src 'self';
+    base-uri 'none';
+    font-src 'none';
+    form-action 'none';
+    frame-src 'none';
+    frame-ancestors 'none';
+    img-src 'none';
+    object-src 'none';
+    script-src 'none';
+    style-src 'none';
+    worker-src 'none';
+    upgrade-insecure-requests;
+    ";
 }
