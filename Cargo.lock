@@ -4021,9 +4021,9 @@ dependencies = [
 
 [[package]]
 name = "tower_governor"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d31d2cd0776b0e10664d3db2e362b9a8b38a18cb09ba97d3f2f775c54f2c51b"
+checksum = "3790eac6ad3fb8d9d96c2b040ae06e2517aa24b067545d1078b96ae72f7bb9a7"
 dependencies = [
  "axum 0.7.4",
  "forwarded-header-value",
