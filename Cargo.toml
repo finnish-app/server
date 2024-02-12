@@ -34,7 +34,7 @@ tokio = { version = "1.36.0", features = ["full"] }
 totp-rs = { version = "5.4.0", features = ["qr"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.1", features = ["fs", "trace"] }
-tower-sessions = "0.10.1"
+tower-sessions = "0.10.2"
 tower-sessions-sqlx-store = { version = "0.10.0", features = ["postgres"] }
 tower_governor = { version = "0.3.1", features = ["axum", "tracing"] }
 tracing = "0.1.40"
