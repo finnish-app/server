@@ -3057,6 +3057,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "shuttle-common"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73ba3a5682794470b5bf045c4a36fd42c86bbbe1040edc1855cb68272df69e91"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "comfy-table",
+ "crossterm 0.27.0",
+ "semver",
+ "serde",
+ "serde_json",
+ "strum 0.26.1",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "shuttle-proto"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3065,7 +3086,7 @@ dependencies = [
  "futures-core",
  "prost 0.12.3",
  "prost-types",
- "shuttle-common",
+ "shuttle-common 0.38.0",
  "tonic 0.10.2",
 ]
 
@@ -3083,9 +3104,9 @@ dependencies = [
  "serde",
  "serde_json",
  "shuttle-codegen",
- "shuttle-common",
+ "shuttle-common 0.38.0",
  "shuttle-proto",
- "shuttle-service",
+ "shuttle-service 0.38.0",
  "strfmt",
  "thiserror",
  "tokio",
@@ -3101,7 +3122,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7bdd3d98310afeb2ccab62b42988a9d0a9ccc1472b18f9e0c478b024cc21556b"
 dependencies = [
  "async-trait",
- "shuttle-service",
+ "shuttle-service 0.38.0",
 ]
 
 [[package]]
@@ -3113,21 +3134,36 @@ dependencies = [
  "anyhow",
  "async-trait",
  "serde",
- "shuttle-common",
+ "shuttle-common 0.38.0",
  "shuttle-proto",
  "strfmt",
  "thiserror",
 ]
 
 [[package]]
-name = "shuttle-shared-db"
-version = "0.38.0"
+name = "shuttle-service"
+version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8d346d6d279774628ddb074cb0749a26b53a6f8b97df7ba75c0ad9c6f0f4a05"
+checksum = "e2a98f52c7fb8a19f8089cdee5ffd5290617f6d322f06ee292d0a2ed75a9094a"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "serde",
+ "shuttle-common 0.41.0",
+ "strfmt",
+ "thiserror",
+]
+
+[[package]]
+name = "shuttle-shared-db"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17b65cbf5d1cf004917a824dd8558bca88f1f8d239407c9e831a7d35dbc75b73"
 dependencies = [
  "async-trait",
  "serde",
- "shuttle-service",
+ "serde_json",
+ "shuttle-service 0.41.0",
  "sqlx",
 ]
 
