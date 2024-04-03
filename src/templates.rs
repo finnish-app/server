@@ -75,7 +75,7 @@ impl ExpensesTemplate {
 pub struct ChangePasswordTemplate {
     /// The url to post to change the user password.
     pub change_password: String,
-    /// The url to validate that the new_password matches with its confirmation.
+    /// The url to validate that the `new_password` matches with its confirmation.
     pub passwords_match: String,
     /// The url to validate password strength with zxcvbn.
     pub password_strength: String,

@@ -1,6 +1,7 @@
 use askama_axum::IntoResponse;
 use axum::{http::StatusCode, Json};
 use sqlx::{Pool, Postgres};
+use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
@@ -14,7 +15,7 @@ pub async fn get_expenses(
     let user_id = auth_session.user.expect("User should be authenticated").id;
     match sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         FROM expenses
         WHERE user_id = $1
         ORDER BY date ASC"#,
@@ -38,15 +39,16 @@ pub async fn create_expense(
         Expense,
         r#"
         INSERT INTO expenses
-        (description, price, category, is_essential, date, user_id)
-        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6)
-        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date
+        (description, price, category, is_essential, date, uuid, user_id)
+        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7)
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         "#,
         create_expense.description,
         create_expense.price,
         create_expense.category as Option<ExpenseCategory>,
         create_expense.is_essential,
         create_expense.date,
+        Uuid::new_v4(),
         user_id
     )
     .fetch_one(db_pool)

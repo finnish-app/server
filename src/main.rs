@@ -53,8 +53,7 @@ use axum_login::{
     tower_sessions::{session_store, ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use shuttle_runtime::{tokio::net::TcpListener, CustomError};
-use shuttle_secrets::SecretStore;
+use shuttle_runtime::{tokio::net::TcpListener, CustomError, SecretStore};
 use sqlx::PgPool;
 use tokio::task;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
@@ -74,7 +73,7 @@ struct AppState {
 #[shuttle_runtime::main]
 /// The main function of the application.
 async fn axum(
-    #[shuttle_secrets::Secrets] secret_store: SecretStore,
+    #[shuttle_runtime::Secrets] secret_store: SecretStore,
     #[shuttle_shared_db::Postgres] pool: PgPool,
 ) -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
