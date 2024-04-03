@@ -2,7 +2,7 @@ use lettre::{
     message::header::ContentType, transport::smtp::authentication::Credentials, Message,
     SmtpTransport, Transport,
 };
-use shuttle_secrets::SecretStore;
+use shuttle_runtime::SecretStore;
 
 pub fn send_email(
     secret_store: &SecretStore,

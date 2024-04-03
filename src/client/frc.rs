@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use shuttle_secrets::SecretStore;
+use shuttle_runtime::SecretStore;
 
 #[derive(serde::Deserialize)]
 pub enum FrcVerificationError {

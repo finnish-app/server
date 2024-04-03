@@ -1,12 +1,10 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use validator::{Validate, ValidationError};
 use zxcvbn::zxcvbn;
 
-lazy_static! {
-    static ref RE_USERNAME: Regex = Regex::new(r"^[a-z0-9]{3,20}$").unwrap();
-}
+static RE_USERNAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-z0-9]{3,20}$").unwrap());
 
 #[derive(Deserialize, Validate, Debug)]
 pub struct EmailInput {
@@ -16,13 +14,13 @@ pub struct EmailInput {
 
 #[derive(Deserialize, Validate)]
 pub struct UsernameInput {
-    #[validate(regex = "RE_USERNAME")]
+    #[validate(regex(path = *RE_USERNAME))]
     pub username: String,
 }
 
 #[derive(Deserialize, Validate)]
 pub struct PasswordInput {
-    #[validate(custom = "validate_password_strength")]
+    #[validate(custom(function = "validate_password_strength"))]
     pub password: String,
 }
 
@@ -36,19 +34,19 @@ fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
 #[derive(Deserialize, Validate)]
 pub struct PasswordsInput {
     pub password: String,
-    #[validate(must_match = "password")]
+    #[validate(must_match(other = "password"))]
     pub confirm_password: String,
 }
 
 #[derive(Deserialize, Validate)]
 pub struct SignUpInput {
-    #[validate(regex = "RE_USERNAME")]
+    #[validate(regex(path = *RE_USERNAME))]
     pub username: String,
     #[validate(email)]
     pub email: String,
-    #[validate(custom = "validate_password_strength")]
+    #[validate(custom(function = "validate_password_strength"))]
     pub password: String,
-    #[validate(must_match = "password")]
+    #[validate(must_match(other = "password"))]
     pub confirm_password: String,
     #[serde(rename = "frc-captcha-solution")]
     pub frc_captcha_solution: String,
@@ -57,17 +55,17 @@ pub struct SignUpInput {
 #[derive(Deserialize, Validate)]
 pub struct ChangePasswordInput {
     pub old_password: String,
-    #[validate(custom = "validate_password_strength")]
+    #[validate(custom(function = "validate_password_strength"))]
     pub password: String,
-    #[validate(must_match = "password")]
+    #[validate(must_match(other = "password"))]
     pub confirm_password: String,
 }
 
 #[derive(Deserialize, Validate)]
 pub struct ForgotPasswordInput {
-    #[validate(custom = "validate_password_strength")]
+    #[validate(custom(function = "validate_password_strength"))]
     pub password: String,
-    #[validate(must_match = "password")]
+    #[validate(must_match(other = "password"))]
     pub confirm_password: String,
 }
 

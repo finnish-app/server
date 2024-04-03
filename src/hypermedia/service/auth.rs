@@ -25,7 +25,7 @@ use axum::{
     response::{Html, Redirect},
 };
 use password_auth::generate_hash;
-use shuttle_secrets::SecretStore;
+use shuttle_runtime::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
 use validator::Validate;
