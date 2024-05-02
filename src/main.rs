@@ -103,7 +103,7 @@ async fn axum(
     let backend = Backend::new(pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-    let gov_conf = Box::new(
+    let gov_conf = Arc::new(
         GovernorConfigBuilder::default()
             .finish()
             .unwrap_or_default(),
@@ -154,9 +154,7 @@ async fn axum(
                 }))
                 .timeout(Duration::from_secs(10))
                 .layer(TraceLayer::new_for_http())
-                .layer(GovernorLayer {
-                    config: Box::leak(gov_conf),
-                })
+                .layer(GovernorLayer { config: gov_conf })
                 .layer(auth_layer)
                 .layer(helmet_layer)
                 .map_response(|mut res: Response<Body>| {
