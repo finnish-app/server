@@ -1,0 +1,92 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            category = COALESCE($3 :: expense_category, category),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE uuid = $6 AND user_id = $7\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "price",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 3,
+        "name": "category: ExpenseCategory",
+        "type_info": {
+          "Custom": {
+            "name": "expense_category",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "is_essential",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "uuid",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Float4",
+        {
+          "Custom": {
+            "name": "expense_category",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        },
+        "Bool",
+        "Date",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "11362d284830b9de70743332c3e6c0610fec70a34cae3c1388b684f86cec292a"
+}
