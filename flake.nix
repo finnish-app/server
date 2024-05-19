@@ -12,13 +12,13 @@
       let
         shuttle = pkgs.rustPlatform.buildRustPackage rec {
           pname = "shuttle";
-          version = "v0.44.0";
+          version = "v0.45.0";
 
           src = pkgs.fetchFromGitHub {
             owner = "shuttle-hq";
             repo = pname;
             rev = version;
-            hash = "sha256-3u2GWgDQpa4sU/66vS6S+JwCEL/fvy8MTsATRs7RGVs=";
+            hash = "sha256-bjGyLfeo11Y55WqPwcUxnNkexozlxC61/rSa65gBGZ4=";
           };
 
           doCheck = false;
@@ -46,6 +46,7 @@
             nixpkgs-fmt
             openssl
             pkg-config
+            python3
             rust-bin.beta.latest.default
             sqlx-cli
             shuttle

@@ -11,3 +11,7 @@ pyvenv.cfg
 
 # ignore pre-commit
 pre-commit-*
+
+# ignore direnv
+.envrc
+.direnv/
