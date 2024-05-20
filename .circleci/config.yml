@@ -7,7 +7,7 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: cimg/rust:1.75.0
+      - image: cimg/rust:1.78.0
     environment:
       # Fail the build if there are warnings
       RUSTFLAGS: '-D warnings'
@@ -40,7 +40,7 @@ jobs:
 
   security:
     docker:
-      - image: cimg/rust:1.75.0
+      - image: cimg/rust:1.78.0
     steps:
       - checkout
       - run:
@@ -66,7 +66,7 @@ jobs:
 
   format:
     docker:
-      - image: cimg/rust:1.75.0
+      - image: cimg/rust:1.78.0
     steps:
       - checkout
       - run:
@@ -83,7 +83,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.75.0
+      - image: cimg/rust:1.78.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -100,7 +100,7 @@ jobs:
 
   shuttle-deploy:
     docker:
-      - image: cimg/rust:1.75.0
+      - image: cimg/rust:1.78.0
     steps:
       - checkout
       - run:
