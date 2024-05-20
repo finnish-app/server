@@ -52,6 +52,9 @@
             shuttle
           ];
 
+          shellHook = ''
+            export DATABASE_URL=postgres://postgres:postgres@localhost:17144/finnish
+          '';
           # shellHook = ''
           #   alias ls=eza
           #   alias find=fd

@@ -7,20 +7,48 @@ use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
-    schema::{Expense, ExpenseCategory, UpdateExpense},
+    schema::{Expense, ExpenseCategory, GetExpense, UpdateExpense},
+    util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
 
 pub async fn get_expenses(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
+    get_expense_input: GetExpense,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let user_id = auth_session.user.expect("User should be authenticated").id;
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Err((StatusCode::UNAUTHORIZED, String::new()));
+    };
+
+    let first_day_of_month = match get_first_day_from_month_or_none(get_expense_input.month.clone())
+    {
+        Ok(date) => date,
+        Err(e) => {
+            tracing::error!("Error getting first day of month: {}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, String::new()));
+        }
+    };
+    let last_day_of_month = match get_last_day_from_month_or_none(get_expense_input.month) {
+        Ok(date) => date,
+        Err(e) => {
+            tracing::error!("Error getting last day of month: {}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, String::new()));
+        }
+    };
     match sqlx::query_as!(
         Expense,
         r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
         FROM expenses
-        WHERE user_id = $1
+        WHERE ((date >= $1) OR ($1 IS NULL))
+        AND ((date <= $2) OR ($2 IS NULL))
+        AND user_id = $3
         ORDER BY date ASC"#,
+        first_day_of_month,
+        last_day_of_month,
         user_id
     )
     .fetch_all(db_pool)
