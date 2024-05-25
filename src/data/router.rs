@@ -29,10 +29,15 @@ async fn get_expenses(
     .await
 }
 
-// async fn insert_expense(
-//     auth_session: AuthSession,
-//     State(shared_state): State<Arc<AppState>>,
-//     Json(create_expense): Json<UpdateExpense>,
-// ) -> Result<impl IntoResponse, impl IntoResponse> {
-//     super::service::create_expense(auth_session, &shared_state.pool, Json(create_expense)).await
-// }
+async fn insert_expense(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+    Json(create_expense): Json<UpdateExpense>,
+) -> impl IntoResponse {
+    crate::data::service::expenses::insert_expense(
+        auth_session,
+        &shared_state.pool,
+        create_expense,
+    )
+    .await
+}
