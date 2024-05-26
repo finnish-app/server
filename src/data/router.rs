@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
-    schema::{GetExpense, UpdateExpense},
+    schema::{GetExpense, UpdateExpense, UpdateExpenseApi},
     AppState,
 };
 
@@ -17,7 +17,7 @@ pub fn data_router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/expenses", get(get_expenses).post(insert_expense))
         .route(
-            "/api/:uuid",
+            "/api/expenses/:uuid",
             get(get_expense).put(update_expense).delete(delete_expense),
         )
 }
@@ -56,7 +56,7 @@ async fn update_expense(
     auth_session: AuthSession,
     Path(uuid): Path<Uuid>,
     State(shared_state): State<Arc<AppState>>,
-    Json(update_expense): Json<UpdateExpense>,
+    Json(update_expense): Json<UpdateExpenseApi>,
 ) -> impl IntoResponse {
     crate::data::service::expenses::update_expense(
         auth_session,

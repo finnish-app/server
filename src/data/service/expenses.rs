@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
-    schema::{Expense, ExpenseCategory, GetExpense, UpdateExpense},
+    schema::{Expense, ExpenseCategory, GetExpense, UpdateExpense, UpdateExpenseApi},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
 
@@ -119,14 +119,14 @@ pub async fn get_expense(
     .await
     .unwrap();
 
-    Ok((StatusCode::CREATED, Json(expense)))
+    Ok((StatusCode::FOUND, Json(expense)))
 }
 
 pub async fn update_expense(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
     uuid: Uuid,
-    update_expense: UpdateExpense,
+    update_expense: UpdateExpenseApi,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
@@ -158,7 +158,7 @@ pub async fn update_expense(
     )
     .fetch_one(db_pool)
     .await {
-        Ok(expense) => Ok((StatusCode::CREATED, Json(expense))),
+        Ok(expense) => Ok((StatusCode::OK, Json(expense))),
         Err(e) => {
             tracing::error!("Error updating expense: {}", e);
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
