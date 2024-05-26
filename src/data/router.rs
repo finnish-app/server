@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn data_router() -> Router<Arc<AppState>> {
-    Router::new().route("/api/expenses", get(get_expenses)) //.post(insert_expense))
+    Router::new().route("/api/expenses", get(get_expenses).post(insert_expense))
 }
 
 async fn get_expenses(
@@ -34,10 +34,6 @@ async fn insert_expense(
     State(shared_state): State<Arc<AppState>>,
     Json(create_expense): Json<UpdateExpense>,
 ) -> impl IntoResponse {
-    crate::data::service::expenses::insert_expense(
-        auth_session,
-        &shared_state.pool,
-        create_expense,
-    )
-    .await
+    crate::data::service::expenses::insert_expense(auth_session, &shared_state.pool, create_expense)
+        .await
 }
