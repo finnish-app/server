@@ -53,6 +53,7 @@
             sqlx-cli
             shuttle
             postgresql
+            jq
           ];
 
           shellHook = ''

@@ -1,9 +1,9 @@
 #![warn(
     clippy::all,
-//    clippy::restriction,
+    // clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
-//    clippy::cargo,
+    // clippy::cargo,
     nonstandard_style,
     future_incompatible,
     missing_debug_implementations

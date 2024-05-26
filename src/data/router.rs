@@ -1,10 +1,11 @@
-#![allow(unused_imports)]
-
-use axum::{extract::Query, routing::get, Json};
-use std::sync::Arc;
-
 use askama_axum::IntoResponse;
-use axum::{extract::State, Router};
+use axum::{
+    extract::{Path, Query, State},
+    routing::get,
+    Json, Router,
+};
+use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
@@ -13,7 +14,12 @@ use crate::{
 };
 
 pub fn data_router() -> Router<Arc<AppState>> {
-    Router::new().route("/api/expenses", get(get_expenses).post(insert_expense))
+    Router::new()
+        .route("/api/expenses", get(get_expenses).post(insert_expense))
+        .route(
+            "/api/:uuid",
+            get(get_expense).put(update_expense).delete(delete_expense),
+        )
 }
 
 async fn get_expenses(
@@ -36,4 +42,35 @@ async fn insert_expense(
 ) -> impl IntoResponse {
     crate::data::service::expenses::insert_expense(auth_session, &shared_state.pool, create_expense)
         .await
+}
+
+async fn get_expense(
+    auth_session: AuthSession,
+    Path(uuid): Path<Uuid>,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::data::service::expenses::get_expense(auth_session, &shared_state.pool, uuid).await
+}
+
+async fn update_expense(
+    auth_session: AuthSession,
+    Path(uuid): Path<Uuid>,
+    State(shared_state): State<Arc<AppState>>,
+    Json(update_expense): Json<UpdateExpense>,
+) -> impl IntoResponse {
+    crate::data::service::expenses::update_expense(
+        auth_session,
+        &shared_state.pool,
+        uuid,
+        update_expense,
+    )
+    .await
+}
+
+async fn delete_expense(
+    auth_session: AuthSession,
+    Path(uuid): Path<Uuid>,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::data::service::expenses::delete_expense(auth_session, &shared_state.pool, uuid).await
 }

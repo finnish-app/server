@@ -127,7 +127,7 @@ pub struct Permission {
 impl From<&str> for Permission {
     fn from(name: &str) -> Self {
         Self {
-            name: name.to_string(),
+            name: name.to_owned(),
         }
     }
 }

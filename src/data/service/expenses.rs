@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 use askama_axum::IntoResponse;
 use axum::{http::StatusCode, Json};
 use sqlx::{Pool, Postgres};
@@ -94,5 +92,116 @@ pub async fn insert_expense(
             tracing::error!("Error inserting expense: {}", e);
             Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         },
+    }
+}
+
+pub async fn get_expense(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    uuid: Uuid,
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Err((StatusCode::UNAUTHORIZED, String::new()));
+    };
+
+    let expense = sqlx::query_as!(
+        Expense,
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        FROM expenses WHERE uuid = $1 AND user_id = $2"#,
+        uuid,
+        user_id
+    )
+    .fetch_one(db_pool)
+    .await
+    .unwrap();
+
+    Ok((StatusCode::CREATED, Json(expense)))
+}
+
+pub async fn update_expense(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    uuid: Uuid,
+    update_expense: UpdateExpense,
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Err((StatusCode::UNAUTHORIZED, String::new()));
+    };
+
+    match sqlx::query_as!(
+        Expense,
+        r#"
+        UPDATE expenses SET
+            description = COALESCE($1, description),
+            price = COALESCE($2, price),
+            category = COALESCE($3 :: expense_category, category),
+            is_essential = COALESCE($4, is_essential),
+            date = COALESCE($5, date)
+        WHERE uuid = $6 AND user_id = $7
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        "#,
+        update_expense.description,
+        update_expense.price,
+        update_expense.category as Option<ExpenseCategory>,
+        update_expense.is_essential,
+        update_expense.date,
+        uuid,
+        user_id
+    )
+    .fetch_one(db_pool)
+    .await {
+        Ok(expense) => Ok((StatusCode::CREATED, Json(expense))),
+        Err(e) => {
+            tracing::error!("Error updating expense: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        },
+    }
+}
+
+pub async fn delete_expense(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+    uuid: Uuid,
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let user_id = if let Some(user) = auth_session.user {
+        tracing::info!("User logged in");
+        user.id
+    } else {
+        tracing::error!("User not logged in");
+        return Err((StatusCode::UNAUTHORIZED, String::new()));
+    };
+
+    // TODO: I should have a constraint of uuid
+    // NOTE: check that later
+    match sqlx::query!(
+        r#"
+        DELETE FROM expenses
+        WHERE uuid = $1 AND user_id = $2
+        "#,
+        uuid,
+        user_id
+    )
+    .execute(db_pool)
+    .await
+    {
+        Ok(q_res) => {
+            if q_res.rows_affected() == 1 {
+                Ok(StatusCode::NO_CONTENT)
+            } else {
+                Err((StatusCode::NOT_FOUND, String::new()))
+            }
+        }
+        Err(e) => {
+            tracing::error!("Error deleting expense: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+        }
     }
 }
