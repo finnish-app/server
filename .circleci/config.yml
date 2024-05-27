@@ -98,6 +98,53 @@ jobs:
           name: Linting
           command: cargo clippy -- -D warnings
 
+  doc:
+    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/configuration-reference/#executor-job
+    docker:
+      - image: cimg/rust:1.78.0
+    # Add steps to the job
+    # See: https://circleci.com/docs/configuration-reference/#steps
+    steps:
+      - checkout
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Install nightly toolchain
+          command: rustup install nightly
+      - run:
+          name: Generating documentation
+          command: rustup run nightly cargo doc --no-deps --all-features
+
+  coverage:
+    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/configuration-reference/#executor-job
+    docker:
+      - image: cimg/rust:1.78.0
+    # Add steps to the job
+    # See: https://circleci.com/docs/configuration-reference/#steps
+    steps:
+      - checkout
+      - run:
+          name: Version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Install nightly toolchain
+          command: rustup install nightly
+      - run:
+          name: Install llvm-tools-preview
+          command: rustup component add llvm-tools-preview --toolchain nightly-x86_64-unknown-linux-gnu
+      - run:
+          name: Install codecov tool
+          command: cargo install cargo-llvm-cov
+      - run:
+          name: Running code coverage
+          command: rustup run nightly cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+      - codecov/upload:
+          file: './lcov.info'
+          #token: $CODECOV_TOKEN already default
+
   shuttle-deploy:
     docker:
       - image: cimg/rust:1.78.0
@@ -138,12 +185,25 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - shuttle-deploy:
+      - doc:
           requires:
             - build-and-test
+            - security
             - format
             - lint
-            - security
+          filters:
+            branches:
+              only: main
+      # - coverage:
+      #     requires:
+      #       - doc
+      #     filters:
+      #       tags:
+      #         only: /.*/
+      - shuttle-deploy:
+          requires:
+            - doc
+            # - coverage
           filters:
             branches:
               only: main
