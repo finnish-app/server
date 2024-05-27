@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use validator::{Validate, ValidationError};
-use zxcvbn::zxcvbn;
+use zxcvbn::{zxcvbn, Score};
 
 static RE_USERNAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-z0-9]{3,20}$").unwrap());
 
@@ -25,10 +25,11 @@ pub struct PasswordInput {
 }
 
 fn validate_password_strength(password: &str) -> Result<(), ValidationError> {
-    if zxcvbn(password, &[]).unwrap().score() < 3 {
-        return Err(ValidationError::new("Password is too weak"));
+    match zxcvbn(password, &[]).score() {
+        Score::Zero | Score::One | Score::Two => Err(ValidationError::new("Password is too weak")),
+        Score::Three | Score::Four => Ok(()),
+        _ => unreachable!(),
     }
-    Ok(())
 }
 
 #[derive(Deserialize, Validate)]

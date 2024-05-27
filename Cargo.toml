@@ -21,7 +21,7 @@ plotly = { git = "https://github.com/nicolasauler/plotly.git" }
 rand = "0.8.5"
 regex = "1.10.4"
 reqwest = { version = "0.12.4", features = ["json"] }
-serde = { version = "1.0.202", features = ["derive"] }
+serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 shuttle-axum = "0.45.0"
 shuttle-runtime = { version = "0.45.0", default-features = false, features = ["colored"] }
@@ -40,4 +40,4 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.8.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
 validator = { version = "0.18.1", features = ["derive"] }
-zxcvbn = "2.2.2"
+zxcvbn = "3.0.1"
