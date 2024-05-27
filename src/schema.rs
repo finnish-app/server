@@ -12,7 +12,6 @@ use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
-#[allow(clippy::missing_docs_in_private_items)]
 /// `ExpenseCategory` is an enum with the types of expenses.
 pub enum ExpenseCategory {
     Food,
@@ -54,7 +53,6 @@ impl Display for ExpenseCategory {
 }
 
 #[derive(FromRow, Serialize, Debug, Default)]
-#[allow(clippy::missing_docs_in_private_items)]
 /// Expense is a struct with the fields of an expense.
 pub struct Expense {
     pub id: i32,
@@ -67,7 +65,6 @@ pub struct Expense {
 }
 
 #[derive(Deserialize, Debug)]
-#[allow(clippy::missing_docs_in_private_items)]
 /// `GetExpense` is a struct with the fields of an expense that can be retrieved.
 /// Currently, only the month is supported and it is optional.
 /// If no month is passed, all expenses are retrieved.
@@ -76,8 +73,18 @@ pub struct GetExpense {
     pub month: Option<Months>,
 }
 
+#[derive(Deserialize, Debug)]
+/// `UpdateExpense` is a struct with the fields of an expense that can be updated.
+/// All fields are optional.
+pub struct UpdateExpenseApi {
+    pub description: Option<String>,
+    pub price: Option<f32>,
+    pub category: Option<ExpenseCategory>,
+    pub is_essential: Option<bool>,
+    pub date: Option<NaiveDate>,
+}
+
 #[derive(Deserialize, Debug, Default)]
-#[allow(clippy::missing_docs_in_private_items)]
 /// `UpdateExpense` is a struct with the fields of an expense that can be updated.
 /// All fields are optional.
 pub struct UpdateExpense {

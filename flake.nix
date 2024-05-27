@@ -34,6 +34,8 @@
           };
           # cargoHash = "";
         };
+        # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+        rust = pkgs.rust-bin.beta.latest.default;
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
           inherit system overlays;
@@ -47,13 +49,16 @@
             openssl
             pkg-config
             python3
-            rust-bin.beta.latest.default
+            rust
             sqlx-cli
             shuttle
+            postgresql
+            jq
           ];
 
           shellHook = ''
             export DATABASE_URL=postgres://postgres:postgres@localhost:17144/finnish
+            # export DATABASE_URL=postgres://postgres:postgres@localhost:21372/finnish
           '';
           # shellHook = ''
           #   alias ls=eza

@@ -1,0 +1,79 @@
+# Add Expense
+## Request
+curl 'http://127.0.0.1:8000/api/expenses' -X POST -H 'Cookie: id=<secret_token>' -H 'Content-Type: application/json' --data-raw '{ "date": "2024-05-26", "price": "4.20", "description": "fromapi", "category": "Food", "is_essential": "true" }'
+
+## Response
+{"id":3,"description":"fromapi","price":4.2,"category":"Food","is_essential":true,"date":"2024-05-26","uuid":"7369ae06-0e51-42f5-b671-f2a8813a7a13"}
+
+# Get Expenses
+## Request
+curl 'http://127.0.0.1:8000/api/expenses?month=May' -H 'Cookie: id=<secret_token>'
+
+## Response
+[
+  {
+    "id": 1,
+    "description": "asdfasdf",
+    "price": -0.03,
+    "category": "Food",
+    "is_essential": false,
+    "date": "2024-05-19",
+    "uuid": "7d2597c8-0ecb-4da1-9e2e-6762ce620119"
+  },
+  {
+    "id": 2,
+    "description": "whatever",
+    "price": 1.65,
+    "category": "Food",
+    "is_essential": true,
+    "date": "2024-05-26",
+    "uuid": "ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b"
+  },
+  {
+    "id": 3,
+    "description": "fromapi",
+    "price": 4.2,
+    "category": "Food",
+    "is_essential": true,
+    "date": "2024-05-26",
+    "uuid": "7369ae06-0e51-42f5-b671-f2a8813a7a13"
+  }
+]
+
+# Get an Expense
+## Request
+curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b' -H 'Cookie: id=<secret_token>'
+
+## Response
+{
+  "id": 2,
+  "description": "whatever",
+  "price": 1.65,
+  "category": "Food",
+  "is_essential": true,
+  "date": "2024-05-26",
+  "uuid": "ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b"
+}
+
+# Update an Expense
+## Request
+curl 'http://127.0.0.1:8000/api/expenses/ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b' -X PUT -H 'Cookie: id=VxsvrnlHkk81VxGBZN-VJg' -H 'Content-Type: application/json' --data-raw '{ "category": "Education" }'
+
+## Response
+{
+  "id": 2,
+  "description": "changed_from_api",
+  "price": 1.65,
+  "category": "Food",
+  "is_essential": false,
+  "date": "2024-05-26",
+  "uuid": "ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b"
+}
+
+# Delete an Expense
+## Request
+curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b' -X DELETE -H 'Cookie: id=<secret_token>'
+
+## Response
+### Status: 204 if ok
+### Status: 404 if not found
