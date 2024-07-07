@@ -41,3 +41,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.9.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
 validator = { version = "0.18.1", features = ["derive"] }
 zxcvbn = "3.0.1"
+
+[profile.dev]
+debug = 0
+strip = "debuginfo"
