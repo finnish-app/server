@@ -2,25 +2,23 @@
 # See: https://circleci.com/docs/configuration-reference
 version: 2.1
 
+orbs:
+  codecov: codecov/codecov@4.1.0
+
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/configuration-reference/#jobs
 jobs:
   build-and-test:
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     environment:
       # Fail the build if there are warnings
-      RUSTFLAGS: '-D warnings'
+      RUSTFLAGS: "-D warnings"
     steps:
       - checkout
       - run:
           name: Version information
           command: rustc --version; cargo --version; rustup --version
-      # If you have committed your Cargo.lock file to version control
-      # delete this step.
-      - run:
-          name: Calculate dependencies
-          command: cargo generate-lockfile
       - restore_cache:
           keys:
             - v1-cargo-cache-{{ arch }}-{{ checksum "Cargo.lock" }}
@@ -35,12 +33,18 @@ jobs:
             - target/debug/deps
           key: v1-cargo-cache-{{ arch }}-{{ checksum "Cargo.lock" }}
       - run:
-          name: Run all tests
-          command: cargo test
+          name: Install nextest
+          command: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - run:
+          name: Build and archive tests
+          command: cargo nextest archive --workspace --archive-file nextest-archive.tar.zst
+      - run:
+          name: Run tests
+          command: cargo nextest run --no-fail-fast --archive-file nextest-archive.tar.zst
 
   security:
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     steps:
       - checkout
       - run:
@@ -66,7 +70,7 @@ jobs:
 
   format:
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     steps:
       - checkout
       - run:
@@ -83,7 +87,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -102,7 +106,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -121,7 +125,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -142,12 +146,12 @@ jobs:
           name: Running code coverage
           command: rustup run nightly cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
       - codecov/upload:
-          file: './lcov.info'
+          file: "./lcov.info"
           #token: $CODECOV_TOKEN already default
 
   shuttle-deploy:
     docker:
-      - image: cimg/rust:1.78.0
+      - image: cimg/rust:1.79.0
     steps:
       - checkout
       - run:
@@ -162,7 +166,6 @@ jobs:
       - run:
           name: Deploy to Shuttle
           command: cargo shuttle deploy
-
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
