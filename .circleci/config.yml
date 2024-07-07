@@ -100,7 +100,7 @@ jobs:
           command: rustup component add clippy
       - run:
           name: Linting
-          command: cargo clippy -- -D warnings
+          command: cargo clippy --locked --all-targets -- -D warnings -D dead-code
 
   doc:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
@@ -197,16 +197,19 @@ workflows:
           filters:
             branches:
               only: main
-      # - coverage:
-      #     requires:
-      #       - doc
-      #     filters:
-      #       tags:
-      #         only: /.*/
+      - coverage:
+          requires:
+            - build-and-test
+            - security
+            - format
+            - lint
+          filters:
+            tags:
+              only: /.*/
       - shuttle-deploy:
           requires:
             - doc
-            # - coverage
+            - coverage
           filters:
             branches:
               only: main
