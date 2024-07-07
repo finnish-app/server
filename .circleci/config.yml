@@ -143,8 +143,11 @@ jobs:
           name: Install codecov tool
           command: cargo install cargo-llvm-cov
       - run:
+          name: Install nextest
+          command: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - run:
           name: Running code coverage
-          command: rustup run nightly cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+          command: rustup run nightly cargo llvm-cov nextest --locked --all-features --lcov --output-path lcov.info
       - codecov/upload:
           file: "./lcov.info"
           #token: $CODECOV_TOKEN already default
