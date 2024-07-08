@@ -1009,6 +1009,7 @@ dependencies = [
 name = "finnish"
 version = "0.1.10"
 dependencies = [
+ "anyhow",
  "askama",
  "askama_axum",
  "axum 0.7.5",
@@ -1025,6 +1026,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shuttle-axum",
+ "shuttle-common",
  "shuttle-runtime",
  "shuttle-shared-db",
  "sqlx",
