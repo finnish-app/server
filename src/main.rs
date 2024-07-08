@@ -121,13 +121,14 @@ async fn axum(
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
-        .merge(data::router::data_router())
+        .merge(data::router::expenses::router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(
             Backend,
             login_url = "/auth/mfa",
             "restricted:read",
         ))
+        .merge(data::router::auth::private_router())
         .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
@@ -161,7 +162,7 @@ async fn axum(
                     if res.headers().get("content-security-policy").is_none() {
                         res.headers_mut().insert(
                             "content-security-policy",
-                            generate_defaut_csp()
+                            generate_default_csp()
                                 .to_string()
                                 .parse()
                                 .unwrap_or_else(|_| {
@@ -231,7 +232,7 @@ fn generate_general_helmet_headers() -> Helmet {
 
 /// Returns a default strict Content Security Policy.
 /// It's used whenever a custom CSP is not set.
-fn generate_defaut_csp() -> ContentSecurityPolicy<'static> {
+fn generate_default_csp() -> ContentSecurityPolicy<'static> {
     return ContentSecurityPolicy::new()
         .default_src(vec!["'self'"])
         .base_uri(vec!["'none'"])

@@ -48,7 +48,7 @@
             buildInputs = [
               bacon
               cargo-nextest
-              cargo-shuttle
+              # cargo-shuttle
               jq
               nixpkgs-fmt
               openssl

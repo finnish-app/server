@@ -13,7 +13,7 @@ use crate::{
     AppState,
 };
 
-pub fn data_router() -> Router<Arc<AppState>> {
+pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/expenses", get(get_expenses).post(insert_expense))
         .route(

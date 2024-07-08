@@ -1,3 +1,3 @@
 pub mod router;
-mod schema;
-mod service;
+pub mod schema;
+pub mod service;

@@ -1,2 +1,2 @@
 pub mod router;
-mod service;
+pub mod service;
