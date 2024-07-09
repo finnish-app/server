@@ -57,7 +57,19 @@
 
 <div id="expenses-plots">
 </div>
+
+<div hx-get="/expenses/pluggy-widget"
+     hx-trigger="load"
+>
+</div>
 </section>
+
+<div hx-get="/expenses/plots"
+     hx-target="#expenses-plots"
+     hx-trigger="load, change from:#month, refresh-table from:body, refresh-plots from:body"
+     hx-include="#month"
+>
+</div>
 
 <div id="add-expense-modal" _="on toggleModal toggle @open on #modal-example">
     <dialog id="modal-example">
