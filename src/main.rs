@@ -1,25 +1,3 @@
-#![warn(
-    clippy::all,
-    // clippy::restriction,
-    clippy::pedantic,
-    clippy::nursery,
-    // clippy::cargo,
-    nonstandard_style,
-    future_incompatible,
-    missing_debug_implementations
-)]
-#![allow(
-    clippy::single_call_fn,
-    clippy::std_instead_of_core,
-    clippy::std_instead_of_alloc,
-    clippy::needless_return,
-    clippy::module_name_repetitions,
-    clippy::multiple_unsafe_ops_per_block,
-    clippy::question_mark_used,
-    clippy::min_ident_chars
-)]
-#![forbid(unsafe_code)]
-
 mod auth;
 mod client;
 mod constant;

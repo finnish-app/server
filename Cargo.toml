@@ -47,3 +47,21 @@ anyhow = "1.0.86"
 [profile.dev]
 debug = 0
 strip = "debuginfo"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = 0 }
+# unwrap_used = { level = "warn", priority = 1 }
+
+allow_attributes_without_reason = { level = "warn", priority = 4 }
+as_underscore = { level = "warn", priority = 4 }
+panic_in_result_fn = { level = "warn", priority = 4 }
+
+needless_return = { level = "allow", priority = 6 }
+module_name_repetitions = { level = "allow", priority = 6 }
+
+[lints.rust]
+unsafe_code = { level = "forbid", priority = 3 }
+nonstandard_style = { level = "warn", priority = 2 }
+future_incompatible = { level = "warn", priority = 1 }
+missing_debug_implementations = { level = "warn", priority = 0 }
