@@ -99,6 +99,7 @@ async fn axum(
 
     let shared_state = Arc::new(AppState { pool, secret_store });
     let router = Router::new()
+        .merge(data::router::pluggy::router())
         .merge(data::router::expenses::router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(

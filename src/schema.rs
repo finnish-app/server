@@ -101,10 +101,11 @@ pub struct UpdateExpense {
 }
 
 /// Function to set the default value for `is_essential` in `UpdateExpense` to be Some(false).
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "Needs to return option for custom deserializer"
-)]
+#[allow(clippy::unnecessary_wraps)]
+//#[allow(
+//    clippy::unnecessary_wraps,
+//    reason = "Needs to return option for custom deserializer"
+//)]
 const fn default_is_essential_to_false() -> Option<bool> {
     return Some(false);
 }

@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use shuttle_runtime::SecretStore;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ApiKey {
     #[serde(rename = "apiKey")]
     pub api_key: String,
