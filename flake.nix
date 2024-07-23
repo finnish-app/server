@@ -47,8 +47,8 @@
           devShells.default = mkShell {
             buildInputs = [
               bacon
+              cargo-expand
               cargo-nextest
-              # cargo-shuttle
               jq
               nixpkgs-fmt
               openssl

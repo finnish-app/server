@@ -15,14 +15,6 @@
 <section class="section" id="expenses">
 <h3>{{ username }}'s Expenses</h3>
 
-<button hx-get="/expenses/pluggy-widget"
-        hx-trigger="click"
-        class="contrast"
-        type="button"
->
-    Sync with Pluggy
-</button>
-
 <form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#month">
     <div class="grid">
         <select name="month" id="month">
@@ -37,6 +29,13 @@
         </select>
 
         <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
+        <button hx-get="/expenses/pluggy-widget"
+                hx-trigger="click"
+                class="btn btn-contrast"
+                type="button"
+        >
+            Sync with Pluggy
+        </button>
     </div>
 </form>
 <div hx-get="/expenses/plots"

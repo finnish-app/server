@@ -11,7 +11,7 @@ use crate::{
 use askama_axum::IntoResponse;
 use axum::{http::StatusCode, response::Html};
 use chrono::NaiveDate;
-use plotly::{common::Title, Layout, Plot, Scatter};
+use plotly::{Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
@@ -379,7 +379,7 @@ pub async fn plot_expenses(
     let mut plot = Plot::new();
     plot.add_trace(trace);
 
-    let layout = Layout::new().title(Title::new("Expenses"));
+    let layout = Layout::new().title("Expenses");
     plot.set_layout(layout);
 
     plot.to_inline_html(Some("plot-data")).into_response()
