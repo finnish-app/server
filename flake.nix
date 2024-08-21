@@ -49,6 +49,7 @@
               bacon
               cargo-expand
               cargo-nextest
+              cargo-watch
               jq
               nixpkgs-fmt
               openssl
@@ -56,6 +57,7 @@
               postgresql
               python3
               rust
+              svix-cli
               sqlx-cli
             ];
 
