@@ -71,6 +71,7 @@ pub enum CreateConnectTokenOutcome {
 
 pub async fn create_connect_token(
     api_key: &ApiKey,
+    webhook_url: &str,
     user_email: &str,
 ) -> anyhow::Result<CreateConnectTokenOutcome> {
     let mut headers = HeaderMap::new();
@@ -79,6 +80,7 @@ pub async fn create_connect_token(
 
     let mut map = HashMap::new();
     map.insert("clientUserId", user_email);
+    map.insert("webhookUrl", webhook_url);
 
     let client = reqwest::Client::new();
     let resp = client

@@ -21,6 +21,11 @@ async fn mfa_verify(
     State(shared_state): State<Arc<AppState>>,
     Json(mfa_token): Json<MfaTokenForm>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::mfa_verify(auth_session, &shared_state.pool, mfa_token.token)
-        .await
+    crate::hypermedia::service::auth::mfa_verify(
+        auth_session,
+        &shared_state.pool,
+        &shared_state.secret_store,
+        mfa_token.token,
+    )
+    .await
 }
