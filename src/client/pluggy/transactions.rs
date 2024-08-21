@@ -1,6 +1,11 @@
+use anyhow::bail;
+use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use chrono::{DateTime, Utc};
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::client::pluggy::auth::ApiKey;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListTransactionsResponse {
@@ -143,9 +148,34 @@ enum TransactionType {
     Credit,
 }
 
-//pub async fn list_transactions(
-//    _api_key: &str,
-//    _account_id: &str,
-//) -> anyhow::Result<ListTransactionsResponse> {
-//    todo!()
-//}
+pub enum ListTransactionsOutcome {
+    Success(ListTransactionsResponse),
+    Missing,
+    Internal,
+}
+
+pub async fn list_transactions(
+    api_key: &ApiKey,
+    account_id: &Uuid,
+) -> anyhow::Result<ListTransactionsOutcome> {
+    let mut headers = HeaderMap::new();
+    let api_key_hdr_value = HeaderValue::from_str(&api_key.api_key)?;
+    headers.insert(HeaderName::from_static("x-api-key"), api_key_hdr_value);
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .get("https:://api.pluggy.ai/transactions")
+        .query(&[("accountId", account_id)])
+        .headers(headers)
+        .send()
+        .await?;
+
+    let transactions: ListTransactionsResponse = match resp.status() {
+        StatusCode::OK => resp.json().await?,
+        StatusCode::BAD_REQUEST => return Ok(ListTransactionsOutcome::Missing),
+        StatusCode::INTERNAL_SERVER_ERROR => return Ok(ListTransactionsOutcome::Internal),
+        _ => bail!("unknown error: {}", resp.text().await?),
+    };
+
+    Ok(ListTransactionsOutcome::Success(transactions))
+}
