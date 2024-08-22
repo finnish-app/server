@@ -4,14 +4,25 @@
         includeSandbox: true,
         theme: 'dark',
         onSuccess: (itemData) => {
-          // TODO: Implement logic for successful connection
-          // The following line is an example, it should be removed when implemented.
-          console.log('Yay! Pluggy connect success!', itemData)
+            console.log('Yay! Pluggy connect success!', itemData)
+            fetch('/api/pluggyconnect/success', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ item_id: itemData.item.id })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                }).catch((error) => {
+                    console.error('Error:', error);
+                });
         },
         onError: (error) => {
-          // TODO: Implement logic for error on connection
-          // The following line is an example, it should be removed when implemented.
-          console.error('Whoops! Pluggy Connect error... ', error)
+            // TODO: Implement logic for error on connection
+            // The following line is an example, it should be removed when implemented.
+            console.error('Whoops! Pluggy Connect error... ', error)
         },
     })
     pluggyConnect.init()
