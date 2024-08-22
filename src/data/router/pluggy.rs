@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
-use crate::client::pluggy::auth::ApiKey;
-use axum::{response::Json, routing::post, Router};
+use crate::client::pluggy::{
+    auth::ApiKey,
+    transactions::{ListTransactionsOutcome, ListTransactionsResponse},
+};
+use axum::{extract::State, http::StatusCode, response::Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -52,26 +55,59 @@ async fn connect_success(
 #[derive(Deserialize, Serialize)]
 struct ListAccountsRequest {
     api_key: ApiKey,
-    item_id: String,
+    item_id: Uuid,
 }
 
 async fn list_accounts(
     auth_session: AuthSession,
     Json(list_accounts_request): Json<ListAccountsRequest>,
-) -> Json<ListAccountsResponse> {
-    let Some(_) = auth_session.user else {
+) -> Result<Json<ListAccountsResponse>, StatusCode> {
+    let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
     tracing::debug!("User logged in");
 
-    let accounts = crate::client::pluggy::account::list_accounts(
+    match crate::client::pluggy::account::list_accounts(
         &list_accounts_request.api_key,
         &list_accounts_request.item_id,
     )
     .await
-    .unwrap();
-
-    Json(accounts)
+    {
+        Ok(accounts) => Ok(Json(accounts)),
+        Err(e) => {
+            tracing::error!(?e, ?user.id, "could not list accounts");
+            Err(StatusCode::FAILED_DEPENDENCY)
+        }
+    }
 }
 
-async fn list_transactions() {}
+#[derive(Deserialize, Serialize)]
+struct ListTransactionsRequest {
+    api_key: ApiKey,
+    account_id: Uuid,
+}
+
+async fn list_transactions(
+    auth_session: AuthSession,
+    Json(list_transactions_request): Json<ListTransactionsRequest>,
+) -> Result<Json<ListTransactionsResponse>, StatusCode> {
+    let Some(user) = auth_session.user else {
+        panic!("user not logged in")
+    };
+    tracing::debug!("User logged in");
+
+    match crate::client::pluggy::transactions::list_transactions(
+        &list_transactions_request.api_key,
+        &list_transactions_request.account_id,
+    )
+    .await
+    {
+        Ok(ListTransactionsOutcome::Success(transactions)) => Ok(Json(transactions)),
+        Ok(ListTransactionsOutcome::Missing) => Err(StatusCode::BAD_REQUEST),
+        Ok(ListTransactionsOutcome::Internal) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            tracing::error!(?e, ?user.id, "could not list accounts");
+            Err(StatusCode::FAILED_DEPENDENCY)
+        }
+    }
+}

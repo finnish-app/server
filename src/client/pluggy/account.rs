@@ -112,7 +112,7 @@ enum AccountSubType {
 
 pub async fn list_accounts(
     api_key: &ApiKey,
-    item_id: &str,
+    item_id: &Uuid,
 ) -> anyhow::Result<ListAccountsResponse> {
     let mut headers = HeaderMap::new();
     let api_key_hdr_value = HeaderValue::from_str(&api_key.api_key)?;
