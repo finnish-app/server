@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
-use crate::client::pluggy::{
-    auth::ApiKey,
-    transactions::{ListTransactionsOutcome, ListTransactionsResponse},
+use crate::client::pluggy::transactions::{ListTransactionsOutcome, ListTransactionsResponse};
+use axum::{
+    extract::{Query, State},
+    http::{header::HeaderMap, StatusCode},
+    response::Json,
+    routing::{get, post},
+    Router,
 };
-use axum::{extract::State, http::StatusCode, response::Json, routing::post, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,8 +16,8 @@ use crate::{auth::AuthSession, client::pluggy::account::ListAccountsResponse, Ap
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/api/pluggyconnect/success", post(connect_success))
-        .route("/api/accounts", post(list_accounts))
-        .route("/api/transactions", post(list_transactions))
+        .route("/api/accounts", get(list_accounts))
+        .route("/api/transactions", get(list_transactions))
 }
 
 #[derive(Deserialize, Serialize)]
@@ -52,26 +55,32 @@ async fn connect_success(
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 struct ListAccountsRequest {
-    api_key: ApiKey,
     item_id: Uuid,
 }
 
 async fn list_accounts(
     auth_session: AuthSession,
-    Json(list_accounts_request): Json<ListAccountsRequest>,
+    headers: HeaderMap,
+    Query(list_accounts_request): Query<ListAccountsRequest>,
 ) -> Result<Json<ListAccountsResponse>, StatusCode> {
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
     tracing::debug!("User logged in");
 
-    match crate::client::pluggy::account::list_accounts(
-        &list_accounts_request.api_key,
-        &list_accounts_request.item_id,
-    )
-    .await
+    let Some(x_api_key) = headers.get("x-api-key") else {
+        tracing::debug!(?user.id, "missing api key header");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let Ok(api_key) = x_api_key.to_str() else {
+        tracing::debug!(?user.id, "api_key header malformed, couldn't parse chars");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+
+    match crate::client::pluggy::account::list_accounts(api_key, &list_accounts_request.item_id)
+        .await
     {
         Ok(accounts) => Ok(Json(accounts)),
         Err(e) => {
@@ -83,21 +92,30 @@ async fn list_accounts(
 
 #[derive(Deserialize, Serialize)]
 struct ListTransactionsRequest {
-    api_key: ApiKey,
     account_id: Uuid,
 }
 
 async fn list_transactions(
     auth_session: AuthSession,
-    Json(list_transactions_request): Json<ListTransactionsRequest>,
+    headers: HeaderMap,
+    Query(list_transactions_request): Query<ListTransactionsRequest>,
 ) -> Result<Json<ListTransactionsResponse>, StatusCode> {
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
     tracing::debug!("User logged in");
 
+    let Some(x_api_key) = headers.get("x-api-key") else {
+        tracing::debug!(?user.id, "missing api key header");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let Ok(api_key) = x_api_key.to_str() else {
+        tracing::debug!(?user.id, "api_key header malformed, couldn't parse chars");
+        return Err(StatusCode::BAD_REQUEST);
+    };
+
     match crate::client::pluggy::transactions::list_transactions(
-        &list_transactions_request.api_key,
+        api_key,
         &list_transactions_request.account_id,
     )
     .await
@@ -106,7 +124,7 @@ async fn list_transactions(
         Ok(ListTransactionsOutcome::Missing) => Err(StatusCode::BAD_REQUEST),
         Ok(ListTransactionsOutcome::Internal) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Err(e) => {
-            tracing::error!(?e, ?user.id, "could not list accounts");
+            tracing::error!(?e, ?user.id, "could not list transactions");
             Err(StatusCode::FAILED_DEPENDENCY)
         }
     }
