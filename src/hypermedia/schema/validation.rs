@@ -1,15 +1,12 @@
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use regex::Regex;
 use serde::Deserialize;
 use validator::{Validate, ValidationError};
 use zxcvbn::{zxcvbn, Score};
 
-pub fn username_regex() -> &'static Regex {
-    static RE_USERNAME: OnceLock<Regex> = OnceLock::new();
-    RE_USERNAME
-        .get_or_init(|| Regex::new(r"^[a-z0-9]{3,20}$").expect("Could not compile username regex"))
-}
+pub static USERNAME_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[a-z0-9]{3,20}$").expect("Could not compile username regex"));
 
 #[derive(Deserialize, Validate, Debug)]
 pub struct EmailInput {
@@ -19,7 +16,7 @@ pub struct EmailInput {
 
 #[derive(Deserialize, Validate)]
 pub struct UsernameInput {
-    #[validate(regex(path = *username_regex()))]
+    #[validate(regex(path = *USERNAME_REGEX))]
     pub username: String,
 }
 
@@ -46,7 +43,7 @@ pub struct PasswordsInput {
 
 #[derive(Deserialize, Validate)]
 pub struct SignUpInput {
-    #[validate(regex(path = *username_regex()))]
+    #[validate(regex(path = *USERNAME_REGEX))]
     pub username: String,
     #[validate(email)]
     pub email: String,
