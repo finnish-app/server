@@ -56,15 +56,15 @@ Current financial features status:
 Disclosure:
 Finnish was born as a software product and will continue to prioritize the experience of using a good software,
 before the features of a financial product. This means that the Finnish Team will always put security and functional
-updates, before adding idk, a new plot in the expenses or income page.
+updates, before adding IDK, a new plot in the expenses or income page.
 
 ## ⚗️ Contributing
 
 ### Install pre-commit
 
 ```shell
-curl -LO https://github.com/pre-commit/pre-commit/releases/download/v3.7.1/pre-commit-3.7.1.pyz
-python pre-commit-3.7.1.pyz install
+curl -LO https://github.com/pre-commit/pre-commit/releases/download/v3.8.0/pre-commit-3.8.0.pyz
+python pre-commit-3.8.0.pyz install
 ```
 
 <!--
