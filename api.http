@@ -1,9 +1,117 @@
-# Add Expense
+# Request your accounts from Pluggy
 ## Request
-curl 'http://127.0.0.1:8000/api/expenses' -X POST -H 'Cookie: id=<secret_token>' -H 'Content-Type: application/json' --data-raw '{ "date": "2024-05-26", "price": "4.20", "description": "fromapi", "category": "Food", "is_essential": "true" }'
+curl 'http://127.0.0.1:8000/api/accounts?item_id=<uuid_item_id>'
+-H 'Cookie: id=<secret_token>'
+-H 'X-API-KEY: <secret_api_key>'
 
 ## Response
-{"id":3,"description":"fromapi","price":4.2,"category":"Food","is_essential":true,"date":"2024-05-26","uuid":"7369ae06-0e51-42f5-b671-f2a8813a7a13"}
+{
+  "total": 1,
+  "page": 1,
+  "totalPages": 1,
+  "results": [
+    {
+      "id": "<your_account_id>",
+      "type": "BANK",
+      "subtype": "CHECKING_ACCOUNT",
+      "number": "<your_account_number>",
+      "name": "Conta Corrente",
+      "marketingName": null,
+      "balance": <redacted>,
+      "itemId": "<item_id>",
+      "taxNumber": null,
+      "owner": "NICOLAS VARELA AULER",
+      "currencyCode": "BRL",
+      "bankData": {
+        "transferNumber": "<redacted_transfer_number>",
+        "closingBalance": null,
+        "automaticallyInvestedBalance": null,
+        "overdraftContractedLimit": null,
+        "overdraftUsedLimit": null,
+        "unarrangedOverdraftAmount": null
+      },
+      "creditData": null
+    }
+  ]
+}
+
+# Now, request your transfers from Pluggy
+## Request
+curl 'http://127.0.0.1:8000/api/transactions?account_id=<uuid_accound_id>'
+-H 'Cookie: id=<secret_token>'
+-H 'X-API-KEY: <secret_api_key>'
+
+## Response
+{
+  "total": 2,
+  "page": 1,
+  "totalPages": 1,
+  "results": [
+    {
+      "id": "<uuid>",
+      "description": "PIX RECEBIDO - Cp :12345678-Fulano da Silva",
+      "descriptionRaw": null,
+      "currencyCode": "BRL",
+      "amount": 420.0,
+      "amountInAccountCurrency": null,
+      "date": "2024-08-02T03:00:00Z",
+      "category": "Transfer - PIX",
+      "categoryId": "05070000",
+      "type": "CREDIT",
+      "balance": 0.0,
+      "providerCode": null,
+      "status": "POSTED",
+      "accountId": "<account_id>",
+      "createdAt": "2024-08-25T23:46:19.704Z",
+      "updatedAt": "2024-08-25T23:46:19.704Z",
+      "paymentData": null,
+      "acquirerData": null,
+      "creditCardMetadata": null,
+      "merchant": null
+    },
+    {
+      "id": "<uuid>",
+      "description": "PIX ENVIADO - Cp :12345678-Jonh Smith",
+      "descriptionRaw": null,
+      "currencyCode": "BRL",
+      "amount": -69.0,
+      "amountInAccountCurrency": null,
+      "date": "2024-08-02T03:00:00Z",
+      "category": "Transfer - PIX",
+      "categoryId": "05070000",
+      "type": "DEBIT",
+      "balance": -10.0,
+      "providerCode": null,
+      "status": "POSTED",
+      "accountId": "<uuid>",
+      "createdAt": "2024-08-25T23:46:19.704Z",
+      "updatedAt": "2024-08-25T23:46:19.704Z",
+      "paymentData": null,
+      "acquirerData": null,
+      "creditCardMetadata": null,
+      "merchant": null
+    }
+  ]
+}
+
+# Add Expense
+## Request
+curl 'http://127.0.0.1:8000/api/expenses'
+-X POST
+-H 'Cookie: id=<secret_token>'
+-H 'Content-Type: application/json'
+--data-raw '{ "date": "2024-05-26", "price": "4.20", "description": "fromapi", "category": "Food", "is_essential": "true" }'
+
+## Response
+{
+  "id": 3,
+  "description": "fromapi",
+  "price": 4.2,
+  "category": "Food",
+  "is_essential": true,
+  "date": "2024-05-26",
+  "uuid": "7369ae06-0e51-42f5-b671-f2a8813a7a13"
+}
 
 # Get Expenses
 ## Request
@@ -42,7 +150,8 @@ curl 'http://127.0.0.1:8000/api/expenses?month=May' -H 'Cookie: id=<secret_token
 
 # Get an Expense
 ## Request
-curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b' -H 'Cookie: id=<secret_token>'
+curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b'
+-H 'Cookie: id=<secret_token>'
 
 ## Response
 {
@@ -57,7 +166,11 @@ curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b' -
 
 # Update an Expense
 ## Request
-curl 'http://127.0.0.1:8000/api/expenses/ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b' -X PUT -H 'Cookie: id=VxsvrnlHkk81VxGBZN-VJg' -H 'Content-Type: application/json' --data-raw '{ "category": "Education" }'
+curl 'http://127.0.0.1:8000/api/expenses/ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b'
+-X PUT
+-H 'Cookie: id=<secret_token>'
+-H 'Content-Type: application/json'
+--data-raw '{ "category": "Education" }'
 
 ## Response
 {
@@ -72,7 +185,9 @@ curl 'http://127.0.0.1:8000/api/expenses/ad3b1e10-01e3-40b1-a9e1-7f3f63aac93b' -
 
 # Delete an Expense
 ## Request
-curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b' -X DELETE -H 'Cookie: id=<secret_token>'
+curl 'http://127.0.0.1:8000/api/expenses/8098c51a-e112-48b7-a555-a329b95b784b'
+-X DELETE
+-H 'Cookie: id=<secret_token>'
 
 ## Response
 ### Status: 204 if ok
