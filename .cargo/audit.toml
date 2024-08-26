@@ -1,6 +1,8 @@
 [advisories]
 ignore = [
     "RUSTSEC-2023-0071", # rsa marvin attack
+    "RUSTSEC-2024-0363", # sqlx -> depends on shuttle upgrade
+    "RUSTSEC-2024-0365", # diesel -> depends on shuttle upgrade
 ]
 
 [output]
