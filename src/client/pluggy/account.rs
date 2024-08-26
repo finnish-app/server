@@ -1,4 +1,3 @@
-use crate::client::pluggy::auth::ApiKey;
 use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use chrono::NaiveDate;
@@ -27,7 +26,7 @@ pub struct Account {
     /// External identifier of the account: agencia/conta
     number: String,
     name: String,
-    marketing_name: String,
+    marketing_name: Option<String>,
     balance: f32,
     item_id: Uuid,
     /// Tax Id of owner (cpf)
@@ -44,9 +43,15 @@ struct BankData {
     /// Complete number of the bank account (agency code / account number)
     transfer_number: String,
     /// Balance including not posted transactions
-    closing_balance: f32,
+    closing_balance: Option<f32>,
     /// Balance automatically invested in the account by the FI
-    automatically_invested_balance: f32,
+    automatically_invested_balance: Option<f32>,
+    // idk
+    overdraft_contracted_limit: Option<f32>,
+    // idk
+    overdraft_used_limit: Option<f32>,
+    // idk
+    unarranged_overdraft_amount: Option<f32>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -110,12 +115,9 @@ enum AccountSubType {
     CreditCard,
 }
 
-pub async fn list_accounts(
-    api_key: &ApiKey,
-    item_id: &Uuid,
-) -> anyhow::Result<ListAccountsResponse> {
+pub async fn list_accounts(api_key: &str, item_id: &Uuid) -> anyhow::Result<ListAccountsResponse> {
     let mut headers = HeaderMap::new();
-    let api_key_hdr_value = HeaderValue::from_str(&api_key.api_key)?;
+    let api_key_hdr_value = HeaderValue::from_str(api_key)?;
     headers.insert(HeaderName::from_static("x-api-key"), api_key_hdr_value);
 
     let client = reqwest::Client::new();
