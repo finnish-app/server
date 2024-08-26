@@ -3,6 +3,7 @@ mod client;
 mod constant;
 mod data;
 mod data_structs;
+mod features;
 mod hypermedia;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;

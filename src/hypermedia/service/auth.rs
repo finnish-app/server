@@ -4,6 +4,7 @@ use crate::{
         frc::{validate_frc, verify_frc_solution},
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
     },
+    features::totp::set_otp_secret,
     hypermedia::schema::{
         auth::MailToUser,
         validation::{ChangePasswordInput, Exists, ForgotPasswordInput, ResendEmail, SignUpInput},
@@ -82,55 +83,32 @@ pub async fn signin(
     return (StatusCode::OK, [("HX-Redirect", "/")]).into_response();
 }
 
-pub async fn mfa_qr(auth_session: AuthSession, db_pool: &Pool<Postgres>) -> impl IntoResponse {
+pub async fn mfa_qr(
+    auth_session: AuthSession,
+    db_pool: &Pool<Postgres>,
+) -> Result<Response<Body>, Response<Body>> {
     let Some(user) = auth_session.user else {
-        return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
+        return Err((StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response());
     };
-    let user_id = user.id;
     tracing::debug!("User logged in");
+
+    // TODO: create logic for changing MFA method
     if user.otp_enabled {
-        // TODO
         todo!("Create logic for changing MFA method");
     }
 
-    let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
-    let mut transaction = db_pool.begin().await.unwrap();
+    let totp = set_otp_secret(db_pool, user.id).await.map_err(|e| {
+        tracing::error!(?user.id, "Error setting OTP secret: {e}");
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    })?;
 
-    let user_email = sqlx::query!(
-        r#"
-        UPDATE users SET otp_secret = $1 WHERE id = $2
-        RETURNING email
-        "#,
-        secret.to_encoded().to_string(),
-        user_id
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .unwrap();
-
-    let totp = TOTP::new(
-        Algorithm::SHA1,
-        6,
-        1,
-        30,
-        secret.to_bytes().unwrap(),
-        Some("Finnish".to_owned()),
-        user_email.email,
-    )
-    .unwrap();
-    let qr_code = totp.get_qr_base64().unwrap(); // qr_code is a base64 encoded image
-                                                 // that can be rendered embedded in an <img> tag
-    let otp_url = totp.get_url(); // otp_url is a otpauth:// url
-                                  // that can be rendered as a QR code
-
-    transaction.commit().await.unwrap();
-    return MfaTemplate {
+    Ok(MfaTemplate {
         mfa_url: "/auth/mfa".to_owned(),
-        qr_code: format!("data:image/png;base64,{qr_code}"),
-        otp_auth_url: otp_url,
+        qr_code: format!("data:image/png;base64,{}", totp.qr_code),
+        otp_auth_url: totp.otp_url,
         ..Default::default()
     }
-    .into_response_with_nonce();
+    .into_response_with_nonce())
 }
 
 pub async fn mfa_verify(
