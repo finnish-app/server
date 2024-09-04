@@ -1,12 +1,20 @@
-DROP TABLE IF EXISTS expenses;
-
-DO $$ BEGIN
-CREATE TYPE expense_category AS ENUM ('food', 'transport', 'health', 'education', 'entertainment', 'other');
+DO $$
+BEGIN
+    CREATE TYPE expense_category AS ENUM (
+        'food',
+        'transport',
+        'health',
+        'education',
+        'entertainment',
+        'other'
+);
 EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+    WHEN duplicate_object THEN
+        NULL;
+END
+$$;
 
-CREATE TABLE IF NOT EXISTS expenses (
+CREATE TABLE expenses (
     id serial PRIMARY KEY,
     description varchar(255) NOT NULL,
     price real NOT NULL,
