@@ -3,6 +3,7 @@ use crate::{
     client::{
         frc::{validate_frc, verify_frc_solution},
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
+        svix::create_user_app,
     },
     features::totp::set_otp_secret,
     hypermedia::schema::{
@@ -114,6 +115,7 @@ pub async fn mfa_qr(
 pub async fn mfa_verify(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
+    secret_store: &SecretStore,
     mfa_token: String,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
@@ -145,6 +147,18 @@ pub async fn mfa_verify(
         }
         Err(e) => {
             tracing::error!("Error verifying MFA token: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    }
+
+    let Some(svix_api_key) = secret_store.get("SVIX_API_KEY") else {
+        tracing::error!("Error getting SVIX_API_KEY from secret store");
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    match create_user_app(svix_api_key, user.id).await {
+        Ok(app) => tracing::debug!("app: {:?}", app),
+        Err(e) => {
+            tracing::error!("Error creating svix app for user: {}", e);
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     }

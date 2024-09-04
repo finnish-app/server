@@ -82,8 +82,13 @@ async fn mfa_verify(
     State(shared_state): State<Arc<AppState>>,
     Form(mfa_token): Form<MfaTokenForm>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::mfa_verify(auth_session, &shared_state.pool, mfa_token.token)
-        .await
+    crate::hypermedia::service::auth::mfa_verify(
+        auth_session,
+        &shared_state.pool,
+        &shared_state.secret_store,
+        mfa_token.token,
+    )
+    .await
 }
 
 async fn signup_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
