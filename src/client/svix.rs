@@ -3,8 +3,8 @@ use svix::api::{ApplicationIn, ApplicationOut, EndpointIn, Svix};
 
 const ENDPOINT_URL_PREFIX: &str = "https://finnish.shuttleapp.rs/webhooks";
 
-pub async fn create_user_app(svix_api_key: String, user_id: i32) -> anyhow::Result<ApplicationOut> {
-    let svix = Svix::new(svix_api_key, None);
+pub async fn create_user_app(svix_api_key: &str, user_id: i32) -> anyhow::Result<ApplicationOut> {
+    let svix = Svix::new(svix_api_key.to_owned(), None);
     let app = svix
         .application()
         .create(
@@ -20,10 +20,10 @@ pub async fn create_user_app(svix_api_key: String, user_id: i32) -> anyhow::Resu
 }
 
 pub async fn create_user_endpoint(
-    svix_api_key: String,
+    svix_api_key: &str,
     svix_user_app_id: String,
 ) -> anyhow::Result<String> {
-    let svix = Svix::new(svix_api_key, None);
+    let svix = Svix::new(svix_api_key.to_owned(), None);
 
     let base = Url::parse(ENDPOINT_URL_PREFIX)?;
     let uuid = uuid::Uuid::new_v4().to_string();

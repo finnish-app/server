@@ -15,6 +15,7 @@ mod util;
 use crate::{auth::Backend, data_structs::Months};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
+use anyhow::bail;
 use axum::{
     body::Body,
     error_handling::HandleErrorLayer,
@@ -41,15 +42,82 @@ use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+struct Secrets {
+    frc_sitekey: String,
+    frc_apikey: String,
+    smtp_key: String,
+    smtp_host: String,
+    mail_from: String,
+    smtp_username: String,
+    pluggy_client_id: String,
+    pluggy_client_secret: String,
+    svix_api_key: String,
+}
+
+impl Secrets {
+    fn from_store(secret_store: &SecretStore) -> anyhow::Result<Secrets> {
+        let Some(frc_apikey) = secret_store.get("FRC_APIKEY") else {
+            bail!("FRC_APIKEY not set in shuttle secret store");
+        };
+
+        let Some(frc_sitekey) = secret_store.get("FRC_SITEKEY") else {
+            bail!("FRC_SITEKEY not set in shuttle secret store");
+        };
+
+        let Some(smtp_key) = secret_store.get("SMTP_KEY") else {
+            bail!("SMTP_KEY not set in shuttle secret store");
+        };
+
+        let Some(smtp_host) = secret_store.get("SMTP_HOST") else {
+            bail!("SMTP_HOST not set in shuttle secret store");
+        };
+
+        let Some(mail_from) = secret_store.get("MAIL_FROM") else {
+            bail!("MAIL_FROM not set in shuttle secret store");
+        };
+
+        let Some(smtp_username) = secret_store.get("SMTP_USERNAME") else {
+            bail!("SMTP_USERNAME not set in shuttle secret store");
+        };
+
+        let Some(pluggy_client_id) = secret_store.get("PLUGGY_CLIENT_ID") else {
+            bail!("PLUGGY_CLIENT_ID not set in shuttle secret store");
+        };
+
+        let Some(pluggy_client_secret) = secret_store.get("PLUGGY_CLIENT_SECRET") else {
+            bail!("PLUGGY_CLIENT_SECRET not set in shuttle secret store");
+        };
+
+        let Some(svix_api_key) = secret_store.get("SVIX_API_KEY") else {
+            bail!("SVIX_API_KEY not set in shuttle secret store");
+        };
+
+        Ok(Secrets {
+            frc_sitekey,
+            frc_apikey,
+            smtp_key,
+            smtp_host,
+            mail_from,
+            smtp_username,
+            pluggy_client_id,
+            pluggy_client_secret,
+            svix_api_key,
+        })
+    }
+}
+
 /// The application state to be shared in axum.
 struct AppState {
     /// The postgres connection pool.
     pool: PgPool,
     /// The shuttle secret store.
-    secret_store: SecretStore,
+    secrets: Secrets,
+    /// The pluggy api key
+    pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
 }
 
 #[shuttle_runtime::main]
+#[allow(clippy::too_many_lines)]
 /// The main function of the application.
 async fn axum(
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
@@ -66,6 +134,8 @@ async fn axum(
         .run(&pool)
         .await
         .map_err(CustomError::new)?;
+
+    let secrets = Secrets::from_store(&secret_store)?;
 
     let session_store = PostgresStore::new(pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
@@ -98,8 +168,26 @@ async fn axum(
 
     let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
-    let shared_state = Arc::new(AppState { pool, secret_store });
+    let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
+        client::pluggy::auth::create_api_key(
+            &secrets.pluggy_client_id,
+            &secrets.pluggy_client_secret,
+        )
+        .await?
+    else {
+        return Err(shuttle_runtime::Error::BuildPanic(
+            "Couldn't create pluggy api key".to_string(),
+        ));
+    };
+    let pluggy_api_key = Arc::new(tokio::sync::Mutex::new(pluggy_api_key.api_key));
+
+    let shared_state = Arc::new(AppState {
+        pool,
+        secrets,
+        pluggy_api_key,
+    });
     let router = Router::new()
+        .merge(data::router::pluggy::router())
         .merge(data::router::expenses::router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(
@@ -154,12 +242,19 @@ async fn axum(
                 })
                 .into_inner(),
         )
-        .with_state(shared_state);
+        .with_state(shared_state.clone());
+
+    let renew_pluggy = renew_pluggy_task(
+        shared_state.pluggy_api_key.clone(),
+        shared_state.secrets.pluggy_client_id.clone(),
+        shared_state.secrets.pluggy_client_secret.clone(),
+    );
 
     tracing::debug!("Server started");
     Ok(CustomService {
         router,
         deletion_task,
+        renew_pluggy,
     })
 }
 
@@ -170,6 +265,8 @@ pub struct CustomService {
     router: Router,
     /// The task to delete expired sessions.
     deletion_task: task::JoinHandle<Result<(), session_store::Error>>,
+    /// The task to renew pluggy api keys
+    renew_pluggy: task::JoinHandle<Result<(), shuttle_runtime::Error>>,
 }
 
 #[shuttle_runtime::async_trait]
@@ -184,9 +281,34 @@ impl shuttle_runtime::Service for CustomService {
         .map_err(CustomError::new)?;
 
         let _deletion = tokio::join!(self.deletion_task);
+        let _renew_pluggy = tokio::join!(self.renew_pluggy);
 
         Ok(())
     }
+}
+
+fn renew_pluggy_task(
+    pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
+    pluggy_client_id: String,
+    pluggy_client_secret: String,
+) -> task::JoinHandle<Result<(), shuttle_runtime::Error>> {
+    task::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(60 * 5)).await;
+
+            let client::pluggy::auth::CreateApiKeyOutcome::Success(new_pluggy_api_key) =
+                client::pluggy::auth::create_api_key(&pluggy_client_id, &pluggy_client_secret)
+                    .await?
+            else {
+                return Err(shuttle_runtime::Error::Custom(CustomError::msg(
+                    "task couldn't renew pluggy api_key",
+                )));
+            };
+
+            let mut pluggy_api_key = pluggy_api_key.lock().await;
+            *pluggy_api_key = new_pluggy_api_key.api_key;
+        }
+    })
 }
 
 /// Returns a default configuration of http security headers.

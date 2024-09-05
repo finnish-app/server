@@ -4,7 +4,6 @@ use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use shuttle_runtime::SecretStore;
 
 #[derive(Deserialize, Serialize)]
 pub struct ApiKey {
@@ -18,20 +17,7 @@ pub enum CreateApiKeyOutcome {
     Internal,
 }
 
-pub async fn create_api_key(secret_store: &SecretStore) -> anyhow::Result<CreateApiKeyOutcome> {
-    let client_id = secret_store.get("PLUGGY_CLIENT_ID").unwrap_or_else(|| {
-        tracing::error!("Error getting PLUGGY_CLIENT_ID from secret store");
-        String::new()
-    });
-    let client_secret = secret_store.get("PLUGGY_CLIENT_SECRET").unwrap_or_else(|| {
-        tracing::error!("Error getting PLUGGY_CLIENT_SECRET from secret store");
-        String::new()
-    });
-
-    create_api_key_inner(&client_id, &client_secret).await
-}
-
-async fn create_api_key_inner(
+pub async fn create_api_key(
     client_id: &str,
     client_secret: &str,
 ) -> anyhow::Result<CreateApiKeyOutcome> {
@@ -104,8 +90,6 @@ pub async fn create_connect_token(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shuttle_common::Secret;
-    use std::collections::BTreeMap;
 
     #[tokio::test]
     async fn test_create_api_key_success() {
@@ -113,18 +97,9 @@ mod tests {
         let pluggy_client_id = dotenvy::var("PLUGGY_CLIENT_ID").unwrap();
         let pluggy_client_secret = dotenvy::var("PLUGGY_CLIENT_SECRET").unwrap();
 
-        let mut secrets: BTreeMap<String, Secret<String>> = BTreeMap::new();
-        secrets.insert(
-            "PLUGGY_CLIENT_ID".to_string(),
-            Secret::new(pluggy_client_id),
-        );
-        secrets.insert(
-            "PLUGGY_CLIENT_SECRET".to_string(),
-            Secret::new(pluggy_client_secret),
-        );
-        let secret_store = shuttle_runtime::SecretStore::new(secrets);
-
-        let outcome = create_api_key(&secret_store).await.unwrap();
+        let outcome = create_api_key(&pluggy_client_id, &pluggy_client_secret)
+            .await
+            .unwrap();
         assert!(matches!(outcome, CreateApiKeyOutcome::Success(_)));
     }
 
@@ -133,18 +108,9 @@ mod tests {
         let pluggy_client_id = "82b871ed-ff67-4732-8b1a-87f9eb167a0e".to_owned();
         let pluggy_client_secret = "82b871ed-ff67-4732-8b1a-87f9eb167a0e".to_owned();
 
-        let mut secrets: BTreeMap<String, Secret<String>> = BTreeMap::new();
-        secrets.insert(
-            "PLUGGY_CLIENT_ID".to_string(),
-            Secret::new(pluggy_client_id),
-        );
-        secrets.insert(
-            "PLUGGY_CLIENT_SECRET".to_string(),
-            Secret::new(pluggy_client_secret),
-        );
-        let secret_store = shuttle_runtime::SecretStore::new(secrets);
-
-        let outcome = create_api_key(&secret_store).await.unwrap();
+        let outcome = create_api_key(&pluggy_client_id, &pluggy_client_secret)
+            .await
+            .unwrap();
         assert!(matches!(outcome, CreateApiKeyOutcome::Unauthorized));
     }
 
@@ -153,18 +119,7 @@ mod tests {
         let pluggy_client_id = "unproper uuid".to_owned();
         let pluggy_client_secret = "unproper uuid".to_owned();
 
-        let mut secrets: BTreeMap<String, Secret<String>> = BTreeMap::new();
-        secrets.insert(
-            "PLUGGY_CLIENT_ID".to_string(),
-            Secret::new(pluggy_client_id),
-        );
-        secrets.insert(
-            "PLUGGY_CLIENT_SECRET".to_string(),
-            Secret::new(pluggy_client_secret),
-        );
-        let secret_store = shuttle_runtime::SecretStore::new(secrets);
-
-        let outcome = create_api_key(&secret_store).await;
+        let outcome = create_api_key(&pluggy_client_id, &pluggy_client_secret).await;
         assert!(outcome.is_err());
     }
 
@@ -174,18 +129,10 @@ mod tests {
         let pluggy_client_id = dotenvy::var("PLUGGY_CLIENT_ID").unwrap();
         let pluggy_client_secret = dotenvy::var("PLUGGY_CLIENT_SECRET").unwrap();
 
-        let mut secrets: BTreeMap<String, Secret<String>> = BTreeMap::new();
-        secrets.insert(
-            "PLUGGY_CLIENT_ID".to_string(),
-            Secret::new(pluggy_client_id),
-        );
-        secrets.insert(
-            "PLUGGY_CLIENT_SECRET".to_string(),
-            Secret::new(pluggy_client_secret),
-        );
-        let secret_store = shuttle_runtime::SecretStore::new(secrets);
-
-        let CreateApiKeyOutcome::Success(api_key) = create_api_key(&secret_store).await.unwrap()
+        let CreateApiKeyOutcome::Success(api_key) =
+            create_api_key(&pluggy_client_id, &pluggy_client_secret)
+                .await
+                .unwrap()
         else {
             unreachable!()
         };

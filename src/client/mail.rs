@@ -2,44 +2,35 @@ use lettre::{
     message::header::ContentType, transport::smtp::authentication::Credentials, Message,
     SmtpTransport, Transport,
 };
-use shuttle_runtime::SecretStore;
+
+pub struct EmailSecrets<'a> {
+    pub smtp_username: &'a str,
+    pub smtp_host: &'a str,
+    pub smtp_key: &'a str,
+    pub mail_from: &'a str,
+}
 
 pub fn send_email(
-    secret_store: &SecretStore,
+    email_secrets: &EmailSecrets,
     to_email: &str,
     subject: &str,
     body: &str,
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
-    let smtp_username = secret_store.get("SMTP_USERNAME").unwrap_or_else(|| {
-        tracing::warn!("SMTP_USERNAME not set, using default");
-        String::new()
-    });
-    let smtp_key = secret_store.get("SMTP_KEY").unwrap_or_else(|| {
-        tracing::warn!("SMTP_KEY not set, using default");
-        String::new()
-    });
-    let host = secret_store.get("SMTP_HOST").unwrap_or_else(|| {
-        tracing::warn!("SMTP_HOST not set, using default");
-        String::new()
-    });
-
-    let from_email = secret_store.get("MAIL_FROM").unwrap_or_else(|| {
-        tracing::warn!("MAIL_FROM not set, using default");
-        String::new()
-    });
-
     let email: Message = Message::builder()
-        .from(from_email.parse().unwrap())
+        .from(email_secrets.mail_from.parse().unwrap())
         .to(to_email.parse().unwrap())
         .subject(subject)
         .header(ContentType::TEXT_HTML)
         .body(body.to_owned())
         .unwrap();
 
-    let creds = Credentials::new(smtp_username, smtp_key);
+    let creds = Credentials::new(
+        email_secrets.smtp_username.to_owned(),
+        email_secrets.smtp_key.to_owned(),
+    );
 
     // Open a remote connection to gmail
-    let mailer = SmtpTransport::relay(&host)
+    let mailer = SmtpTransport::relay(email_secrets.smtp_host)
         .unwrap()
         .credentials(creds)
         .build();
@@ -49,7 +40,7 @@ pub fn send_email(
 }
 
 pub fn send_sign_up_confirmation_mail(
-    secret_store: &SecretStore,
+    email_secrets: &EmailSecrets,
     to_email: &str,
     verification_code: &str,
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
@@ -64,7 +55,7 @@ pub fn send_sign_up_confirmation_mail(
     );
 
     send_email(
-        secret_store,
+        email_secrets,
         to_email,
         "Welcome to finnish! Confirm your email.",
         &body,
@@ -72,7 +63,7 @@ pub fn send_sign_up_confirmation_mail(
 }
 
 pub fn send_forgot_password_mail(
-    secret_store: &SecretStore,
+    email_secrets: &EmailSecrets,
     to_email: &str,
     verification_code: &str,
 ) -> Result<lettre::transport::smtp::response::Response, lettre::transport::smtp::Error> {
@@ -86,5 +77,5 @@ pub fn send_forgot_password_mail(
         </html>"
     );
 
-    send_email(secret_store, to_email, "Reset your password", &body)
+    send_email(email_secrets, to_email, "Reset your password", &body)
 }

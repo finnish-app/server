@@ -5,15 +5,15 @@ use crate::{
         svix::create_user_endpoint,
     },
     templates::PluggyConnectWidgetTemplate,
+    Secrets,
 };
 
 use askama_axum::IntoResponse;
 use axum::http::StatusCode;
-use shuttle_common::SecretStore;
 
 pub async fn widget(
     auth_session: AuthSession,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     pluggy_api_key: &str,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
@@ -21,11 +21,7 @@ pub async fn widget(
     };
     tracing::debug!("User logged in");
 
-    let Some(svix_api_key) = secret_store.get("SVIX_API_KEY") else {
-        tracing::error!("Error getting SVIX_API_KEY from secret store");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    };
-    let webhook_url = create_user_endpoint(svix_api_key, "app_aarosntearnt".to_owned())
+    let webhook_url = create_user_endpoint(&secrets.svix_api_key, "app_aarosntearnt".to_owned())
         .await
         .unwrap();
 

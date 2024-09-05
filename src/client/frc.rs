@@ -1,7 +1,5 @@
 use std::{collections::HashMap, fmt::Display};
 
-use shuttle_runtime::SecretStore;
-
 #[derive(serde::Deserialize)]
 pub enum FrcVerificationError {
     /// You forgot to add the secret (=API key) parameter: 400
@@ -96,22 +94,14 @@ pub fn validate_frc(frc_captcha_solution: &str) -> bool {
 /// - secret: the secret (api key)
 pub async fn verify_frc_solution(
     frc_captcha_solution: &str,
-    secret_store: &SecretStore,
+    frc_sitekey: &str,
+    frc_apikey: &str,
 ) -> Result<(), FrcVerificationErrorList> {
-    let frc_sitekey = secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-        tracing::error!("Error getting FRC_SITEKEY from secret store");
-        String::new()
-    });
-    let frc_apikey = secret_store.get("FRC_APIKEY").unwrap_or_else(|| {
-        tracing::error!("Error getting FRC_APIKEY from secret store");
-        String::new()
-    });
-
     let client = reqwest::Client::new();
     let mut map = HashMap::new();
     map.insert("solution", frc_captcha_solution);
-    map.insert("sitekey", &frc_sitekey);
-    map.insert("secret", &frc_apikey);
+    map.insert("sitekey", frc_sitekey);
+    map.insert("secret", frc_apikey);
 
     // resp is a json of type FrcVerificationResponse
     let resp = client
