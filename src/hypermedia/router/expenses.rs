@@ -26,6 +26,7 @@ pub fn router() -> Router<Arc<AppState>> {
             get(get_expense).put(update_expense).delete(delete_expense),
         )
         .route("/expenses/plots", get(expenses_plots))
+        .route("/expenses/pluggy-widget", get(pluggy_widget))
 }
 
 async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
@@ -127,6 +128,18 @@ async fn expenses_plots(
         auth_session,
         &shared_state.pool,
         get_expense_input,
+    )
+    .await
+}
+
+async fn pluggy_widget(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::pluggy::widget(
+        auth_session,
+        &shared_state.secrets,
+        &shared_state.pluggy_api_key.lock().await,
     )
     .await
 }

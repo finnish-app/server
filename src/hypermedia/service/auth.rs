@@ -3,6 +3,7 @@ use crate::{
     client::{
         frc::{validate_frc, verify_frc_solution},
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail},
+        svix::create_user_app,
     },
     features::totp::set_otp_secret,
     hypermedia::schema::{
@@ -17,6 +18,7 @@ use crate::{
         add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
         now_plus_30_minutes,
     },
+    Secrets,
 };
 
 use askama_axum::IntoResponse;
@@ -26,14 +28,13 @@ use axum::{
     response::{Html, Redirect},
 };
 use password_auth::generate_hash;
-use shuttle_runtime::SecretStore;
 use sqlx::{Pool, Postgres};
 use totp_rs::{Algorithm, Secret, TOTP};
 use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
     if !validate_frc(&signin_input.frc_captcha_solution) {
@@ -43,7 +44,13 @@ pub async fn signin(
         )
             .into_response();
     }
-    if let Err(e) = verify_frc_solution(&signin_input.frc_captcha_solution, secret_store).await {
+    if let Err(e) = verify_frc_solution(
+        &signin_input.frc_captcha_solution,
+        &secrets.frc_sitekey,
+        &secrets.frc_apikey,
+    )
+    .await
+    {
         tracing::error!("Error verifying frc solution: {}", e);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -114,6 +121,7 @@ pub async fn mfa_qr(
 pub async fn mfa_verify(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
+    secrets: &Secrets,
     mfa_token: String,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
@@ -145,6 +153,14 @@ pub async fn mfa_verify(
         }
         Err(e) => {
             tracing::error!("Error verifying MFA token: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    }
+
+    match create_user_app(&secrets.svix_api_key, user.id).await {
+        Ok(app) => tracing::debug!("app: {:?}", app),
+        Err(e) => {
+            tracing::error!("Error creating svix app for user: {}", e);
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     }
@@ -181,36 +197,31 @@ pub async fn mfa_verify(
     }
 }
 
-pub fn signin_tab(secret_store: &SecretStore, print_message: bool) -> impl IntoResponse {
+pub fn signin_tab(secrets: &Secrets, print_message: bool) -> impl IntoResponse {
     return SignInTemplate {
         message: if print_message {
             "Password changed successfully".to_owned()
         } else {
             String::new()
         },
-        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-            tracing::error!("Error getting FRC_SITEKEY from secret store");
-            String::new()
-        }),
+        frc_sitekey: secrets.frc_sitekey.clone(),
         ..Default::default()
     }
     .into_response_with_nonce();
 }
 
-pub fn signup_tab(secret_store: &SecretStore) -> impl IntoResponse {
+pub fn signup_tab(secrets: &Secrets) -> impl IntoResponse {
     return SignUpTemplate {
-        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-            tracing::error!("Error getting FRC_SITEKEY from secret store");
-            String::new()
-        }),
+        frc_sitekey: secrets.frc_sitekey.clone(),
         ..Default::default()
     }
     .into_response_with_nonce();
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn signup(
     db_pool: &Pool<Postgres>,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     signup_input: SignUpInput,
 ) -> impl IntoResponse {
     if !validate_frc(&signup_input.frc_captcha_solution) {
@@ -220,7 +231,13 @@ pub async fn signup(
         )
             .into_response();
     }
-    if let Err(e) = verify_frc_solution(&signup_input.frc_captcha_solution, secret_store).await {
+    if let Err(e) = verify_frc_solution(
+        &signup_input.frc_captcha_solution,
+        &secrets.frc_sitekey,
+        &secrets.frc_apikey,
+    )
+    .await
+    {
         tracing::error!("Error verifying frc solution: {}", e);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -234,6 +251,13 @@ pub async fn signup(
         return StatusCode::BAD_REQUEST.into_response();
     }
 
+    let email_secrets = crate::client::mail::EmailSecrets {
+        smtp_username: &secrets.smtp_username,
+        smtp_host: &secrets.smtp_host,
+        smtp_key: &secrets.smtp_key,
+        mail_from: &secrets.mail_from,
+    };
+
     if let Ok(record) = sqlx::query_as!(
         Exists,
         r#"SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"#,
@@ -244,7 +268,7 @@ pub async fn signup(
     {
         if record.exists.unwrap() {
             match send_forgot_password_mail(
-                secret_store,
+                &email_secrets,
                 &signup_input.email,
                 &signup_input.username,
             ) {
@@ -291,7 +315,7 @@ pub async fn signup(
     {
         Ok(mail_to_user) => {
             match send_sign_up_confirmation_mail(
-                secret_store,
+                &email_secrets,
                 &mail_to_user.email,
                 &mail_to_user.verification_code.unwrap(),
             ) {
@@ -317,12 +341,9 @@ pub async fn signup(
     }
 }
 
-pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
+pub fn email_confirmation(secrets: &Secrets) -> impl IntoResponse {
     return ConfirmationTemplate {
-        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-            tracing::error!("Error getting FRC_SITEKEY from secret store");
-            String::new()
-        }),
+        frc_sitekey: secrets.frc_sitekey.clone(),
         login_url: "/auth/signin".to_owned(),
         resend_url: "/auth/resend-verification".to_owned(),
         ..Default::default()
@@ -332,7 +353,7 @@ pub fn email_confirmation(secret_store: &SecretStore) -> impl IntoResponse {
 
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     resend_email: ResendEmail,
 ) -> impl IntoResponse {
     if !validate_frc(&resend_email.frc_captcha_solution) {
@@ -342,7 +363,13 @@ pub async fn resend_verification_email(
         )
             .into_response();
     }
-    if let Err(e) = verify_frc_solution(&resend_email.frc_captcha_solution, secret_store).await {
+    if let Err(e) = verify_frc_solution(
+        &resend_email.frc_captcha_solution,
+        &secrets.frc_sitekey,
+        &secrets.frc_apikey,
+    )
+    .await
+    {
         tracing::error!("Error verifying frc solution: {}", e);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -383,7 +410,12 @@ pub async fn resend_verification_email(
     .await
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
-            secret_store,
+            &crate::client::mail::EmailSecrets {
+                smtp_username: &secrets.smtp_username,
+                smtp_host: &secrets.smtp_host,
+                smtp_key: &secrets.smtp_key,
+                mail_from: &secrets.mail_from,
+            },
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
@@ -416,9 +448,11 @@ pub async fn resend_verification_email(
 
 pub async fn verify_email(
     db_pool: &Pool<Postgres>,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     token: String,
 ) -> impl IntoResponse {
+    let frc_sitekey = secrets.frc_sitekey.clone();
+
     match sqlx::query!(
         "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
         token,
@@ -455,10 +489,7 @@ pub async fn verify_email(
                             let mut response = (
                                 StatusCode::OK,
                                 VerificationTemplate {
-                                    frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-                                        tracing::error!("Error getting FRC_SITEKEY from secret store");
-                                        String::new()
-                                    }),
+                                    frc_sitekey,
                                     login_url: "/auth/signin".to_owned(),
                                     message: "Email verified successfully. You can now sign in.".to_owned(),
                                     nonce,
@@ -473,13 +504,13 @@ pub async fn verify_email(
                         },
                         Err(e) => {
                             transaction.rollback().await.unwrap();
-                            return return_error_from_email_verification(&e, secret_store);
+                            return return_error_from_email_verification(&e, frc_sitekey);
                         }
                     }
                 },
                 Err(e) => {
                     transaction.rollback().await.unwrap();
-                    return return_error_from_email_verification(&e, secret_store);
+                    return return_error_from_email_verification(&e, frc_sitekey);
                 }
             }
         }
@@ -491,10 +522,7 @@ pub async fn verify_email(
             let mut response = (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
-                    frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-                        tracing::error!("Error getting FRC_SITEKEY from secret store");
-                        String::new()
-                    }),
+                    frc_sitekey: secrets.frc_sitekey.clone(),
                     login_url: "/auth/signin".to_owned(),
                     message: "User already verified or verification code expired.".to_owned(),
                     nonce,
@@ -510,10 +538,7 @@ pub async fn verify_email(
     }
 }
 
-fn return_error_from_email_verification(
-    e: &sqlx::Error,
-    secret_store: &SecretStore,
-) -> Response<Body> {
+fn return_error_from_email_verification(e: &sqlx::Error, frc_sitekey: String) -> Response<Body> {
     tracing::error!("Error updating db: {}", e);
     let nonce = generate_otp_token();
     let nonce_str = format!("'nonce-{nonce}'");
@@ -521,10 +546,7 @@ fn return_error_from_email_verification(
     let mut response = (
         StatusCode::INTERNAL_SERVER_ERROR,
         VerificationTemplate {
-            frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-                tracing::error!("Error getting FRC_SITEKEY from secret store");
-                String::new()
-            }),
+            frc_sitekey,
             login_url: "/auth/signin".to_owned(),
             message: "Error verifying email. Please try again later.".to_owned(),
             nonce,
@@ -591,13 +613,10 @@ pub async fn change_password(
     }
 }
 
-pub fn forgot_password_screen(secret_store: &SecretStore) -> impl IntoResponse {
+pub fn forgot_password_screen(secrets: &Secrets) -> impl IntoResponse {
     return ForgotPasswordTemplate {
         forgot_url: "/auth/forgot-password".to_owned(),
-        frc_sitekey: secret_store.get("FRC_SITEKEY").unwrap_or_else(|| {
-            tracing::error!("Error getting FRC_SITEKEY from secret store");
-            String::new()
-        }),
+        frc_sitekey: secrets.frc_sitekey.clone(),
         login_url: "/auth/signin".to_owned(),
         ..Default::default()
     }
@@ -606,7 +625,7 @@ pub fn forgot_password_screen(secret_store: &SecretStore) -> impl IntoResponse {
 
 pub async fn forgot_password(
     db_pool: &Pool<Postgres>,
-    secret_store: &SecretStore,
+    secrets: &Secrets,
     email_input: ResendEmail,
 ) -> impl IntoResponse {
     if !validate_frc(&email_input.frc_captcha_solution) {
@@ -616,7 +635,13 @@ pub async fn forgot_password(
         )
             .into_response();
     }
-    if let Err(e) = verify_frc_solution(&email_input.frc_captcha_solution, secret_store).await {
+    if let Err(e) = verify_frc_solution(
+        &email_input.frc_captcha_solution,
+        &secrets.frc_sitekey,
+        &secrets.frc_apikey,
+    )
+    .await
+    {
         tracing::error!("Error verifying frc solution: {}", e);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -666,7 +691,12 @@ pub async fn forgot_password(
     .await
     {
         Ok(mail_to_user) => match send_forgot_password_mail(
-            secret_store,
+            &crate::client::mail::EmailSecrets {
+                smtp_username: &secrets.smtp_username,
+                smtp_host: &secrets.smtp_host,
+                smtp_key: &secrets.smtp_key,
+                mail_from: &secrets.mail_from,
+            },
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
         ) {
