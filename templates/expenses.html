@@ -8,12 +8,25 @@
 <script nonce="{{ nonce }}" src="/js/hyperscript.min.js"></script>
 <script nonce="{{ nonce }}" src="/js/plotly-strict-2.28.0.min.js" charset="utf-8"></script>
 <script nonce="{{ nonce }}" src="/js/pluggy-connect.js"></script>
+<script nonce="{{ nonce }}" src="/js/response-targets.js"></script>
 {% endblock %}
 
 {% block content %}
 
 <section class="section" id="expenses">
 <h3>{{ username }}'s Expenses</h3>
+
+<section class="section" id="openfinance">
+<div hx-ext="response-targets">
+    <div id="response-div"></div>
+    <button hx-get="/expenses/pluggy-widget"
+            hx-target-error="#pluggy-modal-here" 
+    >
+        Sync with Pluggy
+    </button>
+    <div id="pluggy-modal-here" _="on toggleModal toggle @open on #pluggy-widget-error-modal"></div>
+</div>
+</section>
 
 <form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#month">
     <div class="grid">
@@ -29,15 +42,9 @@
         </select>
 
         <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
-        <button hx-get="/expenses/pluggy-widget"
-                hx-trigger="click"
-                class="btn btn-contrast"
-                type="button"
-        >
-            Sync with Pluggy
-        </button>
     </div>
 </form>
+
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
      hx-trigger="load, change from:#month, refresh-table from:body, refresh-plots from:body"

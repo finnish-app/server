@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 
 use crate::{
     auth::AuthSession,
-    constant::{DELETE_EXPENSE_MODAL, TABLE_ROW},
+    constant::TABLE_ROW,
     schema::{Expense, ExpenseCategory, GetExpense, UpdateExpense},
-    templates::{EditableExpenseRowTemplate, ExpenseRowTemplate},
+    templates::{DeleteExpenseModal, EditableExpenseRowTemplate, ExpenseRowTemplate},
     util::{get_first_day_from_month_or_none, get_last_day_from_month_or_none},
 };
 
@@ -247,13 +247,13 @@ pub async fn remove_expense_modal(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
     uuid: Uuid,
-) -> Html<String> {
+) -> impl IntoResponse {
     let user_id = if let Some(user) = auth_session.user {
         tracing::info!("User logged in");
         user.id
     } else {
         tracing::error!("User not logged in");
-        return Html(String::new());
+        return StatusCode::UNAUTHORIZED.into_response();
     };
 
     let expense = sqlx::query_as!(
@@ -267,7 +267,10 @@ pub async fn remove_expense_modal(
         .await
         .unwrap();
 
-    Html(format!(DELETE_EXPENSE_MODAL!(), expense.uuid))
+    DeleteExpenseModal {
+        expense_uuid: expense.uuid,
+    }
+    .into_response()
 }
 
 pub async fn insert_expense(
