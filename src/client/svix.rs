@@ -10,6 +10,7 @@ pub async fn create_user_app(svix_api_key: &str, user_id: i32) -> anyhow::Result
         .create(
             ApplicationIn {
                 name: format!("finnish-{user_id}"),
+                uid: Some(user_id.to_string()),
                 ..ApplicationIn::default()
             },
             None,
@@ -19,10 +20,7 @@ pub async fn create_user_app(svix_api_key: &str, user_id: i32) -> anyhow::Result
     Ok(app)
 }
 
-pub async fn create_user_endpoint(
-    svix_api_key: &str,
-    svix_user_app_id: String,
-) -> anyhow::Result<String> {
+pub async fn create_user_endpoint(svix_api_key: &str, user_id: i32) -> anyhow::Result<String> {
     let svix = Svix::new(svix_api_key.to_owned(), None);
 
     let base = Url::parse(ENDPOINT_URL_PREFIX)?;
@@ -32,7 +30,7 @@ pub async fn create_user_endpoint(
     let endpoint = svix
         .endpoint()
         .create(
-            svix_user_app_id,
+            user_id.to_string(),
             EndpointIn {
                 url: joined.to_string(),
                 description: Some("Pluggy connect endpoint".to_string()),

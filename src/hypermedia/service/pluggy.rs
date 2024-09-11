@@ -4,7 +4,7 @@ use crate::{
         pluggy::auth::{create_connect_token, CreateConnectTokenOutcome},
         svix::create_user_endpoint,
     },
-    templates::PluggyConnectWidgetTemplate,
+    templates::{PluggyConnectWidgetTemplate, PluggyWidgetModalErrorTemplate},
     Secrets,
 };
 
@@ -21,9 +21,13 @@ pub async fn widget(
     };
     tracing::debug!("User logged in");
 
-    let webhook_url = create_user_endpoint(&secrets.svix_api_key, "app_aarosntearnt".to_owned())
-        .await
-        .unwrap();
+    let Ok(webhook_url) = create_user_endpoint(&secrets.svix_api_key, user.id).await else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            PluggyWidgetModalErrorTemplate {},
+        )
+            .into_response();
+    };
 
     let Ok(CreateConnectTokenOutcome::Success(connect_token)) = create_connect_token(
         pluggy_api_key,
@@ -33,7 +37,11 @@ pub async fn widget(
     )
     .await
     else {
-        panic!("panik")
+        return (
+            StatusCode::FAILED_DEPENDENCY,
+            PluggyWidgetModalErrorTemplate {},
+        )
+            .into_response();
     };
 
     return PluggyConnectWidgetTemplate {

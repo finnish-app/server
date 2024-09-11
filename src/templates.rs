@@ -353,3 +353,7 @@ pub struct DeleteExpenseModal {
 pub struct PluggyConnectWidgetTemplate {
     pub access_token: String,
 }
+
+#[derive(Template, Default)]
+#[template(path = "pluggy_widget_modal_error.html")]
+pub struct PluggyWidgetModalErrorTemplate {}
