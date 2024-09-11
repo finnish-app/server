@@ -350,29 +350,6 @@ macro_rules! WEAK_NEW_PASSWORD {
     };
 }
 
-macro_rules! DELETE_EXPENSE_MODAL {
-    () => {
-        "<dialog id=\"delete-expense-modal\" open>
-            <article>
-                <a href=\"#close\"
-                  aria-label=\"Close\"
-                  class=\"close\"
-                  _=\"on click trigger toggleModal\">
-                </a>
-                <h3>Delete the expense</h3>
-                <p>Are you sure you want to delete this expense?</p>
-                <footer>
-                    <div class=\"grid\">
-                        <button hx-delete=\"/expenses/{}\" hx-target=\"#delete-modal-here\" class=\"contrast\" hx-trigger=\"click\">Delete</button>
-                        <button _=\"on click trigger toggleModal\" type=\"button\">Close</button>
-                    </div>
-                </footer>
-            </article>
-        </dialog>"
-    };
-}
-
-pub(crate) use DELETE_EXPENSE_MODAL;
 pub(crate) use INVALID_EMAIL;
 pub(crate) use INVALID_USERNAME;
 pub(crate) use MATCHING_NEW_PASSWORDS;

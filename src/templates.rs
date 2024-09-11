@@ -343,6 +343,12 @@ pub struct ExpenseRowTemplate {
 }
 
 #[derive(Template, Default)]
+#[template(path = "delete_expense_modal.html")]
+pub struct DeleteExpenseModal {
+    pub expense_uuid: Uuid,
+}
+
+#[derive(Template, Default)]
 #[template(path = "pluggy_connect_widget.html")]
 pub struct PluggyConnectWidgetTemplate {
     pub access_token: String,
