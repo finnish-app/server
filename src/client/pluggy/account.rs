@@ -57,17 +57,17 @@ struct BankData {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct CreditData {
-    level: CreditLevel,
+    level: Option<CreditLevel>,
     brand: CreditBrand,
     balance_close_date: NaiveDate,
     balance_due_date: NaiveDate,
-    available_credit_limit: i32,
+    available_credit_limit: f32,
     /// Balance in usd
-    balance_foreign_currency: Option<i32>,
-    minimum_payment: f32,
-    credit_limit: i32,
-    status: CreditStatus,
-    holder_type: CreditHolderType,
+    balance_foreign_currency: Option<f32>,
+    minimum_payment: Option<f32>,
+    credit_limit: f32,
+    status: Option<CreditStatus>,
+    holder_type: Option<CreditHolderType>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
