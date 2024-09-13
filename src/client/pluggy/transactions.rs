@@ -56,7 +56,7 @@ pub struct Transaction {
 struct PaymentData {
     payer: PayerOrReceiver,
     receiver: PayerOrReceiver,
-    reason: String,
+    reason: Option<String>,
     reference_number: String,
     receiver_reference_id: Option<String>,
     payment_method: PaymentMethod,
@@ -83,7 +83,7 @@ struct PayerOrReceiver {
     name: String,
     account_number: String,
     branch_number: String,
-    routing_number: String,
+    routing_number: Option<String>,
     routing_number_ispb: Option<String>,
 }
 
@@ -129,8 +129,8 @@ struct Merchant {
     name: String,
     business_name: String,
     cnpj: String,
-    cnae: String,
-    category: String,
+    cnae: Option<String>,
+    category: Option<String>,
 }
 
 #[derive(Deserialize, Serialize)]
