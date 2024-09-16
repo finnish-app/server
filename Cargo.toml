@@ -8,7 +8,7 @@ keywords = ["finance", "personal finance", "budget", "money", "expenses", "incom
 categories = ["finance"]
 
 [dependencies]
-anyhow = { version = "1.0.86", default-features = false }
+anyhow = { version = "1.0.89", default-features = false }
 askama = { version = "0.12.1", default-features = false, features = ["with-axum", "serde-json"] }
 askama_axum = { version = "0.4.0", default-features = false }
 axum = { version = "0.7.5", default-features = false }
