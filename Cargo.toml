@@ -8,21 +8,21 @@ keywords = ["finance", "personal finance", "budget", "money", "expenses", "incom
 categories = ["finance"]
 
 [dependencies]
-anyhow = { version = "1.0.86", default-features = false }
+anyhow = { version = "1.0.89", default-features = false }
 askama = { version = "0.12.1", default-features = false, features = ["with-axum", "serde-json"] }
 askama_axum = { version = "0.4.0", default-features = false }
-axum = { version = "0.7.5", default-features = false }
+axum = { version = "0.7.6", default-features = false }
 axum-helmet = { version = "0.1.0", default-features = false }
 axum-login = { version = "0.15.3", default-features = false }
 chrono = { version = "0.4.38", default-features = false, features = ["serde"] }
 dotenvy = { version = "0.15.7", default-features = false }
-lettre = { version = "0.11.8", default-features = false, features = ["smtp-transport", "native-tls", "builder"] }
+lettre = { version = "0.11.9", default-features = false, features = ["smtp-transport", "native-tls", "builder"] }
 password-auth = { version = "1.1.0-pre.0", default-features = false, features = ["argon2"] }
-plotly = { version = "0.9.0", default-features=false, features = ["with-axum"] }
+plotly = { version = "0.10.0", default-features=false, features = ["with-axum"] }
 rand = { version = "0.8.5", default-features = false }
 regex = { version = "1.10.6", default-features = false }
 reqwest = { version = "0.12.7", default-features = false, features = ["json", "default-tls"] }
-serde = { version = "1.0.209", default-features = false, features = ["derive", "serde_derive"] }
+serde = { version = "1.0.210", default-features = false, features = ["derive", "serde_derive"] }
 serde_json = { version = "1.0.128", default-features = false }
 shuttle-axum = { version = "0.47.0", default-features = false, features = ["axum"] }
 shuttle-common = { version = "0.47.0", default-features = false }
@@ -30,12 +30,12 @@ shuttle-runtime = { version = "0.47.0", default-features = false, features = ["c
 shuttle-shared-db = { version = "0.47.0", default-features = false, features = ["postgres", "sqlx"] }
 sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
 strum = { version = "0.26.3", default-features = false, features = ["strum_macros", "derive"] }
-svix = { version = "1.32.0", default-features = false, features = ["native-tls"] }
+svix = { version = "1.36.0", default-features = false, features = ["native-tls"] }
 time = { version = "0.3.36", default-features = false }
 tokio = { version = "1.40.0", default-features = false, features = ["full"] }
 totp-rs = { version = "5.6.0", default-features = false, features = ["qr"] }
-tower = { version = "0.5.0", default-features = false, features = ["timeout", "util"] }
-tower-http = { version = "0.5.2", default-features = false, features = ["fs", "trace"] }
+tower = { version = "0.5.1", default-features = false, features = ["timeout", "util"] }
+tower-http = { version = "0.6.1", default-features = false, features = ["fs", "trace"] }
 tower-sessions = { version = "0.12.3", default-features = false }
 tower-sessions-sqlx-store = { version = "0.12.0", default-features = false, features = ["postgres"] }
 tower_governor = { version = "0.4.2", default-features = false, features = ["axum", "tracing"] }

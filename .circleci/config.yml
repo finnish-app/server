@@ -11,7 +11,7 @@ orbs:
 jobs:
   build-and-test:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     environment:
       # Fail the build if there are warnings
       RUSTFLAGS: "-D warnings"
@@ -55,7 +55,7 @@ jobs:
 
   security:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     steps:
       - checkout
       - run:
@@ -81,7 +81,7 @@ jobs:
 
   format:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     steps:
       - checkout
       - run:
@@ -100,7 +100,7 @@ jobs:
     # images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -118,7 +118,7 @@ jobs:
 
   doc:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     steps:
       - checkout
       - run:
@@ -133,7 +133,7 @@ jobs:
 
   coverage:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     steps:
       - checkout
       - run:
@@ -168,7 +168,7 @@ jobs:
 
   shuttle-deploy:
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:1.81.0
     steps:
       - checkout
       - run:
