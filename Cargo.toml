@@ -18,7 +18,7 @@ chrono = { version = "0.4.38", default-features = false, features = ["serde"] }
 dotenvy = { version = "0.15.7", default-features = false }
 lettre = { version = "0.11.8", default-features = false, features = ["smtp-transport", "native-tls", "builder"] }
 password-auth = { version = "1.1.0-pre.0", default-features = false, features = ["argon2"] }
-plotly = { version = "0.9.0", default-features=false, features = ["with-axum"] }
+plotly = { version = "0.10.0", default-features=false, features = ["with-axum"] }
 rand = { version = "0.8.5", default-features = false }
 regex = { version = "1.10.6", default-features = false }
 reqwest = { version = "0.12.7", default-features = false, features = ["json", "default-tls"] }
