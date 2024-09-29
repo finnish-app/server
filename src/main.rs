@@ -5,6 +5,7 @@ mod data;
 mod data_structs;
 mod features;
 mod hypermedia;
+mod queries;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;
 /// Module containing the askama html templates to be rendered.
