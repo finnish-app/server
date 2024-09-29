@@ -1,6 +1,6 @@
 use chrono::{NaiveDate, Utc};
 use plotly::{Layout, Plot, Scatter};
-use sqlx::{Pool, Postgres};
+use sqlx::PgPool;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
@@ -8,7 +8,7 @@ use crate::schema::{CreateExpense, UpdateExpenseApi, UpdateExpenseHypr};
 
 pub async fn create(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     create_expense: CreateExpense,
 ) -> Result<(), sqlx::Error> {
     let params = crate::queries::expenses::CreateParams {
@@ -31,7 +31,7 @@ pub async fn create(
 
 pub async fn list_in_period(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     from: Option<NaiveDate>,
     to: Option<NaiveDate>,
 ) -> Result<Vec<crate::queries::expenses::Expense>, sqlx::Error> {
@@ -40,7 +40,7 @@ pub async fn list_in_period(
 
 pub async fn find_active_for_user(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     expense_uuid: Uuid,
 ) -> Result<crate::queries::expenses::Expense, sqlx::Error> {
     crate::queries::expenses::find_active_for_user(&db_pool, user_id, expense_uuid).await
@@ -48,7 +48,7 @@ pub async fn find_active_for_user(
 
 pub async fn update(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     expense_uuid: Uuid,
     update: UpdateExpenseApi,
 ) -> Result<(), sqlx::Error> {
@@ -76,7 +76,7 @@ pub enum UpdateOutcome {
 
 pub async fn update_for_site(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     expense_uuid: Uuid,
     update: UpdateExpenseHypr,
 ) -> anyhow::Result<UpdateOutcome> {
@@ -112,7 +112,7 @@ pub enum DeleteOutcome {
 
 pub async fn delete(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     expense_uuid: Uuid,
 ) -> anyhow::Result<DeleteOutcome> {
     if let Some(exists) =
@@ -140,7 +140,7 @@ pub async fn delete(
 
 pub async fn plot(
     user_id: i32,
-    db_pool: Pool<Postgres>,
+    db_pool: PgPool,
     from: Option<NaiveDate>,
     to: Option<NaiveDate>,
 ) -> Result<Plot, sqlx::Error> {

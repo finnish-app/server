@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::Serialize;
-use sqlx::{Pool, Postgres};
+use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
 use crate::schema::ExpenseCategory;
@@ -15,7 +15,7 @@ pub struct CreateParams {
 }
 
 pub async fn create(
-    db_pool: &Pool<Postgres>,
+    conn: impl PgExecutor<'_>,
     user_id: i32,
     p: CreateParams,
 ) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
@@ -33,7 +33,7 @@ pub async fn create(
         user_id,
         p.now,
     )
-    .execute(db_pool)
+    .execute(conn)
     .await
 }
 
@@ -50,7 +50,7 @@ pub struct Expense {
 }
 
 pub async fn list_for_user_in_period(
-    db_pool: &Pool<Postgres>,
+    conn: impl PgExecutor<'_>,
     user_id: i32,
     from: Option<NaiveDate>,
     to: Option<NaiveDate>,
@@ -68,12 +68,12 @@ pub async fn list_for_user_in_period(
         to,
         user_id
     )
-    .fetch_all(db_pool)
+    .fetch_all(conn)
     .await
 }
 
 pub async fn find_active_for_user(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
 ) -> Result<Expense, sqlx::Error> {
@@ -92,7 +92,7 @@ pub async fn find_active_for_user(
 }
 
 pub async fn exists_active(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
 ) -> Result<Option<bool>, sqlx::Error> {
@@ -118,7 +118,7 @@ pub struct UpdateParams {
 }
 
 pub async fn update(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
     p: UpdateParams,
@@ -147,7 +147,7 @@ pub async fn update(
 }
 
 pub async fn update_for_site(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
     p: UpdateParams,
@@ -178,7 +178,7 @@ pub async fn update_for_site(
 }
 
 pub async fn delete(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
     now: DateTime<Utc>,
