@@ -28,7 +28,7 @@ shuttle-axum = { version = "0.47.0", default-features = false, features = ["axum
 shuttle-common = { version = "0.47.0", default-features = false }
 shuttle-runtime = { version = "0.47.0", default-features = false, features = ["colored"] }
 shuttle-shared-db = { version = "0.47.0", default-features = false, features = ["postgres", "sqlx"] }
-sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "migrate"] }
 strum = { version = "0.26.3", default-features = false, features = ["strum_macros", "derive"] }
 svix = { version = "1.36.0", default-features = false, features = ["native-tls"] }
 time = { version = "0.3.36", default-features = false }

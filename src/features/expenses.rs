@@ -167,3 +167,43 @@ pub async fn plot(
 
     Ok(plot)
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn create_success(pool: PgPool) {
+        let email = "test@test.com";
+        let now = Utc::now();
+        crate::queries::user::create(
+            &pool,
+            crate::queries::user::CreateParams {
+                name: "test_name",
+                email,
+                hashed_pass: "test_hash",
+                verification_token: "test_token",
+                expiration_date: now,
+            },
+        )
+        .await
+        .unwrap();
+
+        let user_id = sqlx::query!("SELECT id FROM users WHERE email = $1", email)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+            .id;
+
+        let create_expense = crate::schema::CreateExpense {
+            description: "test_expense".to_owned(),
+            price: 6.9,
+            category: crate::schema::ExpenseCategory::Food,
+            is_essential: false,
+            date: now.date_naive(),
+        };
+
+        super::create(user_id, pool, create_expense).await.unwrap();
+    }
+}
