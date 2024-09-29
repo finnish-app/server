@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO expenses (description, price, category, is_essential, date, uuid, user_id)\n        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Float4",
+        {
+          "Custom": {
+            "name": "expense_category",
+            "kind": {
+              "Enum": [
+                "food",
+                "transport",
+                "health",
+                "education",
+                "entertainment",
+                "other"
+              ]
+            }
+          }
+        },
+        "Bool",
+        "Date",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "de408d7096db52682e68d9db5268e901782a70966a7a9a8049fbd05e4970114f"
+}
