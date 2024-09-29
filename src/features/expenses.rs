@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use plotly::{Layout, Plot, Scatter};
 use sqlx::{Pool, Postgres};
 use std::collections::BTreeMap;
@@ -17,6 +17,7 @@ pub async fn create(
         category: create_expense.category,
         is_essential: create_expense.is_essential,
         date: create_expense.date,
+        now: Utc::now(),
     };
     crate::queries::expenses::create(&db_pool, user_id, params)
         .await

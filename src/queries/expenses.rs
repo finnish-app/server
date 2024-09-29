@@ -11,6 +11,7 @@ pub struct CreateParams {
     pub category: ExpenseCategory,
     pub is_essential: bool,
     pub date: NaiveDate,
+    pub now: DateTime<Utc>,
 }
 
 pub async fn create(
@@ -20,8 +21,8 @@ pub async fn create(
 ) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO expenses (description, price, category, is_essential, date, uuid, user_id)
-        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7)
+        INSERT INTO expenses (description, price, category, is_essential, date, uuid, user_id, created_at)
+        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7, $8)
         "#,
         p.description,
         p.price,
@@ -29,7 +30,8 @@ pub async fn create(
         p.is_essential,
         p.date,
         Uuid::new_v4(),
-        user_id
+        user_id,
+        p.now,
     )
     .execute(db_pool)
     .await
