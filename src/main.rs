@@ -118,7 +118,10 @@ struct AppState {
 }
 
 #[shuttle_runtime::main]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "I have to think on how to shrink it, idk"
+)]
 /// The main function of the application.
 async fn axum(
     #[shuttle_runtime::Secrets] secret_store: SecretStore,

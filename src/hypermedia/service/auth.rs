@@ -218,7 +218,7 @@ pub fn signup_tab(secrets: &Secrets) -> impl IntoResponse {
     .into_response_with_nonce();
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines, reason = "not yet reviewed this function")]
 pub async fn signup(
     db_pool: &Pool<Postgres>,
     secrets: &Secrets,
