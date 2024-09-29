@@ -144,6 +144,37 @@ pub async fn update(
     .await
 }
 
+pub async fn update_for_site(
+    db_pool: &Pool<Postgres>,
+    user_id: i32,
+    expense_uuid: Uuid,
+    p: UpdateParams,
+) -> Result<Expense, sqlx::Error> {
+    sqlx::query_as!(
+        Expense,
+        r#"
+        UPDATE expenses SET
+            description = COALESCE($1, description),
+            price = COALESCE($2, price),
+            category = COALESCE($3 :: expense_category, category),
+            is_essential = COALESCE($4, is_essential),
+            date = COALESCE($5, date)
+        WHERE uuid = $6 AND user_id = $7
+        and deleted_at is null
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        "#,
+        p.description,
+        p.price,
+        p.category as Option<ExpenseCategory>,
+        p.is_essential,
+        p.date,
+        expense_uuid,
+        user_id
+    )
+    .fetch_one(db_pool)
+    .await
+}
+
 pub async fn delete(
     db_pool: &Pool<Postgres>,
     user_id: i32,
