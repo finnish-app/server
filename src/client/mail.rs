@@ -10,6 +10,8 @@ pub struct EmailSecrets<'a> {
     pub mail_from: &'a str,
 }
 
+// TODO: create a mailer object and add it to application state
+// instead of creating on every call
 pub fn send_email(
     email_secrets: &EmailSecrets,
     to_email: &str,
