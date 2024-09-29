@@ -5,9 +5,7 @@ use std::{
 
 use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize};
-use sqlx::FromRow;
 use strum::EnumIter;
-use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
@@ -49,18 +47,6 @@ impl Display for ExpenseCategory {
             Self::Other => return write!(fmtr, "Other"),
         }
     }
-}
-
-#[derive(FromRow, Serialize, Debug, Default)]
-/// Expense is a struct with the fields of an expense.
-pub struct Expense {
-    pub id: i32,
-    pub description: String,
-    pub price: f32,
-    pub category: ExpenseCategory,
-    pub is_essential: bool,
-    pub date: NaiveDate,
-    pub uuid: Uuid,
 }
 
 #[derive(Deserialize, Debug)]
