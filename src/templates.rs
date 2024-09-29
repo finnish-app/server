@@ -1,12 +1,11 @@
 use crate::{
-    data_structs::{Months, MonthsIter},
     schema::{ExpenseCategory, ExpenseCategoryIter},
     util::{add_csp_to_response, generate_otp_token},
 };
 
 use askama_axum::{IntoResponse, Template};
 use axum::{body::Body, http::Response};
-use chrono::{Datelike, Month, NaiveDate, Utc};
+use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 
@@ -14,12 +13,8 @@ use uuid::Uuid;
 #[template(path = "expenses.html")]
 /// The askama template for the expenses page.
 pub struct ExpensesTemplate {
-    /// The current month to be displayed in English in the dropdown.
-    pub current_month: Months,
     /// The expense types to be displayed in the dropdown.
     pub expense_categories: ExpenseCategoryIter,
-    /// The months to be displayed in the dropdown.
-    pub months: MonthsIter,
     /// The username of the logged in user.
     pub username: String,
     /// CSP nonce
@@ -29,19 +24,7 @@ pub struct ExpensesTemplate {
 impl Default for ExpensesTemplate {
     fn default() -> Self {
         return Self {
-            current_month: {
-                Months::from_chrono_month(
-                    Month::try_from(u8::try_from(Utc::now().month()).unwrap_or_else(|_| {
-                        tracing::error!(
-                            "Failed to convert chrono month to u8, defaulting to 1(January)"
-                        );
-                        return 1;
-                    }))
-                    .unwrap_or(Month::January),
-                )
-            },
             expense_categories: ExpenseCategory::iter(),
-            months: Months::iter(),
             username: String::new(),
             nonce: String::new(),
         };
@@ -56,9 +39,7 @@ impl ExpensesTemplate {
         let nonce_str = format!("'nonce-{nonce}'");
 
         let mut response = Self {
-            current_month: self.current_month,
             expense_categories: self.expense_categories,
-            months: self.months,
             username: self.username,
             nonce,
         }

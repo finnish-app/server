@@ -13,7 +13,7 @@ mod templates;
 /// Module containing time and crypto utility functions.
 mod util;
 
-use crate::{auth::Backend, data_structs::Months};
+use crate::auth::Backend;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::bail;
