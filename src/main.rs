@@ -16,7 +16,6 @@ mod util;
 use crate::auth::Backend;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use anyhow::bail;
 use axum::{
     body::Body,
     error_handling::HandleErrorLayer,
@@ -34,7 +33,7 @@ use axum_login::{
     tower_sessions::{session_store, ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use shuttle_runtime::{tokio::net::TcpListener, CustomError, SecretStore};
+use shuttle_runtime::{tokio::net::TcpListener, CustomError};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::task;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
@@ -43,7 +42,8 @@ use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-struct Secrets {
+struct Env {
+    db_url: &'static str,
     frc_sitekey: String,
     frc_apikey: String,
     smtp_key: String,
@@ -55,45 +55,24 @@ struct Secrets {
     svix_api_key: String,
 }
 
-impl Secrets {
-    fn from_store(secret_store: &SecretStore) -> anyhow::Result<Secrets> {
-        let Some(frc_apikey) = secret_store.get("FRC_APIKEY") else {
-            bail!("FRC_APIKEY not set in shuttle secret store");
-        };
+impl Env {
+    fn try_build() -> Result<Self, std::env::VarError> {
+        // opens
+        let db_url = std::env!("DATABASE_URL");
 
-        let Some(frc_sitekey) = secret_store.get("FRC_SITEKEY") else {
-            bail!("FRC_SITEKEY not set in shuttle secret store");
-        };
+        // secrets
+        let frc_apikey = std::env::var("FRC_APIKEY")?;
+        let frc_sitekey = std::env::var("FRC_SITEKEY")?;
+        let smtp_key = std::env::var("SMTP_KEY")?;
+        let smtp_host = std::env::var("SMTP_HOST")?;
+        let mail_from = std::env::var("MAIL_FROM")?;
+        let smtp_username = std::env::var("SMTP_USERNAME")?;
+        let pluggy_client_id = std::env::var("PLUGGY_CLIENT_ID")?;
+        let pluggy_client_secret = std::env::var("PLUGGY_CLIENT_SECRET")?;
+        let svix_api_key = std::env::var("SVIX_API_KEY")?;
 
-        let Some(smtp_key) = secret_store.get("SMTP_KEY") else {
-            bail!("SMTP_KEY not set in shuttle secret store");
-        };
-
-        let Some(smtp_host) = secret_store.get("SMTP_HOST") else {
-            bail!("SMTP_HOST not set in shuttle secret store");
-        };
-
-        let Some(mail_from) = secret_store.get("MAIL_FROM") else {
-            bail!("MAIL_FROM not set in shuttle secret store");
-        };
-
-        let Some(smtp_username) = secret_store.get("SMTP_USERNAME") else {
-            bail!("SMTP_USERNAME not set in shuttle secret store");
-        };
-
-        let Some(pluggy_client_id) = secret_store.get("PLUGGY_CLIENT_ID") else {
-            bail!("PLUGGY_CLIENT_ID not set in shuttle secret store");
-        };
-
-        let Some(pluggy_client_secret) = secret_store.get("PLUGGY_CLIENT_SECRET") else {
-            bail!("PLUGGY_CLIENT_SECRET not set in shuttle secret store");
-        };
-
-        let Some(svix_api_key) = secret_store.get("SVIX_API_KEY") else {
-            bail!("SVIX_API_KEY not set in shuttle secret store");
-        };
-
-        Ok(Secrets {
+        Ok(Self {
+            db_url,
             frc_sitekey,
             frc_apikey,
             smtp_key,
@@ -111,8 +90,8 @@ impl Secrets {
 struct AppState {
     /// The postgres connection pool.
     pool: PgPool,
-    /// The shuttle secret store.
-    secrets: Secrets,
+    /// The environment variables
+    env: Env,
     /// The pluggy api key
     pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
 }
@@ -123,9 +102,7 @@ struct AppState {
     reason = "I have to think on how to shrink it, idk"
 )]
 /// The main function of the application.
-async fn axum(
-    #[shuttle_runtime::Secrets] secret_store: SecretStore,
-) -> Result<CustomService, shuttle_runtime::Error> {
+async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
@@ -133,10 +110,11 @@ async fn axum(
         .with(fmt::layer())
         .init();
 
-    let db_url = std::env!("DATABASE_URL");
+    let env = Env::try_build().expect("couldn't build envs");
+
     let db_pool = PgPoolOptions::new()
         .max_connections(20)
-        .connect(db_url)
+        .connect(env.db_url)
         .await
         .expect("can't connect to database");
 
@@ -144,8 +122,6 @@ async fn axum(
         .run(&db_pool)
         .await
         .map_err(CustomError::new)?;
-
-    let secrets = Secrets::from_store(&secret_store)?;
 
     let session_store = PostgresStore::new(db_pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
@@ -179,11 +155,8 @@ async fn axum(
     let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
     let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
-        client::pluggy::auth::create_api_key(
-            &secrets.pluggy_client_id,
-            &secrets.pluggy_client_secret,
-        )
-        .await?
+        client::pluggy::auth::create_api_key(&env.pluggy_client_id, &env.pluggy_client_secret)
+            .await?
     else {
         return Err(shuttle_runtime::Error::BuildPanic(
             "Couldn't create pluggy api key".to_string(),
@@ -193,7 +166,7 @@ async fn axum(
 
     let shared_state = Arc::new(AppState {
         pool: db_pool,
-        secrets,
+        env,
         pluggy_api_key,
     });
     let router = Router::new()
@@ -256,8 +229,8 @@ async fn axum(
 
     let renew_pluggy = renew_pluggy_task(
         shared_state.pluggy_api_key.clone(),
-        shared_state.secrets.pluggy_client_id.clone(),
-        shared_state.secrets.pluggy_client_secret.clone(),
+        shared_state.env.pluggy_client_id.clone(),
+        shared_state.env.pluggy_client_secret.clone(),
     );
 
     tracing::debug!("Server started");

@@ -1,6 +1,7 @@
 /target
 .shuttle-storage
 Secrets*.toml
+.secrets
 *.env
 .env
 test.env
@@ -15,5 +16,5 @@ pyvenv.cfg
 pre-commit-*
 
 # ignore direnv
-.envrc
+# .envrc
 .direnv/
