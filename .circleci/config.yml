@@ -61,6 +61,11 @@ jobs:
   security:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -87,6 +92,11 @@ jobs:
   format:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -106,6 +116,11 @@ jobs:
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -124,6 +139,11 @@ jobs:
   doc:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -139,6 +159,16 @@ jobs:
   coverage:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
+      - image: cimg/postgres:17.0
+        environment:
+          POSTGRES_USER: postgres
+    environment:
+      DATABASE_URL: postgresql://postgres@localhost/circle_test
     steps:
       - checkout
       - run:
@@ -159,6 +189,14 @@ jobs:
           command: |
             curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - run:
+          name: Install sqlx-cli
+          command: cargo install sqlx-cli
+      - run:
+          name: Database setup
+          command: |
+            sqlx database create
+            sqlx migrate run
+      - run:
           name: Setup test.env
           command: |
             echo PLUGGY_CLIENT_ID=$PLUGGY_CLIENT_ID > test.env
@@ -167,8 +205,6 @@ jobs:
           name: Running code coverage
           command: |
             rustup run nightly cargo llvm-cov nextest --locked --all-features --lcov --output-path lcov.info
-          environment:
-            DATABASE_URL: postgresql://postgres@localhost/circle_test
       - codecov/upload:
           file: "./lcov.info"
           # token: $CODECOV_TOKEN already default
@@ -231,10 +267,11 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - shuttle-deploy:
-          requires:
-            - doc
-            - coverage
-          filters:
-            branches:
-              only: main
+# skipping auto deploy for now
+# - shuttle-deploy:
+#     requires:
+#       - doc
+#       - coverage
+#     filters:
+#       branches:
+#         only: main
