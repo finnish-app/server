@@ -8,7 +8,7 @@ use crate::{
     features::totp::set_otp_secret,
     hypermedia::schema::{
         auth::MailToUser,
-        validation::{ChangePasswordInput, Exists, ForgotPasswordInput, ResendEmail, SignUpInput},
+        validation::{ChangePasswordInput, Exists, ForgotPasswordInput, ResendEmail},
     },
     templates::{
         ChangePasswordTemplate, ConfirmationTemplate, ForgotPasswordTemplate, MfaTemplate,
@@ -216,129 +216,6 @@ pub fn signup_tab(secrets: &Secrets) -> impl IntoResponse {
         ..Default::default()
     }
     .into_response_with_nonce();
-}
-
-#[expect(clippy::too_many_lines, reason = "not yet reviewed this function")]
-pub async fn signup(
-    db_pool: &Pool<Postgres>,
-    secrets: &Secrets,
-    signup_input: SignUpInput,
-) -> impl IntoResponse {
-    if !validate_frc(&signup_input.frc_captcha_solution) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
-        )
-            .into_response();
-    }
-    if let Err(e) = verify_frc_solution(
-        &signup_input.frc_captcha_solution,
-        &secrets.frc_sitekey,
-        &secrets.frc_apikey,
-    )
-    .await
-    {
-        tracing::error!("Error verifying frc solution: {}", e);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Html("<p style=\"color:red;\">Error verifying captcha</p>"),
-        )
-            .into_response();
-    }
-
-    if let Err(e) = signup_input.validate() {
-        tracing::error!("Error validating signup input: {}", e);
-        return StatusCode::BAD_REQUEST.into_response();
-    }
-
-    let email_secrets = crate::client::mail::EmailSecrets {
-        smtp_username: &secrets.smtp_username,
-        smtp_host: &secrets.smtp_host,
-        smtp_key: &secrets.smtp_key,
-        mail_from: &secrets.mail_from,
-    };
-
-    if let Ok(record) = sqlx::query_as!(
-        Exists,
-        r#"SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"#,
-        signup_input.email
-    )
-    .fetch_one(db_pool)
-    .await
-    {
-        if record.exists.unwrap() {
-            match send_forgot_password_mail(
-                &email_secrets,
-                &signup_input.email,
-                &signup_input.username,
-            ) {
-                Ok(_) => {
-                    return (
-                        StatusCode::OK,
-                        [("HX-Redirect", "/auth/email-confirmation")],
-                    )
-                        .into_response()
-                }
-                Err(e) => {
-                    tracing::error!("Error sending forgot password mail: {}", e);
-                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-                }
-            }
-        }
-    } else {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-
-    let hashed_pass = generate_hash(&signup_input.password);
-    let mut transaction = db_pool.begin().await.unwrap();
-
-    let Some(expiration_date) = now_plus_24_hours() else {
-        transaction.rollback().await.unwrap();
-        tracing::error!("Error generating expiration date, maybe it overflowed?");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    };
-
-    match sqlx::query!(
-        r#"
-        INSERT INTO users (username, email, password, verification_code, code_expires_at)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING email, verification_code
-        "#,
-        signup_input.username,
-        signup_input.email,
-        hashed_pass,
-        generate_verification_token(),
-        expiration_date
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    {
-        Ok(mail_to_user) => {
-            match send_sign_up_confirmation_mail(
-                &email_secrets,
-                &mail_to_user.email,
-                &mail_to_user.verification_code.unwrap(),
-            ) {
-                Ok(_) => {
-                    transaction.commit().await.unwrap();
-                    (
-                        StatusCode::OK,
-                        [("HX-Redirect", "/auth/email-confirmation")],
-                    )
-                        .into_response()
-                }
-                Err(e) => {
-                    transaction.rollback().await.unwrap();
-                    tracing::error!("Error sending sign up confirmation mail: {}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
-                }
-            }
-        }
-        Err(e) => {
-            tracing::error!("Error signing up: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
 }
 
 pub fn email_confirmation(secrets: &Secrets) -> impl IntoResponse {

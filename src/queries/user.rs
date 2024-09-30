@@ -28,18 +28,41 @@ pub async fn create(
     .await
 }
 
-pub async fn is_email_taken(
+pub struct ForSignup {
+    pub id: i32,
+    pub verified: bool,
+}
+
+pub async fn user_state_for_signup(
     conn: impl PgExecutor<'_>,
     email: &str,
-) -> Result<Option<bool>, sqlx::Error> {
-    let record = sqlx::query!(
+) -> Result<Option<ForSignup>, sqlx::Error> {
+    sqlx::query_as!(
+        ForSignup,
         r#"
-    select exists (select 1 from users where email = $1)
-    "#,
+        select id, verified from users where email = $1
+        "#,
         email
     )
-    .fetch_one(conn)
-    .await?;
+    .fetch_optional(conn)
+    .await
+}
 
-    Ok(record.exists)
+pub async fn set_email_prereq(
+    conn: impl PgExecutor<'_>,
+    verification_code: &str,
+    expires_at: DateTime<Utc>,
+    user_id: i32,
+) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        update users set verification_code = $1, code_expires_at = $2
+        where id = $3
+        "#,
+        verification_code,
+        expires_at,
+        user_id
+    )
+    .execute(conn)
+    .await
 }

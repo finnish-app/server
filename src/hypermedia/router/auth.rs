@@ -12,9 +12,11 @@ use std::sync::Arc;
 use askama_axum::IntoResponse;
 use axum::{
     extract::{Path, State},
+    response::{Html, Response},
     routing::{get, post},
     Form, Router,
 };
+use reqwest::StatusCode;
 
 pub fn public_router() -> Router<Arc<AppState>> {
     Router::new()
@@ -98,13 +100,47 @@ async fn signup_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoRespo
 async fn signup(
     State(shared_state): State<Arc<AppState>>,
     Form(signup_input): Form<SignUpInput>,
-) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup(
-        &shared_state.pool,
+) -> Result<impl IntoResponse, Response> {
+    let outcome = crate::features::user::create(
+        shared_state.pool.clone(),
         &shared_state.secrets,
         signup_input,
     )
     .await
+    .map_err(|e| {
+        tracing::error!("Error inserting expense: {}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+    })?;
+
+    match outcome {
+        crate::features::user::CreateOutcome::PendingCaptcha => Err((
+            StatusCode::BAD_REQUEST,
+            Html("<p style=\"color:red;\">Please complete the captcha</p>"),
+        )
+            .into_response()),
+        crate::features::user::CreateOutcome::InvalidCaptcha(e) => {
+            tracing::error!("Error verifying frc solution: {}", e);
+            Err((
+                StatusCode::FAILED_DEPENDENCY,
+                Html(format!(
+                    "<p style=\"color:red;\">Error verifying captcha {e}</p>"
+                )),
+            )
+                .into_response())
+        }
+        crate::features::user::CreateOutcome::InvalidInput(e) => Err((
+            StatusCode::PRECONDITION_FAILED,
+            Html(format!(
+                "<p style=\"color:red;\">Please send valid inputs {e}</p>"
+            )),
+        )
+            .into_response()),
+        crate::features::user::CreateOutcome::Success
+        | crate::features::user::CreateOutcome::EmailConfirmationResent
+        | crate::features::user::CreateOutcome::EmailAlreadyConfirmed => {
+            Ok([("HX-Redirect", "/auth/email-confirmation")])
+        }
+    }
 }
 
 async fn resend_verification_email(
