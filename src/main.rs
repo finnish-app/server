@@ -35,7 +35,7 @@ use axum_login::{
     AuthManagerLayerBuilder,
 };
 use shuttle_runtime::{tokio::net::TcpListener, CustomError, SecretStore};
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::task;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
@@ -125,7 +125,6 @@ struct AppState {
 /// The main function of the application.
 async fn axum(
     #[shuttle_runtime::Secrets] secret_store: SecretStore,
-    #[shuttle_shared_db::Postgres] pool: PgPool,
 ) -> Result<CustomService, shuttle_runtime::Error> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -134,14 +133,21 @@ async fn axum(
         .with(fmt::layer())
         .init();
 
+    let db_url = std::env!("DATABASE_URL");
+    let db_pool = PgPoolOptions::new()
+        .max_connections(20)
+        .connect(db_url)
+        .await
+        .expect("can't connect to database");
+
     sqlx::migrate!()
-        .run(&pool)
+        .run(&db_pool)
         .await
         .map_err(CustomError::new)?;
 
     let secrets = Secrets::from_store(&secret_store)?;
 
-    let session_store = PostgresStore::new(pool.clone());
+    let session_store = PostgresStore::new(db_pool.clone());
     session_store.migrate().await.map_err(CustomError::new)?;
 
     let deletion_task = task::spawn(
@@ -153,7 +159,7 @@ async fn axum(
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
-    let backend = Backend::new(pool.clone());
+    let backend = Backend::new(db_pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     let gov_conf = Arc::new(
@@ -186,7 +192,7 @@ async fn axum(
     let pluggy_api_key = Arc::new(tokio::sync::Mutex::new(pluggy_api_key.api_key));
 
     let shared_state = Arc::new(AppState {
-        pool,
+        pool: db_pool,
         secrets,
         pluggy_api_key,
     });
