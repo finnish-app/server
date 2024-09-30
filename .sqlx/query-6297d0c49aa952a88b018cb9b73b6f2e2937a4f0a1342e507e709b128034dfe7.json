@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        update users set verification_code = $1, code_expires_at = $2\n        where id = $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Timestamptz",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6297d0c49aa952a88b018cb9b73b6f2e2937a4f0a1342e507e709b128034dfe7"
+}
