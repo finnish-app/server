@@ -20,8 +20,7 @@ pub struct ListAccountsResponse {
 pub struct Account {
     id: Uuid,
     #[serde(rename = "type")]
-    #[allow(clippy::struct_field_names)]
-    account_type: AccountType,
+    acc_type: AccountType,
     subtype: AccountSubType,
     /// External identifier of the account: agencia/conta
     number: String,

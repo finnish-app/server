@@ -48,6 +48,7 @@
             buildInputs = [
               bacon
               cargo-expand
+              cargo-llvm-cov
               cargo-nextest
               cargo-watch
               jq

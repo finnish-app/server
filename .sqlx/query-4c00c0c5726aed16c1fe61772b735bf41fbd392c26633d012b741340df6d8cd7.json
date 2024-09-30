@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO expenses (description, price, category, is_essential, date, uuid, user_id)\n        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7)\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        ",
+  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            category = COALESCE($3 :: expense_category, category),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE uuid = $6 AND user_id = $7\n        and deleted_at is null\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        ",
   "describe": {
     "columns": [
       {
@@ -88,5 +88,5 @@
       false
     ]
   },
-  "hash": "8af3df736a8bc36a1375a27d1443f98103f0e3c4398db76799502ee3a0c25779"
+  "hash": "4c00c0c5726aed16c1fe61772b735bf41fbd392c26633d012b741340df6d8cd7"
 }

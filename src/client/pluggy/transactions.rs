@@ -35,8 +35,7 @@ pub struct Transaction {
     /// Can be used to identify the category in the Categories endpoint
     category_id: Option<String>,
     #[serde(rename = "type")]
-    #[allow(clippy::struct_field_names)]
-    transaction_type: TransactionType,
+    tx_type: TransactionType,
     /// Balance after the transaction
     balance: f32,
     /// Institution provided code

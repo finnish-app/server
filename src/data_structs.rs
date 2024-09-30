@@ -61,30 +61,28 @@ impl Display for Months {
     }
 }
 
-impl TryInto<u32> for Months {
-    type Error = &'static str;
-
-    fn try_into(self) -> Result<u32, Self::Error> {
-        match self {
-            Self::January => Ok(1),
-            Self::February => Ok(2),
-            Self::March => Ok(3),
-            Self::April => Ok(4),
-            Self::May => Ok(5),
-            Self::June => Ok(6),
-            Self::July => Ok(7),
-            Self::August => Ok(8),
-            Self::September => Ok(9),
-            Self::October => Ok(10),
-            Self::November => Ok(11),
-            Self::December => Ok(12),
+impl From<Months> for u32 {
+    fn from(value: Months) -> Self {
+        match value {
+            Months::January => 1,
+            Months::February => 2,
+            Months::March => 3,
+            Months::April => 4,
+            Months::May => 5,
+            Months::June => 6,
+            Months::July => 7,
+            Months::August => 8,
+            Months::September => 9,
+            Months::October => 10,
+            Months::November => 11,
+            Months::December => 12,
         }
     }
 }
 
-impl Months {
-    pub const fn from_chrono_month(month: Month) -> Self {
-        match month {
+impl From<chrono::Month> for Months {
+    fn from(value: chrono::Month) -> Self {
+        match value {
             Month::January => Self::January,
             Month::February => Self::February,
             Month::March => Self::March,

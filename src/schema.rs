@@ -1,4 +1,3 @@
-use crate::Months;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -6,9 +5,7 @@ use std::{
 
 use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize};
-use sqlx::FromRow;
 use strum::EnumIter;
-use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
@@ -52,30 +49,19 @@ impl Display for ExpenseCategory {
     }
 }
 
-#[derive(FromRow, Serialize, Debug, Default)]
-/// Expense is a struct with the fields of an expense.
-pub struct Expense {
-    pub id: i32,
-    pub description: String,
-    pub price: f32,
-    pub category: ExpenseCategory,
-    pub is_essential: bool,
-    pub date: NaiveDate,
-    pub uuid: Uuid,
-}
-
 #[derive(Deserialize, Debug)]
 /// `GetExpense` is a struct with the fields of an expense that can be retrieved.
-/// Currently, only the month is supported and it is optional.
-/// If no month is passed, all expenses are retrieved.
 pub struct GetExpense {
     #[serde(deserialize_with = "empty_string_to_none")]
-    pub month: Option<Months>,
+    pub from: Option<NaiveDate>,
+    #[serde(deserialize_with = "empty_string_to_none")]
+    pub to: Option<NaiveDate>,
 }
 
 #[derive(Deserialize, Debug)]
 /// `UpdateExpense` is a struct with the fields of an expense that can be updated.
 /// All fields are optional.
+/// This is part of the contract of the Data API.
 pub struct UpdateExpenseApi {
     pub description: Option<String>,
     pub price: Option<f32>,
@@ -84,10 +70,20 @@ pub struct UpdateExpenseApi {
     pub date: Option<NaiveDate>,
 }
 
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug)]
+pub struct CreateExpense {
+    pub description: String,
+    pub price: f32,
+    pub category: ExpenseCategory,
+    pub is_essential: bool,
+    pub date: NaiveDate,
+}
+
+#[derive(Deserialize, Debug)]
 /// `UpdateExpense` is a struct with the fields of an expense that can be updated.
 /// All fields are optional.
-pub struct UpdateExpense {
+/// This is part of the contract of the Hypermedia API.
+pub struct UpdateExpenseHypr {
     pub description: Option<String>,
     #[serde(deserialize_with = "de_string_to_option_f32")]
     pub price: Option<f32>,
@@ -101,11 +97,10 @@ pub struct UpdateExpense {
 }
 
 /// Function to set the default value for `is_essential` in `UpdateExpense` to be Some(false).
-#[allow(clippy::unnecessary_wraps)]
-//#[allow(
-//    clippy::unnecessary_wraps,
-//    reason = "Needs to return option for custom deserializer"
-//)]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Needs to return option for custom deserializer"
+)]
 const fn default_is_essential_to_false() -> Option<bool> {
     return Some(false);
 }
@@ -130,7 +125,7 @@ where
 /// If the string is empty, returns None.
 /// If the string is a valid month, returns Some(Months).
 /// If the string is not a valid month, returns an error.
-fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Months>, D::Error>
+fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -138,7 +133,9 @@ where
     if str.is_empty() {
         return Ok(None);
     }
-    return Ok(Some(Months::from_str(&str).map_err(de::Error::custom)?));
+    return Ok(Some(
+        NaiveDate::parse_from_str(&str, "%Y-%m-%d").map_err(de::Error::custom)?,
+    ));
 }
 
 /// Deserialization serde function that parses a f32 from a string.

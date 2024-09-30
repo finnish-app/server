@@ -11,7 +11,7 @@ categories = ["finance"]
 anyhow = { version = "1.0.89", default-features = false }
 askama = { version = "0.12.1", default-features = false, features = ["with-axum", "serde-json"] }
 askama_axum = { version = "0.4.0", default-features = false }
-axum = { version = "0.7.6", default-features = false }
+axum = { version = "0.7.7", default-features = false }
 axum-helmet = { version = "0.1.0", default-features = false }
 axum-login = { version = "0.15.3", default-features = false }
 chrono = { version = "0.4.38", default-features = false, features = ["serde"] }
@@ -20,7 +20,7 @@ lettre = { version = "0.11.9", default-features = false, features = ["smtp-trans
 password-auth = { version = "1.1.0-pre.0", default-features = false, features = ["argon2"] }
 plotly = { version = "0.10.0", default-features=false, features = ["with-axum"] }
 rand = { version = "0.8.5", default-features = false }
-regex = { version = "1.10.6", default-features = false }
+regex = { version = "1.11.0", default-features = false }
 reqwest = { version = "0.12.7", default-features = false, features = ["json", "default-tls"] }
 serde = { version = "1.0.210", default-features = false, features = ["derive", "serde_derive"] }
 serde_json = { version = "1.0.128", default-features = false }
@@ -28,7 +28,7 @@ shuttle-axum = { version = "0.47.0", default-features = false, features = ["axum
 shuttle-common = { version = "0.47.0", default-features = false }
 shuttle-runtime = { version = "0.47.0", default-features = false, features = ["colored"] }
 shuttle-shared-db = { version = "0.47.0", default-features = false, features = ["postgres", "sqlx"] }
-sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+sqlx = { version = "0.7.4", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "migrate"] }
 strum = { version = "0.26.3", default-features = false, features = ["strum_macros", "derive"] }
 svix = { version = "1.36.0", default-features = false, features = ["native-tls"] }
 time = { version = "0.3.36", default-features = false }
@@ -54,7 +54,8 @@ all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = 0 }
 # unwrap_used = { level = "warn", priority = 1 }
 
-# allow_attributes_without_reason = { level = "warn", priority = 4 } # nightly
+allow_attributes = { level = "warn", priority = 4 }
+allow_attributes_without_reason = { level = "warn", priority = 4 }
 as_underscore = { level = "warn", priority = 4 }
 panic_in_result_fn = { level = "warn", priority = 4 }
 

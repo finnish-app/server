@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses WHERE uuid = $1 AND user_id = $2",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses\n        WHERE uuid = $1 AND user_id = $2\n        and deleted_at is null\n        ",
   "describe": {
     "columns": [
       {
@@ -69,5 +69,5 @@
       false
     ]
   },
-  "hash": "464e88875aee2328e04c3617bd9cc85f7b5389f117a38ea678b5d623a88fe998"
+  "hash": "ac8c51d1316f7120d56b03c8881b997e8e55d73db7af45519acc176364feb4d4"
 }

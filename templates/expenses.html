@@ -28,18 +28,15 @@
 </div>
 </section>
 
-<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#month">
+<form hx-get="/expenses" hx-target="#expenses-table-body" hx-trigger="load, refresh-table from:body, change from:#from, change from:#to">
     <div class="grid">
-        <select name="month" id="month">
-            {% for month in months.clone() %}
-                {% if month == current_month %}
-                    <option value="{{ month }}" selected>{{ month }}</option>
-                {% else %}
-                    <option value="{{ month }}">{{ month }}</option>
-                {% endif %}
-            {% endfor %}
-            <option value="">Entire year</option>
-        </select>
+        <label for="from-date">From Date
+            <input type="date" name="from" id="from">
+        </label>
+
+        <label for="to-date">To Date
+            <input type="date" name="to" id="to">
+        </label>
 
         <button _="on click toggle @open on #modal-example" class="contrast" type="button">Add Expense</button>
     </div>
@@ -47,8 +44,8 @@
 
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
-     hx-trigger="load, change from:#month, refresh-table from:body, refresh-plots from:body"
-     hx-include="#month"
+     hx-trigger="load, change from:#to, change from:#from, refresh-table from:body, refresh-plots from:body"
+     hx-include="#from, #to"
 >
 </div>
 
@@ -76,8 +73,8 @@
 
 <div hx-get="/expenses/plots"
      hx-target="#expenses-plots"
-     hx-trigger="load, change from:#month, refresh-table from:body, refresh-plots from:body"
-     hx-include="#month"
+     hx-trigger="load, change from:#from, change from:#to, refresh-table from:body, refresh-plots from:body"
+     hx-include="#from, #to"
 >
 </div>
 

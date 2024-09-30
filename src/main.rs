@@ -5,6 +5,7 @@ mod data;
 mod data_structs;
 mod features;
 mod hypermedia;
+mod queries;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;
 /// Module containing the askama html templates to be rendered.
@@ -12,7 +13,7 @@ mod templates;
 /// Module containing time and crypto utility functions.
 mod util;
 
-use crate::{auth::Backend, data_structs::Months};
+use crate::auth::Backend;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::bail;
@@ -117,7 +118,10 @@ struct AppState {
 }
 
 #[shuttle_runtime::main]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "I have to think on how to shrink it, idk"
+)]
 /// The main function of the application.
 async fn axum(
     #[shuttle_runtime::Secrets] secret_store: SecretStore,

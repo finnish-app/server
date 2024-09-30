@@ -12,11 +12,14 @@ jobs:
   build-and-test:
     docker:
       - image: cimg/rust:1.81.0
-    environment:
-      # Fail the build if there are warnings
-      RUSTFLAGS: "-D warnings"
-      CARGO_INCREMENTAL: 0
-      # RUSTC_WRAPPER: "sccache"
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
+      - image: cimg/postgres:17.0
+        environment:
+          POSTGRES_USER: postgres
     steps:
       - checkout
       - run:
@@ -52,10 +55,17 @@ jobs:
           name: Run tests
           command: |
             cargo nextest run --no-fail-fast --archive-file nextest-archive.tar.zst
+          environment:
+            DATABASE_URL: postgresql://postgres@localhost/circle_test
 
   security:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -82,6 +92,11 @@ jobs:
   format:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -101,6 +116,11 @@ jobs:
     # See: https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     # Add steps to the job
     # See: https://circleci.com/docs/configuration-reference/#steps
     steps:
@@ -119,6 +139,11 @@ jobs:
   doc:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
     steps:
       - checkout
       - run:
@@ -134,6 +159,16 @@ jobs:
   coverage:
     docker:
       - image: cimg/rust:1.81.0
+        environment:
+          # Fail the build if there are warnings
+          RUSTFLAGS: "-D warnings"
+          CARGO_INCREMENTAL: 0
+          # RUSTC_WRAPPER: "sccache"
+      - image: cimg/postgres:17.0
+        environment:
+          POSTGRES_USER: postgres
+    environment:
+      DATABASE_URL: postgresql://postgres@localhost/circle_test
     steps:
       - checkout
       - run:
@@ -153,6 +188,14 @@ jobs:
           name: Install nextest
           command: |
             curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - run:
+          name: Install sqlx-cli
+          command: cargo install sqlx-cli
+      - run:
+          name: Database setup
+          command: |
+            sqlx database create
+            sqlx migrate run
       - run:
           name: Setup test.env
           command: |
@@ -224,10 +267,11 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - shuttle-deploy:
-          requires:
-            - doc
-            - coverage
-          filters:
-            branches:
-              only: main
+# skipping auto deploy for now
+# - shuttle-deploy:
+#     requires:
+#       - doc
+#       - coverage
+#     filters:
+#       branches:
+#         only: main
