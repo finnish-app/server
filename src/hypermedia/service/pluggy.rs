@@ -5,7 +5,7 @@ use crate::{
         svix::create_user_endpoint,
     },
     templates::{PluggyConnectWidgetTemplate, PluggyWidgetModalErrorTemplate},
-    Secrets,
+    Env,
 };
 
 use askama_axum::IntoResponse;
@@ -13,7 +13,7 @@ use axum::http::StatusCode;
 
 pub async fn widget(
     auth_session: AuthSession,
-    secrets: &Secrets,
+    env: &Env,
     pluggy_api_key: &str,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
@@ -21,7 +21,7 @@ pub async fn widget(
     };
     tracing::debug!("User logged in");
 
-    let Ok(webhook_url) = create_user_endpoint(&secrets.svix_api_key, user.id).await else {
+    let Ok(webhook_url) = create_user_endpoint(&env.svix_api_key, user.id).await else {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             PluggyWidgetModalErrorTemplate {},

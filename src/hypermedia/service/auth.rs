@@ -18,7 +18,7 @@ use crate::{
         add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
         now_plus_30_minutes,
     },
-    Secrets,
+    Env,
 };
 
 use askama_axum::IntoResponse;
@@ -34,7 +34,7 @@ use validator::Validate;
 
 pub async fn signin(
     mut auth_session: AuthSession,
-    secrets: &Secrets,
+    env: &Env,
     signin_input: LoginCredentials,
 ) -> impl IntoResponse {
     if !validate_frc(&signin_input.frc_captcha_solution) {
@@ -46,8 +46,8 @@ pub async fn signin(
     }
     if let Err(e) = verify_frc_solution(
         &signin_input.frc_captcha_solution,
-        &secrets.frc_sitekey,
-        &secrets.frc_apikey,
+        &env.frc_sitekey,
+        &env.frc_apikey,
     )
     .await
     {
@@ -121,7 +121,7 @@ pub async fn mfa_qr(
 pub async fn mfa_verify(
     auth_session: AuthSession,
     db_pool: &Pool<Postgres>,
-    secrets: &Secrets,
+    env: &Env,
     mfa_token: String,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
@@ -157,7 +157,7 @@ pub async fn mfa_verify(
         }
     }
 
-    match create_user_app(&secrets.svix_api_key, user.id).await {
+    match create_user_app(&env.svix_api_key, user.id).await {
         Ok(app) => tracing::debug!("app: {:?}", app),
         Err(e) => {
             tracing::error!("Error creating svix app for user: {}", e);
@@ -197,30 +197,30 @@ pub async fn mfa_verify(
     }
 }
 
-pub fn signin_tab(secrets: &Secrets, print_message: bool) -> impl IntoResponse {
+pub fn signin_tab(env: &Env, print_message: bool) -> impl IntoResponse {
     return SignInTemplate {
         message: if print_message {
             "Password changed successfully".to_owned()
         } else {
             String::new()
         },
-        frc_sitekey: secrets.frc_sitekey.clone(),
+        frc_sitekey: env.frc_sitekey.clone(),
         ..Default::default()
     }
     .into_response_with_nonce();
 }
 
-pub fn signup_tab(secrets: &Secrets) -> impl IntoResponse {
+pub fn signup_tab(env: &Env) -> impl IntoResponse {
     return SignUpTemplate {
-        frc_sitekey: secrets.frc_sitekey.clone(),
+        frc_sitekey: env.frc_sitekey.clone(),
         ..Default::default()
     }
     .into_response_with_nonce();
 }
 
-pub fn email_confirmation(secrets: &Secrets) -> impl IntoResponse {
+pub fn email_confirmation(env: &Env) -> impl IntoResponse {
     return ConfirmationTemplate {
-        frc_sitekey: secrets.frc_sitekey.clone(),
+        frc_sitekey: env.frc_sitekey.clone(),
         login_url: "/auth/signin".to_owned(),
         resend_url: "/auth/resend-verification".to_owned(),
         ..Default::default()
@@ -230,7 +230,7 @@ pub fn email_confirmation(secrets: &Secrets) -> impl IntoResponse {
 
 pub async fn resend_verification_email(
     db_pool: &Pool<Postgres>,
-    secrets: &Secrets,
+    env: &Env,
     resend_email: ResendEmail,
 ) -> impl IntoResponse {
     if !validate_frc(&resend_email.frc_captcha_solution) {
@@ -242,8 +242,8 @@ pub async fn resend_verification_email(
     }
     if let Err(e) = verify_frc_solution(
         &resend_email.frc_captcha_solution,
-        &secrets.frc_sitekey,
-        &secrets.frc_apikey,
+        &env.frc_sitekey,
+        &env.frc_apikey,
     )
     .await
     {
@@ -288,10 +288,10 @@ pub async fn resend_verification_email(
     {
         Ok(mail_to_user) => match send_sign_up_confirmation_mail(
             &crate::client::mail::EmailSecrets {
-                smtp_username: &secrets.smtp_username,
-                smtp_host: &secrets.smtp_host,
-                smtp_key: &secrets.smtp_key,
-                mail_from: &secrets.mail_from,
+                smtp_username: &env.smtp_username,
+                smtp_host: &env.smtp_host,
+                smtp_key: &env.smtp_key,
+                mail_from: &env.mail_from,
             },
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),
@@ -323,12 +323,8 @@ pub async fn resend_verification_email(
         .into_response();
 }
 
-pub async fn verify_email(
-    db_pool: &Pool<Postgres>,
-    secrets: &Secrets,
-    token: String,
-) -> impl IntoResponse {
-    let frc_sitekey = secrets.frc_sitekey.clone();
+pub async fn verify_email(db_pool: &Pool<Postgres>, env: &Env, token: String) -> impl IntoResponse {
+    let frc_sitekey = env.frc_sitekey.clone();
 
     match sqlx::query!(
         "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
@@ -399,7 +395,7 @@ pub async fn verify_email(
             let mut response = (
                 StatusCode::CONFLICT,
                 VerificationTemplate {
-                    frc_sitekey: secrets.frc_sitekey.clone(),
+                    frc_sitekey: env.frc_sitekey.clone(),
                     login_url: "/auth/signin".to_owned(),
                     message: "User already verified or verification code expired.".to_owned(),
                     nonce,
@@ -490,10 +486,10 @@ pub async fn change_password(
     }
 }
 
-pub fn forgot_password_screen(secrets: &Secrets) -> impl IntoResponse {
+pub fn forgot_password_screen(env: &Env) -> impl IntoResponse {
     return ForgotPasswordTemplate {
         forgot_url: "/auth/forgot-password".to_owned(),
-        frc_sitekey: secrets.frc_sitekey.clone(),
+        frc_sitekey: env.frc_sitekey.clone(),
         login_url: "/auth/signin".to_owned(),
         ..Default::default()
     }
@@ -502,7 +498,7 @@ pub fn forgot_password_screen(secrets: &Secrets) -> impl IntoResponse {
 
 pub async fn forgot_password(
     db_pool: &Pool<Postgres>,
-    secrets: &Secrets,
+    env: &Env,
     email_input: ResendEmail,
 ) -> impl IntoResponse {
     if !validate_frc(&email_input.frc_captcha_solution) {
@@ -514,8 +510,8 @@ pub async fn forgot_password(
     }
     if let Err(e) = verify_frc_solution(
         &email_input.frc_captcha_solution,
-        &secrets.frc_sitekey,
-        &secrets.frc_apikey,
+        &env.frc_sitekey,
+        &env.frc_apikey,
     )
     .await
     {
@@ -569,10 +565,10 @@ pub async fn forgot_password(
     {
         Ok(mail_to_user) => match send_forgot_password_mail(
             &crate::client::mail::EmailSecrets {
-                smtp_username: &secrets.smtp_username,
-                smtp_host: &secrets.smtp_host,
-                smtp_key: &secrets.smtp_key,
-                mail_from: &secrets.mail_from,
+                smtp_username: &env.smtp_username,
+                smtp_host: &env.smtp_host,
+                smtp_key: &env.smtp_key,
+                mail_from: &env.mail_from,
             },
             &mail_to_user.email.unwrap(),
             &mail_to_user.verification_code.unwrap(),

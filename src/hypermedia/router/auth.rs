@@ -50,13 +50,13 @@ pub fn private_router() -> Router<Arc<AppState>> {
 }
 
 async fn signin_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(&shared_state.secrets, false)
+    crate::hypermedia::service::auth::signin_tab(&shared_state.env, false)
 }
 
 async fn signin_tab_after_change_password(
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin_tab(&shared_state.secrets, true)
+    crate::hypermedia::service::auth::signin_tab(&shared_state.env, true)
 }
 
 async fn signin(
@@ -64,12 +64,11 @@ async fn signin(
     State(shared_state): State<Arc<AppState>>,
     Form(signin_input): Form<LoginCredentials>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signin(auth_session, &shared_state.secrets, signin_input)
-        .await
+    crate::hypermedia::service::auth::signin(auth_session, &shared_state.env, signin_input).await
 }
 
 async fn email_confirmation(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    crate::hypermedia::service::auth::email_confirmation(&shared_state.secrets)
+    crate::hypermedia::service::auth::email_confirmation(&shared_state.env)
 }
 
 async fn mfa_qr(
@@ -87,30 +86,27 @@ async fn mfa_verify(
     crate::hypermedia::service::auth::mfa_verify(
         auth_session,
         &shared_state.pool,
-        &shared_state.secrets,
+        &shared_state.env,
         mfa_token.token,
     )
     .await
 }
 
 async fn signup_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    crate::hypermedia::service::auth::signup_tab(&shared_state.secrets)
+    crate::hypermedia::service::auth::signup_tab(&shared_state.env)
 }
 
 async fn signup(
     State(shared_state): State<Arc<AppState>>,
     Form(signup_input): Form<SignUpInput>,
 ) -> Result<impl IntoResponse, Response> {
-    let outcome = crate::features::user::create(
-        shared_state.pool.clone(),
-        &shared_state.secrets,
-        signup_input,
-    )
-    .await
-    .map_err(|e| {
-        tracing::error!("Error inserting expense: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-    })?;
+    let outcome =
+        crate::features::user::create(shared_state.pool.clone(), &shared_state.env, signup_input)
+            .await
+            .map_err(|e| {
+                tracing::error!("Error inserting expense: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            })?;
 
     match outcome {
         crate::features::user::CreateOutcome::PendingCaptcha => Err((
@@ -149,7 +145,7 @@ async fn resend_verification_email(
 ) -> impl IntoResponse {
     crate::hypermedia::service::auth::resend_verification_email(
         &shared_state.pool,
-        &shared_state.secrets,
+        &shared_state.env,
         resend_email,
     )
     .await
@@ -159,24 +155,20 @@ async fn verify_email(
     State(shared_state): State<Arc<AppState>>,
     Path(token): Path<String>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::verify_email(&shared_state.pool, &shared_state.secrets, token)
+    crate::hypermedia::service::auth::verify_email(&shared_state.pool, &shared_state.env, token)
         .await
 }
 
 async fn forgot_password_screen(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {
-    crate::hypermedia::service::auth::forgot_password_screen(&shared_state.secrets)
+    crate::hypermedia::service::auth::forgot_password_screen(&shared_state.env)
 }
 
 async fn forgot_password(
     State(shared_state): State<Arc<AppState>>,
     Form(email): Form<ResendEmail>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::forgot_password(
-        &shared_state.pool,
-        &shared_state.secrets,
-        email,
-    )
-    .await
+    crate::hypermedia::service::auth::forgot_password(&shared_state.pool, &shared_state.env, email)
+        .await
 }
 
 async fn logout(auth_session: AuthSession) -> impl IntoResponse {

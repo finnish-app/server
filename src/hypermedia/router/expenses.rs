@@ -303,7 +303,7 @@ async fn pluggy_widget(
 ) -> impl IntoResponse {
     crate::hypermedia::service::pluggy::widget(
         auth_session,
-        &shared_state.secrets,
+        &shared_state.env,
         &shared_state.pluggy_api_key.lock().await,
     )
     .await

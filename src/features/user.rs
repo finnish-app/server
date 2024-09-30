@@ -10,7 +10,7 @@ use crate::{
     },
     hypermedia::schema::validation::SignUpInput,
     util::{generate_verification_token, now_plus_24_hours},
-    Secrets,
+    Env,
 };
 
 pub enum CreateOutcome {
@@ -24,7 +24,7 @@ pub enum CreateOutcome {
 
 pub async fn create(
     db_pool: PgPool,
-    secrets: &Secrets,
+    env: &Env,
     create_user: SignUpInput,
 ) -> anyhow::Result<CreateOutcome> {
     if !validate_frc(&create_user.frc_captcha_solution) {
@@ -33,8 +33,8 @@ pub async fn create(
 
     if let Err(e) = verify_frc_solution(
         &create_user.frc_captcha_solution,
-        &secrets.frc_sitekey,
-        &secrets.frc_apikey,
+        &env.frc_sitekey,
+        &env.frc_apikey,
     )
     .await
     {
@@ -46,10 +46,10 @@ pub async fn create(
     }
 
     let email_secrets = EmailSecrets {
-        smtp_username: &secrets.smtp_username,
-        smtp_host: &secrets.smtp_host,
-        smtp_key: &secrets.smtp_key,
-        mail_from: &secrets.mail_from,
+        smtp_username: &env.smtp_username,
+        smtp_host: &env.smtp_host,
+        smtp_key: &env.smtp_key,
+        mail_from: &env.mail_from,
     };
 
     let Some(expiration_date) = now_plus_24_hours() else {
