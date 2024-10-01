@@ -5,6 +5,7 @@ use axum_login::{AuthUser, AuthnBackend, AuthzBackend, UserId};
 use password_auth::verify_password;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
+use time::OffsetDateTime;
 
 #[derive(Clone, Serialize, Deserialize, FromRow)]
 pub struct User {
@@ -13,10 +14,10 @@ pub struct User {
     pub email: String,
     password: String,
 
-    created_at: chrono::DateTime<chrono::Utc>,
+    created_at: OffsetDateTime,
     pub verified: bool,
     verification_code: Option<String>,
-    code_expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    code_expires_at: Option<OffsetDateTime>,
 
     pub otp_enabled: bool,
     pub otp_verified: bool,

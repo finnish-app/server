@@ -24,7 +24,7 @@ async fn mfa_verify(
     crate::hypermedia::service::auth::mfa_verify(
         auth_session,
         &shared_state.pool,
-        &shared_state.secrets,
+        &shared_state.env,
         mfa_token.token,
     )
     .await

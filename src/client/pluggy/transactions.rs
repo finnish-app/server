@@ -1,8 +1,8 @@
 use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
-use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize)]
@@ -27,7 +27,8 @@ pub struct Transaction {
     /// Only present if the transaction is in a different currency
     /// than the account's currency
     amount_in_account_currency: Option<f32>,
-    date: DateTime<Utc>,
+    #[serde(with = "time::serde::iso8601")]
+    date: OffsetDateTime,
     /// Category of the transaction (e.g. Restaurants, Education).
     /// See the Transaction Categorization section in our guides.
     category: String,
@@ -42,8 +43,10 @@ pub struct Transaction {
     provider_code: Option<String>,
     status: TransactionStatus,
     account_id: Uuid,
-    created_at: Option<DateTime<Utc>>,
-    updated_at: Option<DateTime<Utc>>,
+    #[serde(default, with = "time::serde::iso8601::option")]
+    created_at: Option<OffsetDateTime>,
+    #[serde(default, with = "time::serde::iso8601::option")]
+    updated_at: Option<OffsetDateTime>,
     payment_data: Option<PaymentData>,
     acquirer_data: Option<AcquirerData>,
     credit_card_metadata: Option<CreditCardMetadata>,
@@ -116,7 +119,8 @@ struct CreditCardMetadata {
     installment_number: i32,
     total_installments: i32,
     total_amount: i32,
-    purchase_date: DateTime<Utc>,
+    #[serde(with = "time::serde::iso8601")]
+    purchase_date: OffsetDateTime,
     payee_mcc: Option<String>,
     card_number: String,
     bill_id: String,
@@ -184,7 +188,7 @@ mod tests {
 
     const TEST_DATA: &str = r#"
 {
-  "total": 7,
+  "total": 8,
   "totalPages": 1,
   "page": 1,
   "results": [
@@ -332,6 +336,47 @@ mod tests {
         "paymentMethod": "TED",
         "referenceNumber": "123456789"
       }
+    },
+    {
+      "id": "6ec156fe-e8ac-4d9a-a4b3-7770529ab01c",
+      "description": "TED Example",
+      "descriptionRaw": null,
+      "currencyCode": "BRL",
+      "amount": 1500,
+      "date": "2020-10-14T00:00:00.000Z",
+      "createdAt": "2020-10-14T00:00:00.000Z",
+      "updatedAt": "2020-10-14T00:00:00.000Z",
+      "balance": 3500,
+      "category": "Transfer",
+      "accountId": "03cc0eff-4ec5-495c-adb3-1ef9611624fc",
+      "providerCode": "123456",
+      "type": "CREDIT",
+      "status": "POSTED",
+      "paymentData": {
+        "payer": {
+          "name": "Tiago Rodrigues Santos",
+          "branchNumber": "090",
+          "accountNumber": "1234-5",
+          "routingNumber": "001",
+          "documentNumber": {
+            "type": "CPF",
+            "value": "882.937.076-23"
+          }
+        },
+        "reason": "Taxa de serviço",
+        "receiver": {
+          "name": "Pluggy",
+          "branchNumber": "999",
+          "accountNumber": "9876-1",
+          "routingNumber": "002",
+          "documentNumber": {
+            "type": "CNPJ",
+            "value": "08.050.608/0001-32"
+          }
+        },
+        "paymentMethod": "TED",
+        "referenceNumber": "123456789"
+      }
     }
   ]
 }
@@ -340,6 +385,6 @@ mod tests {
     #[test]
     fn test_deserialize() {
         let transactions: ListTransactionsResponse = serde_json::from_str(TEST_DATA).unwrap();
-        assert_eq!(transactions.results.len(), 7);
+        assert_eq!(transactions.results.len(), 8);
     }
 }

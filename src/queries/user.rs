@@ -1,12 +1,12 @@
-use chrono::{DateTime, Utc};
 use sqlx::PgExecutor;
+use time::OffsetDateTime;
 
 pub struct CreateParams<'a> {
     pub name: &'a str,
     pub email: &'a str,
     pub hashed_pass: &'a str,
     pub verification_token: &'a str,
-    pub expiration_date: DateTime<Utc>,
+    pub expiration_date: OffsetDateTime,
 }
 
 pub async fn create(
@@ -51,7 +51,7 @@ pub async fn user_state_for_signup(
 pub async fn set_email_prereq(
     conn: impl PgExecutor<'_>,
     verification_code: &str,
-    expires_at: DateTime<Utc>,
+    expires_at: OffsetDateTime,
     user_id: i32,
 ) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
     sqlx::query!(

@@ -5,8 +5,8 @@ use crate::{
 
 use askama_axum::{IntoResponse, Template};
 use axum::{body::Body, http::Response};
-use chrono::NaiveDate;
 use strum::IntoEnumIterator;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Template)]
@@ -288,7 +288,7 @@ pub struct EditableExpenseRowTemplate {
     /// The description of the expense.
     pub description: String,
     /// The date of the expense.
-    pub date: NaiveDate,
+    pub date: Date,
 }
 
 impl Default for EditableExpenseRowTemplate {
@@ -300,17 +300,17 @@ impl Default for EditableExpenseRowTemplate {
             expense_categories: ExpenseCategory::iter(),
             price: 0.0,
             description: String::new(),
-            date: NaiveDate::default(),
+            date: OffsetDateTime::now_utc().date(),
         };
     }
 }
 
-#[derive(Template, Default)]
+#[derive(Template)]
 #[template(path = "expense_row.html")]
 /// The askama template for a row in the expenses table.
 pub struct ExpenseRowTemplate {
     /// The date of the expense.
-    pub date: NaiveDate,
+    pub date: Date,
     /// The description of the expense.
     pub description: String,
     /// The price of the expense.
@@ -323,18 +323,18 @@ pub struct ExpenseRowTemplate {
     pub uuid: Uuid,
 }
 
-#[derive(Template, Default)]
+#[derive(Template)]
 #[template(path = "delete_expense_modal.html")]
 pub struct DeleteExpenseModal {
     pub expense_uuid: Uuid,
 }
 
-#[derive(Template, Default)]
+#[derive(Template)]
 #[template(path = "pluggy_connect_widget.html")]
 pub struct PluggyConnectWidgetTemplate {
     pub access_token: String,
 }
 
-#[derive(Template, Default)]
+#[derive(Template)]
 #[template(path = "pluggy_widget_modal_error.html")]
 pub struct PluggyWidgetModalErrorTemplate {}

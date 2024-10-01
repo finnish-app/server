@@ -1,6 +1,6 @@
-use chrono::{DateTime, NaiveDate, Utc};
 use serde::Serialize;
 use sqlx::{PgExecutor, PgPool};
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 use crate::schema::ExpenseCategory;
@@ -10,8 +10,8 @@ pub struct CreateParams {
     pub price: f32,
     pub category: ExpenseCategory,
     pub is_essential: bool,
-    pub date: NaiveDate,
-    pub now: DateTime<Utc>,
+    pub date: Date,
+    pub now: OffsetDateTime,
 }
 
 pub async fn create(
@@ -45,15 +45,15 @@ pub struct Expense {
     pub price: f32,
     pub category: ExpenseCategory,
     pub is_essential: bool,
-    pub date: NaiveDate,
+    pub date: Date,
     pub uuid: Uuid,
 }
 
 pub async fn list_for_user_in_period(
     conn: impl PgExecutor<'_>,
     user_id: i32,
-    from: Option<NaiveDate>,
-    to: Option<NaiveDate>,
+    from: Option<Date>,
+    to: Option<Date>,
 ) -> Result<Vec<Expense>, sqlx::Error> {
     sqlx::query_as!(
         Expense,
@@ -114,7 +114,7 @@ pub struct UpdateParams {
     pub price: Option<f32>,
     pub category: Option<ExpenseCategory>,
     pub is_essential: Option<bool>,
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 }
 
 pub async fn update(
@@ -181,7 +181,7 @@ pub async fn delete(
     db_pool: &PgPool,
     user_id: i32,
     expense_uuid: Uuid,
-    now: DateTime<Utc>,
+    now: OffsetDateTime,
 ) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
     sqlx::query!(
         r#"

@@ -65,6 +65,7 @@
             shellHook = ''
               # export DATABASE_URL=postgres://postgres:postgres@localhost:17144/finnish
               # export DATABASE_URL=postgres://postgres:postgres@localhost:21372/finnish
+              # export DATABASE_URL=postgres://postgres@localhost:6543/finapp
             '';
           };
         }
