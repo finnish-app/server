@@ -20,18 +20,6 @@ pub fn generate_otp_token() -> String {
         .collect();
 }
 
-/// Returns the current time in UTC plus 24 hours.
-/// This is used to set the expiration time of the email verification token.
-pub fn now_plus_24_hours() -> Option<chrono::DateTime<chrono::Utc>> {
-    return chrono::Utc::now().checked_add_signed(chrono::Duration::hours(24));
-}
-
-/// Returns the current time in UTC plus 30 minutes.
-/// This is used to set the expiration time of the password reset token.
-pub fn now_plus_30_minutes() -> Option<chrono::DateTime<chrono::Utc>> {
-    return chrono::Utc::now().checked_add_signed(chrono::Duration::minutes(30));
-}
-
 /// Receives something that implements `IntoResponse` and adds a CSP header to it.
 pub fn add_csp_to_response(response: &mut Response<Body>, nonce_str: &str) {
     if let Ok(csp) = ContentSecurityPolicy::new()
