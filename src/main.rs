@@ -16,6 +16,7 @@ mod util;
 use crate::auth::Backend;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
+use anyhow::{bail, Context};
 use axum::{
     body::Body,
     error_handling::HandleErrorLayer,
@@ -30,12 +31,10 @@ use axum_helmet::{
 };
 use axum_login::{
     permission_required,
-    tower_sessions::{session_store, ExpiredDeletion, Expiry, SessionManagerLayer},
+    tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use shuttle_runtime::{tokio::net::TcpListener, CustomError};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tokio::task;
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -96,13 +95,8 @@ struct AppState {
     pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
 }
 
-#[shuttle_runtime::main]
-#[expect(
-    clippy::too_many_lines,
-    reason = "I have to think on how to shrink it, idk"
-)]
-/// The main function of the application.
-async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
@@ -110,32 +104,71 @@ async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
         .with(fmt::layer())
         .init();
 
-    let env = Env::try_build().expect("couldn't build envs");
+    let env = Env::try_build().context("couldn't build envs")?;
 
     let db_pool = PgPoolOptions::new()
         .max_connections(20)
         .connect(env.db_url)
         .await
-        .expect("can't connect to database");
+        .context("can't connect to database")?;
 
     sqlx::migrate!()
         .run(&db_pool)
         .await
-        .map_err(CustomError::new)?;
+        .context("couldn't run migrations")?;
 
     let session_store = PostgresStore::new(db_pool.clone());
-    session_store.migrate().await.map_err(CustomError::new)?;
+    session_store
+        .migrate()
+        .await
+        .context("couldn't migrate session store")?;
 
-    let deletion_task = task::spawn(
+    let deletion_task = tokio::task::spawn(
         session_store
             .clone()
             .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
     );
 
+    let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
+        client::pluggy::auth::create_api_key(&env.pluggy_client_id, &env.pluggy_client_secret)
+            .await?
+    else {
+        bail!("Couldn't create pluggy api key")
+    };
+    let pluggy_api_key = Arc::new(tokio::sync::Mutex::new(pluggy_api_key.api_key));
+
+    let shared_state = Arc::new(AppState {
+        pool: db_pool,
+        env,
+        pluggy_api_key,
+    });
+
+    let renew_pluggy = renew_pluggy_task(
+        shared_state.pluggy_api_key.clone(),
+        shared_state.env.pluggy_client_id.clone(),
+        shared_state.env.pluggy_client_secret.clone(),
+    );
+
+    tracing::info!("Server started");
+    let rest = rest(shared_state.clone(), session_store);
+    rest.await??;
+
+    tracing::info!("Starting deletion task"); // message won't show
+    deletion_task.await??;
+
+    renew_pluggy.await??;
+
+    Ok(())
+}
+
+fn rest(
+    app_state: Arc<AppState>,
+    session_store: PostgresStore,
+) -> tokio::task::JoinHandle<anyhow::Result<()>> {
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(time::Duration::minutes(30)));
 
-    let backend = Backend::new(db_pool.clone());
+    let backend = Backend::new(app_state.pool.clone());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     let gov_conf = Arc::new(
@@ -144,7 +177,7 @@ async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
             .unwrap_or_default(),
     );
     let governor_limiter = gov_conf.limiter().clone();
-    task::spawn(async move {
+    tokio::task::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(60)).await;
             tracing::info!("rate limiting storage size: {}", governor_limiter.len());
@@ -154,21 +187,6 @@ async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
 
     let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
-    let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
-        client::pluggy::auth::create_api_key(&env.pluggy_client_id, &env.pluggy_client_secret)
-            .await?
-    else {
-        return Err(shuttle_runtime::Error::BuildPanic(
-            "Couldn't create pluggy api key".to_string(),
-        ));
-    };
-    let pluggy_api_key = Arc::new(tokio::sync::Mutex::new(pluggy_api_key.api_key));
-
-    let shared_state = Arc::new(AppState {
-        pool: db_pool,
-        env,
-        pluggy_api_key,
-    });
     let router = Router::new()
         .merge(data::router::pluggy::router())
         .merge(data::router::expenses::router())
@@ -225,67 +243,39 @@ async fn axum() -> Result<CustomService, shuttle_runtime::Error> {
                 })
                 .into_inner(),
         )
-        .with_state(shared_state.clone());
+        .with_state(app_state);
 
-    let renew_pluggy = renew_pluggy_task(
-        shared_state.pluggy_api_key.clone(),
-        shared_state.env.pluggy_client_id.clone(),
-        shared_state.env.pluggy_client_secret.clone(),
-    );
+    tokio::spawn(async move {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
+            .await
+            .context("could not start listener")?;
+        let server = axum::serve(
+            listener,
+            router.into_make_service_with_connect_info::<SocketAddr>(),
+        );
 
-    tracing::debug!("Server started");
-    Ok(CustomService {
-        router,
-        deletion_task,
-        renew_pluggy,
+        tracing::info!("REST ready to go at http://127.0.0.1:8000");
+        let outcome = server.await;
+        tracing::info!("REST went bye bye.");
+        outcome.context("server")
     })
-}
-
-#[derive(Debug)]
-/// The custom service to be used in the shuttle runtime.
-pub struct CustomService {
-    /// The axum router.
-    router: Router,
-    /// The task to delete expired sessions.
-    deletion_task: task::JoinHandle<Result<(), session_store::Error>>,
-    /// The task to renew pluggy api keys
-    renew_pluggy: task::JoinHandle<Result<(), shuttle_runtime::Error>>,
-}
-
-#[shuttle_runtime::async_trait]
-impl shuttle_runtime::Service for CustomService {
-    async fn bind(mut self, addr: SocketAddr) -> Result<(), shuttle_runtime::Error> {
-        axum::serve(
-            TcpListener::bind(addr).await.map_err(CustomError::new)?,
-            self.router
-                .into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .await
-        .map_err(CustomError::new)?;
-
-        let _deletion = tokio::join!(self.deletion_task);
-        let _renew_pluggy = tokio::join!(self.renew_pluggy);
-
-        Ok(())
-    }
 }
 
 fn renew_pluggy_task(
     pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
     pluggy_client_id: String,
     pluggy_client_secret: String,
-) -> task::JoinHandle<Result<(), shuttle_runtime::Error>> {
-    task::spawn(async move {
+) -> tokio::task::JoinHandle<anyhow::Result<()>> {
+    tokio::task::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(60 * 5)).await;
+            tracing::info!("waky waky renew pluggy");
 
             let client::pluggy::auth::CreateApiKeyOutcome::Success(new_pluggy_api_key) =
                 client::pluggy::auth::create_api_key(&pluggy_client_id, &pluggy_client_secret)
                     .await?
             else {
-                return Err(shuttle_runtime::Error::Custom(CustomError::msg(
-                    "task couldn't renew pluggy api_key",
-                )));
+                bail!("task couldn't renew pluggy api_key")
             };
 
             let mut pluggy_api_key = pluggy_api_key.lock().await;
