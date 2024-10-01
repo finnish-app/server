@@ -244,6 +244,7 @@ fn rest(
         )
         .with_state(app_state);
 
+    // TODO: add graceful shutdown: https://github.com/maxcountryman/axum-login/blob/9c26b37cd03be8d803ae261b7bc556229c2043da/examples/sqlite/src/web/app.rs#L69
     tokio::spawn(async move {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
             .await
