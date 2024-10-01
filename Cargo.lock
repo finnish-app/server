@@ -760,7 +760,6 @@ dependencies = [
  "axum",
  "axum-helmet",
  "axum-login",
- "dotenvy",
  "lettre",
  "password-auth",
  "plotly",

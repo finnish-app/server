@@ -93,9 +93,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_api_key_success() {
-        dotenvy::from_filename("test.env").unwrap();
-        let pluggy_client_id = dotenvy::var("PLUGGY_CLIENT_ID").unwrap();
-        let pluggy_client_secret = dotenvy::var("PLUGGY_CLIENT_SECRET").unwrap();
+        let pluggy_client_id = std::env::var("PLUGGY_CLIENT_ID").unwrap();
+        let pluggy_client_secret = std::env::var("PLUGGY_CLIENT_SECRET").unwrap();
 
         let outcome = create_api_key(&pluggy_client_id, &pluggy_client_secret)
             .await
@@ -125,9 +124,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_connect_token_success() {
-        dotenvy::from_filename("test.env").unwrap();
-        let pluggy_client_id = dotenvy::var("PLUGGY_CLIENT_ID").unwrap();
-        let pluggy_client_secret = dotenvy::var("PLUGGY_CLIENT_SECRET").unwrap();
+        let pluggy_client_id = std::env::var("PLUGGY_CLIENT_ID").unwrap();
+        let pluggy_client_secret = std::env::var("PLUGGY_CLIENT_SECRET").unwrap();
 
         let CreateApiKeyOutcome::Success(api_key) =
             create_api_key(&pluggy_client_id, &pluggy_client_secret)
