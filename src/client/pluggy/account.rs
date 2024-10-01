@@ -2,7 +2,7 @@ use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use time::Date;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -34,6 +34,10 @@ pub struct Account {
     currency_code: String,
     bank_data: Option<BankData>,
     credit_data: Option<CreditData>,
+    #[serde(with = "time::serde::iso8601")]
+    created_at: OffsetDateTime,
+    #[serde(with = "time::serde::iso8601")]
+    updated_at: OffsetDateTime,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

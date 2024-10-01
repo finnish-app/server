@@ -25,7 +25,7 @@ serde_json = { version = "1.0.128", default-features = false }
 sqlx = { version = "0.8.2", default-features = false, features = ["runtime-tokio-rustls", "postgres", "time", "uuid", "migrate"] }
 strum = { version = "0.26.3", default-features = false, features = ["strum_macros", "derive"] }
 svix = { version = "1.36.0", default-features = false, features = ["native-tls"] }
-time = { version = "0.3.36", default-features = false }
+time = { version = "0.3.36", default-features = false, features = ["serde", "serde-human-readable", "serde-well-known", "parsing"] }
 tokio = { version = "1.40.0", default-features = false, features = ["full"] }
 totp-rs = { version = "5.6.0", default-features = false, features = ["qr"] }
 tower = { version = "0.5.1", default-features = false, features = ["timeout", "util"] }
