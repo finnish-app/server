@@ -41,7 +41,7 @@ use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 struct Env {
-    db_url: &'static str,
+    db_url: String,
     frc_sitekey: String,
     frc_apikey: String,
     smtp_key: String,
@@ -56,7 +56,7 @@ struct Env {
 impl Env {
     fn try_build() -> Result<Self, std::env::VarError> {
         // opens
-        let db_url = std::env!("DATABASE_URL");
+        let db_url = std::env::var("DATABASE_URL")?;
 
         // secrets
         let frc_apikey = std::env::var("FRC_APIKEY")?;
@@ -107,7 +107,7 @@ async fn main() -> anyhow::Result<()> {
 
     let db_pool = PgPoolOptions::new()
         .max_connections(20)
-        .connect(env.db_url)
+        .connect(&env.db_url)
         .await
         .context("can't connect to database")?;
 
