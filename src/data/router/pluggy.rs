@@ -9,6 +9,7 @@ use axum::{
     Router,
 };
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::{auth::AuthSession, client::pluggy::account::ListAccountsResponse, AppState};
@@ -40,7 +41,7 @@ async fn connect_success(
         &shared_state.pool,
         user.id,
         pluggyconnect_request.item_id,
-        chrono::Utc::now(),
+        OffsetDateTime::now_utc(),
     )
     .await
     {

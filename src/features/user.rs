@@ -1,6 +1,6 @@
-use anyhow::bail;
 use password_auth::generate_hash;
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use validator::{Validate, ValidationErrors};
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
         mail::{send_forgot_password_mail, send_sign_up_confirmation_mail, EmailSecrets},
     },
     hypermedia::schema::validation::SignUpInput,
-    util::{generate_verification_token, now_plus_24_hours},
+    util::generate_verification_token,
     Env,
 };
 
@@ -52,9 +52,7 @@ pub async fn create(
         mail_from: &env.mail_from,
     };
 
-    let Some(expiration_date) = now_plus_24_hours() else {
-        bail!("error adding 24 hours to current time");
-    };
+    let expiration_date = OffsetDateTime::now_utc() + time::Duration::days(1);
     let verification_token = generate_verification_token();
 
     // TODO: change this to not use a transaction, and instead insert the table without depending

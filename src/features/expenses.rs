@@ -1,7 +1,7 @@
-use chrono::{NaiveDate, Utc};
 use plotly::{Layout, Plot, Scatter};
 use sqlx::PgPool;
 use std::collections::BTreeMap;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 use crate::schema::{CreateExpense, UpdateExpenseApi, UpdateExpenseHypr};
@@ -17,7 +17,7 @@ pub async fn create(
         category: create_expense.category,
         is_essential: create_expense.is_essential,
         date: create_expense.date,
-        now: Utc::now(),
+        now: OffsetDateTime::now_utc(),
     };
     crate::queries::expenses::create(&db_pool, user_id, params)
         .await
@@ -32,8 +32,8 @@ pub async fn create(
 pub async fn list_in_period(
     user_id: i32,
     db_pool: PgPool,
-    from: Option<NaiveDate>,
-    to: Option<NaiveDate>,
+    from: Option<Date>,
+    to: Option<Date>,
 ) -> Result<Vec<crate::queries::expenses::Expense>, sqlx::Error> {
     crate::queries::expenses::list_for_user_in_period(&db_pool, user_id, from, to).await
 }
@@ -127,7 +127,7 @@ pub async fn delete(
         return Ok(DeleteOutcome::NotFound);
     }
 
-    crate::queries::expenses::delete(&db_pool, user_id, expense_uuid, chrono::Utc::now())
+    crate::queries::expenses::delete(&db_pool, user_id, expense_uuid, OffsetDateTime::now_utc())
         .await
         .map(|c| {
             if c.rows_affected() > 1 {
@@ -141,13 +141,13 @@ pub async fn delete(
 pub async fn plot(
     user_id: i32,
     db_pool: PgPool,
-    from: Option<NaiveDate>,
-    to: Option<NaiveDate>,
+    from: Option<Date>,
+    to: Option<Date>,
 ) -> Result<Plot, sqlx::Error> {
     let expenses =
         crate::queries::expenses::list_for_user_in_period(&db_pool, user_id, from, to).await?;
 
-    let mut expenses_by_date = BTreeMap::<NaiveDate, f32>::new();
+    let mut expenses_by_date = BTreeMap::<Date, f32>::new();
     for expense in expenses {
         let price = expenses_by_date.entry(expense.date).or_insert(0.0);
         *price += expense.price;
@@ -170,13 +170,13 @@ pub async fn plot(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use sqlx::PgPool;
+    use time::OffsetDateTime;
 
     #[sqlx::test]
     async fn create_success(pool: PgPool) {
         let email = "test@test.com";
-        let now = Utc::now();
+        let now = OffsetDateTime::now_utc();
         crate::queries::user::create(
             &pool,
             crate::queries::user::CreateParams {
@@ -201,7 +201,7 @@ mod tests {
             price: 6.9,
             category: crate::schema::ExpenseCategory::Food,
             is_essential: false,
-            date: now.date_naive(),
+            date: now.date(),
         };
 
         super::create(user_id, pool, create_expense).await.unwrap();

@@ -14,10 +14,7 @@ use crate::{
         ChangePasswordTemplate, ConfirmationTemplate, ForgotPasswordTemplate, MfaTemplate,
         SignInTemplate, SignUpTemplate, VerificationTemplate,
     },
-    util::{
-        add_csp_to_response, generate_otp_token, generate_verification_token, now_plus_24_hours,
-        now_plus_30_minutes,
-    },
+    util::{add_csp_to_response, generate_otp_token, generate_verification_token},
     Env,
 };
 
@@ -29,6 +26,7 @@ use axum::{
 };
 use password_auth::generate_hash;
 use sqlx::{Pool, Postgres};
+use time::OffsetDateTime;
 use totp_rs::{Algorithm, Secret, TOTP};
 use validator::Validate;
 
@@ -276,11 +274,12 @@ pub async fn resend_verification_email(
     }
 
     let mut transaction = db_pool.begin().await.unwrap();
+    let now_plus_24_hours = OffsetDateTime::now_utc() + time::Duration::days(1);
     match sqlx::query_as!(
         MailToUser,
         r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
-        now_plus_24_hours(),
+        now_plus_24_hours,
         resend_email.email
     )
     .fetch_one(&mut *transaction)
@@ -329,7 +328,7 @@ pub async fn verify_email(db_pool: &Pool<Postgres>, env: &Env, token: String) ->
     match sqlx::query!(
         "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
         token,
-        chrono::Utc::now()
+        OffsetDateTime::now_utc()
     )
     .fetch_one(db_pool)
     .await
@@ -557,7 +556,7 @@ pub async fn forgot_password(
         MailToUser,
         r#"UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE email = $3 RETURNING email, verification_code"#,
         generate_verification_token(),
-        now_plus_30_minutes(),
+        OffsetDateTime::now_utc() + time::Duration::minutes(30),
         email_input.email
     )
     .fetch_one(&mut *transaction)
@@ -614,7 +613,7 @@ pub async fn change_forgotten_password(
     match sqlx::query!(
         "SELECT id FROM users WHERE verification_code = $1 AND code_expires_at > $2",
         secret_code,
-        chrono::Utc::now()
+        OffsetDateTime::now_utc()
     )
     .fetch_one(db_pool)
     .await

@@ -1,8 +1,8 @@
 use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
-use chrono::NaiveDate;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use time::Date;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -58,8 +58,8 @@ struct BankData {
 struct CreditData {
     level: Option<CreditLevel>,
     brand: CreditBrand,
-    balance_close_date: NaiveDate,
-    balance_due_date: NaiveDate,
+    balance_close_date: Date,
+    balance_due_date: Date,
     available_credit_limit: f32,
     /// Balance in usd
     balance_foreign_currency: Option<f32>,

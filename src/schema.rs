@@ -3,9 +3,9 @@ use std::{
     str::FromStr,
 };
 
-use chrono::NaiveDate;
 use serde::{de, Deserialize, Serialize};
 use strum::EnumIter;
+use time::{macros::format_description, Date};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Clone, EnumIter, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
@@ -53,9 +53,9 @@ impl Display for ExpenseCategory {
 /// `GetExpense` is a struct with the fields of an expense that can be retrieved.
 pub struct GetExpense {
     #[serde(deserialize_with = "empty_string_to_none")]
-    pub from: Option<NaiveDate>,
+    pub from: Option<Date>,
     #[serde(deserialize_with = "empty_string_to_none")]
-    pub to: Option<NaiveDate>,
+    pub to: Option<Date>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -67,7 +67,7 @@ pub struct UpdateExpenseApi {
     pub price: Option<f32>,
     pub category: Option<ExpenseCategory>,
     pub is_essential: Option<bool>,
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -76,7 +76,7 @@ pub struct CreateExpense {
     pub price: f32,
     pub category: ExpenseCategory,
     pub is_essential: bool,
-    pub date: NaiveDate,
+    pub date: Date,
 }
 
 #[derive(Deserialize, Debug)]
@@ -93,7 +93,7 @@ pub struct UpdateExpenseHypr {
         deserialize_with = "de_string_to_bool"
     )]
     pub is_essential: Option<bool>,
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 }
 
 /// Function to set the default value for `is_essential` in `UpdateExpense` to be Some(false).
@@ -121,11 +121,11 @@ where
     return Ok(Some(str.parse::<bool>().map_err(de::Error::custom)?));
 }
 
-/// Deserialization serde function that parses a Months from a string.
+/// Deserialization serde function that parses a Date from a string.
 /// If the string is empty, returns None.
-/// If the string is a valid month, returns Some(Months).
-/// If the string is not a valid month, returns an error.
-fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
+/// If the string is a valid date, returns Some(Date).
+/// If the string is not a valid date, returns an error.
+fn empty_string_to_none<'de, D>(deserializer: D) -> Result<Option<Date>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -133,9 +133,9 @@ where
     if str.is_empty() {
         return Ok(None);
     }
-    return Ok(Some(
-        NaiveDate::parse_from_str(&str, "%Y-%m-%d").map_err(de::Error::custom)?,
-    ));
+
+    let format = format_description!("[year]-[month]-[day]");
+    return Ok(Some(Date::parse(&str, &format).map_err(de::Error::custom)?));
 }
 
 /// Deserialization serde function that parses a f32 from a string.

@@ -1,8 +1,8 @@
 use anyhow::bail;
 use axum::http::{HeaderMap, HeaderName, HeaderValue};
-use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize)]
@@ -27,7 +27,7 @@ pub struct Transaction {
     /// Only present if the transaction is in a different currency
     /// than the account's currency
     amount_in_account_currency: Option<f32>,
-    date: DateTime<Utc>,
+    date: OffsetDateTime,
     /// Category of the transaction (e.g. Restaurants, Education).
     /// See the Transaction Categorization section in our guides.
     category: String,
@@ -42,8 +42,8 @@ pub struct Transaction {
     provider_code: Option<String>,
     status: TransactionStatus,
     account_id: Uuid,
-    created_at: Option<DateTime<Utc>>,
-    updated_at: Option<DateTime<Utc>>,
+    created_at: Option<OffsetDateTime>,
+    updated_at: Option<OffsetDateTime>,
     payment_data: Option<PaymentData>,
     acquirer_data: Option<AcquirerData>,
     credit_card_metadata: Option<CreditCardMetadata>,
@@ -116,7 +116,7 @@ struct CreditCardMetadata {
     installment_number: i32,
     total_installments: i32,
     total_amount: i32,
-    purchase_date: DateTime<Utc>,
+    purchase_date: OffsetDateTime,
     payee_mcc: Option<String>,
     card_number: String,
     bill_id: String,
