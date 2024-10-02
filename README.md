@@ -7,8 +7,17 @@
 </p>
 
 <div align="center">
-    <a href="https://dl.circleci.com/status-badge/redirect/gh/nicolasauler/finnish/tree/main">
-        <img src="https://dl.circleci.com/status-badge/img/gh/nicolasauler/finnish/tree/main.svg?style=shield" />
+    <a href="https://dl.circleci.com/status-badge/redirect/gh/finnish-app/server/tree/main">
+        <img src="https://dl.circleci.com/status-badge/img/gh/finnish-app/server/tree/main.svg?style=svg" />
+    </a>
+    <a href="https://finnish-app.github.io/server/">
+        <img src="https://github.com/finnish-app/server/actions/workflows/docs.yml/badge.svg" />
+    </a>
+    <a href="https://codecov.io/gh/finnish-app/server">
+        <img src="https://codecov.io/gh/finnish-app/server/graph/badge.svg?token=2FLDRQB7ZC" />
+    </a>
+    <a href="https://github.com/finnish-app/server">
+        <img src="https://img.shields.io/badge/MSRV-1.81.0-informational" />
     </a>
 </div>
 
