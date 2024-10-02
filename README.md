@@ -8,7 +8,7 @@
 
 <div align="center">
     <a href="https://dl.circleci.com/status-badge/redirect/gh/finnish-app/server/tree/main">
-        <img src="https://dl.circleci.com/status-badge/img/gh/finnish-app/server/tree/main.svg?style=svg" />
+        <img src="https://dl.circleci.com/status-badge/img/gh/finnish-app/server/tree/main.svg?style=shield" />
     </a>
     <a href="https://finnish-app.github.io/server/">
         <img src="https://github.com/finnish-app/server/actions/workflows/docs.yml/badge.svg" />
