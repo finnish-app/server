@@ -51,7 +51,7 @@ pub fn send_sign_up_confirmation_mail(
             <body>
                 <h1>Hi there!</h1>
                 <p>Thanks for signing up for finnish!</p>
-                <p>Click <a href=\"https://finnish.shuttleapp.rs/auth/verify-email/{verification_code}\">here</a> to verify your email.</p>
+                <p>Click <a href=\"https://finnish.ovh/auth/verify-email/{verification_code}\">here</a> to verify your email.</p>
             </body>
         </html>"
     );
@@ -74,7 +74,7 @@ pub fn send_forgot_password_mail(
             <body>
                 <h1>Hi there!</h1>
                 <p>Having trouble login in or remembering your password?</p>
-                <p>Click <a href=\"https://finnish.shuttleapp.rs/auth/reset-password/{verification_code}\">here</a> to reset your password.</p>
+                <p>Click <a href=\"https://finnish.ovh/auth/reset-password/{verification_code}\">here</a> to reset your password.</p>
             </body>
         </html>"
     );

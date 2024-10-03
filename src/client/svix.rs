@@ -1,7 +1,7 @@
 use reqwest::Url;
 use svix::api::{ApplicationIn, ApplicationOut, EndpointIn, Svix};
 
-const ENDPOINT_URL_PREFIX: &str = "https://finnish.shuttleapp.rs/webhooks";
+const ENDPOINT_URL_PREFIX: &str = "https://finnish.ovh/webhooks";
 
 pub async fn create_user_app(svix_api_key: &str, user_id: i32) -> anyhow::Result<ApplicationOut> {
     let svix = Svix::new(svix_api_key.to_owned(), None);

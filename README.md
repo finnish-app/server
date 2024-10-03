@@ -32,7 +32,7 @@ your financial information and helping you better organize your life.
 
 This way, you're on top of your financials and can make better decisions of how to manage your hard-earned money.
 
-Sign up in: [finnish](https://finnish.shuttleapp.rs)
+Sign up in: [finnish](https://finnish.ovh)
 
 :warning: Finnish is still in beta and will have a 0.2 launch soon:
 
