@@ -33,23 +33,27 @@ use axum_login::{
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
+use opentelemetry_otlp::WithExportConfig;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tower_sessions_sqlx_store::PostgresStore;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 struct Env {
     db_url: String,
-    frc_sitekey: String,
     frc_apikey: String,
-    smtp_key: String,
-    smtp_host: String,
+    frc_sitekey: String,
+    instance_id: String,
     mail_from: String,
-    smtp_username: String,
+    otel_endpoint: String,
     pluggy_client_id: String,
     pluggy_client_secret: String,
+    rust_log: String,
+    smtp_host: String,
+    smtp_key: String,
+    smtp_username: String,
     svix_api_key: String,
 }
 
@@ -69,16 +73,23 @@ impl Env {
         let pluggy_client_secret = std::env::var("PLUGGY_CLIENT_SECRET")?;
         let svix_api_key = std::env::var("SVIX_API_KEY")?;
 
+        let instance_id = std::env::var("INSTANCE_ID")?;
+        let otel_endpoint = std::env::var("OTEL_ENDPOINT")?;
+        let rust_log = std::env::var("RUST_LOG")?;
+
         Ok(Self {
             db_url,
-            frc_sitekey,
             frc_apikey,
-            smtp_key,
-            smtp_host,
+            frc_sitekey,
+            instance_id,
             mail_from,
-            smtp_username,
+            otel_endpoint,
             pluggy_client_id,
             pluggy_client_secret,
+            rust_log,
+            smtp_host,
+            smtp_key,
+            smtp_username,
             svix_api_key,
         })
     }
@@ -96,14 +107,16 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            return "finnish=debug,axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,axum::rejection=trace".into();
-        }))
-        .with(fmt::layer())
-        .init();
-
     let env = Env::try_build().context("couldn't build envs")?;
+
+    let logger_provider = init_otlp(
+        &env.rust_log,
+        &env.otel_endpoint,
+        "server",
+        "0",
+        &env.instance_id,
+    )
+    .context("can't start logging")?;
 
     let db_pool = PgPoolOptions::new()
         .max_connections(20)
@@ -157,6 +170,7 @@ async fn main() -> anyhow::Result<()> {
 
     renew_pluggy.await??;
 
+    logger_provider.shutdown()?;
     Ok(())
 }
 
@@ -338,4 +352,51 @@ const fn fallback_static_str_csp() -> &'static str {
     worker-src 'none';
     upgrade-insecure-requests;
     ";
+}
+
+fn init_otlp(
+    rust_log: &str,
+    otel_endpoint: &str,
+    name: &'static str,
+    version: &'static str,
+    instance_id: &str,
+) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry::logs::LogError> {
+    let logger_provider = init_logs(otel_endpoint, name, version, instance_id)?;
+
+    let otel_logger =
+        opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger_provider);
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(rust_log))
+        .with(tracing_subscriber::fmt::layer())
+        .with(otel_logger)
+        .init();
+
+    Ok(logger_provider)
+}
+
+fn init_logs(
+    otel_endpoint: &str,
+    name: &'static str,
+    version: &'static str,
+    instance_id: &str,
+) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry::logs::LogError> {
+    use opentelemetry_semantic_conventions::resource::{
+        SERVICE_INSTANCE_ID, SERVICE_NAME, SERVICE_VERSION,
+    };
+
+    opentelemetry_otlp::new_pipeline()
+        .logging()
+        .with_resource(opentelemetry_sdk::Resource::new([
+            opentelemetry::KeyValue::new(SERVICE_NAME, name),
+            opentelemetry::KeyValue::new(SERVICE_VERSION, version),
+            opentelemetry::KeyValue::new(SERVICE_INSTANCE_ID, instance_id.to_owned()),
+        ]))
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint(otel_endpoint)
+                .with_compression(opentelemetry_otlp::Compression::Zstd),
+        )
+        .install_batch(opentelemetry_sdk::runtime::Tokio)
 }
