@@ -1,3 +1,4 @@
+---
 version: 2
 updates:
   - package-ecosystem: "cargo"
@@ -7,4 +8,7 @@ updates:
     ignore:
       - dependency-name: "semver"
       - dependency-name: "crates-io"
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
     rebase-strategy: "disabled"
