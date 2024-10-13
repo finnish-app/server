@@ -155,6 +155,7 @@ pub async fn mfa_verify(
         }
     }
 
+    // TODO: move to email confirmation
     match create_user_app(&env.svix_api_key, user.id).await {
         Ok(app) => tracing::debug!("app: {:?}", app),
         Err(e) => {

@@ -7,7 +7,7 @@ pub async fn create_user_app(svix_api_key: &str, user_id: i32) -> anyhow::Result
     let svix = Svix::new(svix_api_key.to_owned(), None);
     let app = svix
         .application()
-        .create(
+        .get_or_create(
             ApplicationIn {
                 name: format!("finnish-{user_id}"),
                 uid: Some(user_id.to_string()),
