@@ -14,7 +14,7 @@ askama_axum = { version = "0.4.0", default-features = false }
 axum = { version = "0.7.7", default-features = false }
 axum-helmet = { version = "0.1.0", default-features = false }
 axum-login = { version = "0.16.0", default-features = false }
-lettre = { version = "0.11.9", default-features = false, features = ["smtp-transport", "native-tls", "builder"] }
+lettre = { version = "0.11.10", default-features = false, features = ["smtp-transport", "native-tls", "builder"] }
 opentelemetry = "0.26.0"
 opentelemetry-appender-log = "0.26.0"
 opentelemetry-appender-tracing = "0.26.0"
