@@ -4,70 +4,121 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+
+    buildbot-nix.url = "github:nix-community/buildbot-nix";
+    buildbot-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    crane.url = "github:ipetkov/crane";
   };
 
-  outputs = {
+  outputs = inputs @ {
+    flake-parts,
     nixpkgs,
     rust-overlay,
-    flake-utils,
+    crane,
     ...
   }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        # shuttle = pkgs.rustPlatform.buildRustPackage rec {
-        #   pname = "shuttle";
-        #   version = "v0.45.0";
-        #   src = pkgs.fetchFromGitHub {
-        #     owner = "shuttle-hq";
-        #     repo = pname;
-        #     rev = version;
-        #     hash = "sha256-bjGyLfeo11Y55WqPwcUxnNkexozlxC61/rSa65gBGZ4=";
-        #   };
-        #   doCheck = false;
-        #   cargoLock = {
-        #     lockFile = "${src}/Cargo.lock";
-        #     outputHashes = {
-        #       "async-posthog-0.2.3" = "sha256-V0f9+UKZkqh80p7UjINEbAW9y8cKBmJTRjAJZV3no1M=";
-        #       "hyper-reverse-proxy-0.5.2-dev" = "sha256-R1ZXGgWvwHWRHmKX823QLqM6ZJW+tzWUXigKkAyI5OE=";
-        #       "permit-client-rs-2.0.0" = "sha256-MxsgqPbvWDYDOb3oGuD1I6d3cdcGAhfoWsI7cwfhrb4=";
-        #       "permit-pdp-client-rs-0.2.0" = "sha256-F9wSvo3WzoRXjZb+We0Bvcwx3rRSG1QxXPsvrmtIN38=";
-        #     };
-        #   };
-        #   # cargoHash = "";
-        # };
-        rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
-        # rust = pkgs.rust-bin.beta.latest.default;
-        overlays = [(import rust-overlay)];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
-      in
-        with pkgs; {
-          devShells.default = mkShell {
-            buildInputs = [
-              bacon
-              cargo-expand
-              cargo-llvm-cov
-              cargo-nextest
-              cargo-watch
-              jq
-              nixpkgs-fmt
-              openssl
-              pkg-config
-              postgresql
-              python3
-              rust
-              svix-cli
-              sqlx-cli
-            ];
+    (flake-parts.lib.evalFlakeModule {inherit inputs;} (
+      {
+        lib,
+        self,
+        inputs,
+        ...
+      }: {
+        imports = [
+          ./devshells.nix
+        ];
 
-            shellHook = ''
-              # export DATABASE_URL=postgres://postgres:postgres@localhost:17144/finnish
-              # export DATABASE_URL=postgres://postgres:postgres@localhost:21372/finnish
-              # export DATABASE_URL=postgres://postgres@localhost:6543/finapp
-            '';
+        systems = [
+          "x86_64-linux"
+        ];
+
+        perSystem = {
+          self',
+          system,
+          pkgs,
+          ...
+        }: let
+          craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default));
+        in {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+            overlays = [
+              (import rust-overlay)
+            ];
           };
-        }
-    );
+
+          checks = let
+            # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+            # NB: we don't need to overlay our custom toolchain for the *entire*
+            # pkgs (which would require rebuidling anything else which uses rust).
+            # Instead, we just want to update the scope that crane will use by appending
+            # our specific toolchain there.
+            ## src = craneLib.cleanCargoSource ./.;
+            unfilteredRoot = ./.; # The original, unfiltered source
+            src = lib.fileset.toSource {
+              root = unfilteredRoot;
+              fileset = lib.fileset.unions [
+                # Default files from crane (Rust and cargo files)
+                (craneLib.fileset.commonCargoSources unfilteredRoot)
+                # Include all the .sql migrations as well
+                ./migrations
+                ./.sqlx
+                ./templates
+              ];
+            };
+
+            # Common arguments can be set here to avoid repeating them later
+            commonArgs = {
+              inherit src;
+              strictDeps = true;
+
+              buildInputs = [
+                pkgs.openssl
+                pkgs.pkg-config
+              ];
+              nativeBuildInputs = [
+                pkgs.pkg-config
+                pkgs.openssl
+              ];
+            };
+
+            # Build *just* the cargo dependencies, so we can reuse
+            # all of that work (e.g. via cachix) when running in CI
+            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+            # Build the actual crate itself, reusing the dependency
+            # artifacts from above.
+            ## runs tests -> which will break currently due to network connectivity
+            ## my-crate = craneLib.buildPackage (commonArgs
+            my-crate = craneLib.cargoBuild (commonArgs
+              // {
+                inherit cargoArtifacts;
+              });
+          in {
+            # Build the crate as part of `nix flake check` for convenience
+            inherit my-crate;
+
+            # Run clippy (and deny all warnings) on the crate source,
+            # again, reusing the dependency artifacts from above.
+            #
+            # Note that this is done as a separate derivation so that
+            # we can block the CI if there are issues here, but not
+            # prevent downstream consumers from building our crate by itself.
+            my-crate-clippy = craneLib.cargoClippy (commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+              });
+          };
+        };
+      }
+    ))
+    .config
+    .flake;
 }
