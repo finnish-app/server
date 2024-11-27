@@ -75,7 +75,7 @@ pub struct CreateExpense {
     pub description: String,
     pub price: f32,
     pub category: ExpenseCategory,
-    pub is_essential: bool,
+    pub is_essential: Option<bool>,
     pub date: Date,
 }
 

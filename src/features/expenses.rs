@@ -200,7 +200,7 @@ mod tests {
             description: "test_expense".to_owned(),
             price: 6.9,
             category: crate::schema::ExpenseCategory::Food,
-            is_essential: false,
+            is_essential: Some(false),
             date: now.date(),
         };
 
