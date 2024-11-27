@@ -33,7 +33,6 @@ use axum_login::{
     tower_sessions::{ExpiredDeletion, Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
-use opentelemetry_otlp::WithExportConfig;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower::{timeout::error::Elapsed, BoxError, ServiceBuilder};
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
@@ -360,7 +359,7 @@ fn init_otlp(
     name: &'static str,
     version: &'static str,
     instance_id: &str,
-) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry::logs::LogError> {
+) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry_sdk::logs::LogError> {
     let logger_provider = init_logs(otel_endpoint, name, version, instance_id)?;
 
     let otel_logger =
@@ -380,23 +379,24 @@ fn init_logs(
     name: &'static str,
     version: &'static str,
     instance_id: &str,
-) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry::logs::LogError> {
+) -> Result<opentelemetry_sdk::logs::LoggerProvider, opentelemetry_sdk::logs::LogError> {
+    use opentelemetry_otlp::{WithExportConfig, WithTonicConfig};
     use opentelemetry_semantic_conventions::resource::{
         SERVICE_INSTANCE_ID, SERVICE_NAME, SERVICE_VERSION,
     };
 
-    opentelemetry_otlp::new_pipeline()
-        .logging()
+    let exporter = opentelemetry_otlp::LogExporter::builder()
+        .with_tonic()
+        .with_endpoint(otel_endpoint)
+        .with_compression(opentelemetry_otlp::Compression::Zstd)
+        .build()?;
+
+    Ok(opentelemetry_sdk::logs::LoggerProvider::builder()
         .with_resource(opentelemetry_sdk::Resource::new([
             opentelemetry::KeyValue::new(SERVICE_NAME, name),
             opentelemetry::KeyValue::new(SERVICE_VERSION, version),
             opentelemetry::KeyValue::new(SERVICE_INSTANCE_ID, instance_id.to_owned()),
         ]))
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(otel_endpoint)
-                .with_compression(opentelemetry_otlp::Compression::Zstd),
-        )
-        .install_batch(opentelemetry_sdk::runtime::Tokio)
+        .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+        .build())
 }

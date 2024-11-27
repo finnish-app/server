@@ -9,7 +9,7 @@ pub struct CreateParams {
     pub description: String,
     pub price: f32,
     pub category: ExpenseCategory,
-    pub is_essential: bool,
+    pub is_essential: Option<bool>,
     pub date: Date,
     pub now: OffsetDateTime,
 }
@@ -27,7 +27,7 @@ pub async fn create(
         p.description,
         p.price,
         p.category as ExpenseCategory,
-        p.is_essential,
+        p.is_essential.unwrap_or_default(),
         p.date,
         Uuid::new_v4(),
         user_id,
