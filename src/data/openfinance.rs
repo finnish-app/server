@@ -75,7 +75,6 @@ async fn connect_success(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::features::openfinance::add_item(
         &shared_state.pool,
@@ -110,7 +109,6 @@ async fn list_accounts(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::client::pluggy::account::list_accounts(
         &shared_state.pluggy_api_key.lock().await,
@@ -139,7 +137,6 @@ async fn list_transactions(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::client::pluggy::transactions::list_transactions(
         &shared_state.pluggy_api_key.lock().await,

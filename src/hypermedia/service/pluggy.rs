@@ -19,7 +19,6 @@ pub async fn widget(
     let Some(user) = auth_session.user else {
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
-    tracing::debug!("User logged in");
 
     let Ok(webhook_url) = create_user_endpoint(&env.svix_api_key, user.id).await else {
         return (

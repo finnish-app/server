@@ -95,7 +95,6 @@ pub async fn mfa_qr(
     let Some(user) = auth_session.user else {
         return Err((StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response());
     };
-    tracing::debug!("User logged in");
 
     // TODO: create logic for changing MFA method
     if user.otp_enabled {
@@ -127,7 +126,6 @@ pub async fn mfa_verify(
     let Some(user) = auth_session.user else {
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
-    tracing::debug!("User logged in");
 
     let secret = Secret::Encoded(user.otp_secret.unwrap());
     let totp = TOTP::new(
