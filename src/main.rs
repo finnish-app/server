@@ -200,7 +200,7 @@ fn rest(
     let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
     let router = Router::new()
-        .merge(data::pluggy::router())
+        .merge(data::openfinance::router())
         .merge(data::expenses::router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(

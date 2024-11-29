@@ -26,7 +26,6 @@ struct ConnectRequest {
     item_id: Uuid,
 }
 
-// TODO: create and move to service
 async fn connect_success(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
@@ -62,7 +61,6 @@ struct ListAccountsRequest {
     item_id: Uuid,
 }
 
-// TODO: create and move to service
 async fn list_accounts(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
@@ -92,7 +90,6 @@ struct ListTransactionsRequest {
     account_id: Uuid,
 }
 
-// TODO: create and move to service
 async fn list_transactions(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
