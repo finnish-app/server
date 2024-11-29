@@ -16,12 +16,53 @@ use crate::{auth::AuthSession, client::pluggy::account::ListAccountsResponse, Ap
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
+        .route("/api/pluggyconnect/token", get(connect_token))
         .route("/api/pluggyconnect/success", post(connect_success))
         .route("/api/accounts", get(list_accounts))
         .route("/api/transactions", get(list_transactions))
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
+struct ConnectTokenResponse {
+    connect_token: String,
+}
+
+async fn connect_token(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> Result<Json<ConnectTokenResponse>, StatusCode> {
+    use crate::client::pluggy::auth::CreateConnectTokenOutcome;
+
+    let Some(user) = auth_session.user else {
+        panic!("user not logged in")
+    };
+
+    match crate::client::pluggy::auth::create_connect_token(
+        &shared_state.pluggy_api_key.lock().await,
+        "",
+        &user.email,
+    )
+    .await
+    {
+        Ok(CreateConnectTokenOutcome::Success(token)) => Ok(Json(ConnectTokenResponse {
+            connect_token: token.access_token,
+        })),
+        Ok(CreateConnectTokenOutcome::NotFound | CreateConnectTokenOutcome::Internal) => {
+            tracing::error!(user.id, "couldn't create connect token in pluggy");
+            Err(StatusCode::FAILED_DEPENDENCY)
+        }
+        Ok(CreateConnectTokenOutcome::Forbidden) => {
+            tracing::error!(user.id, "error authenticating with api key");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Err(e) => {
+            tracing::error!(?e, user.id, "error creating connect token");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[derive(Deserialize)]
 struct ConnectRequest {
     item_id: Uuid,
 }
@@ -34,7 +75,6 @@ async fn connect_success(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::features::openfinance::add_item(
         &shared_state.pool,
@@ -69,7 +109,6 @@ async fn list_accounts(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::client::pluggy::account::list_accounts(
         &shared_state.pluggy_api_key.lock().await,
@@ -98,7 +137,6 @@ async fn list_transactions(
     let Some(user) = auth_session.user else {
         panic!("user not logged in")
     };
-    tracing::debug!("User logged in");
 
     match crate::client::pluggy::transactions::list_transactions(
         &shared_state.pluggy_api_key.lock().await,
