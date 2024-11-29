@@ -25,7 +25,7 @@ use axum::{
     response::{Html, Redirect},
 };
 use password_auth::generate_hash;
-use sqlx::{Pool, Postgres};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use totp_rs::{Algorithm, Secret, TOTP};
 use validator::Validate;
@@ -90,7 +90,7 @@ pub async fn signin(
 
 pub async fn mfa_qr(
     auth_session: AuthSession,
-    db_pool: &Pool<Postgres>,
+    db_pool: PgPool,
 ) -> Result<Response<Body>, Response<Body>> {
     let Some(user) = auth_session.user else {
         return Err((StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response());
@@ -102,10 +102,12 @@ pub async fn mfa_qr(
         todo!("Create logic for changing MFA method");
     }
 
-    let totp = set_otp_secret(db_pool, user.id).await.map_err(|e| {
-        tracing::error!(?user.id, "Error setting OTP secret: {e}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    })?;
+    let totp = set_otp_secret(db_pool, user.id, user.email)
+        .await
+        .map_err(|e| {
+            tracing::error!(?user.id, "Error setting OTP secret: {e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        })?;
 
     Ok(MfaTemplate {
         mfa_url: "/auth/mfa".to_owned(),
@@ -118,7 +120,7 @@ pub async fn mfa_qr(
 
 pub async fn mfa_verify(
     auth_session: AuthSession,
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     env: &Env,
     mfa_token: String,
 ) -> impl IntoResponse {
@@ -228,7 +230,7 @@ pub fn email_confirmation(env: &Env) -> impl IntoResponse {
 }
 
 pub async fn resend_verification_email(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     env: &Env,
     resend_email: ResendEmail,
 ) -> impl IntoResponse {
@@ -323,7 +325,7 @@ pub async fn resend_verification_email(
         .into_response();
 }
 
-pub async fn verify_email(db_pool: &Pool<Postgres>, env: &Env, token: String) -> impl IntoResponse {
+pub async fn verify_email(db_pool: &PgPool, env: &Env, token: String) -> impl IntoResponse {
     let frc_sitekey = env.frc_sitekey.clone();
 
     match sqlx::query!(
@@ -442,7 +444,7 @@ pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
 
 pub async fn change_password(
     auth_session: AuthSession,
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     change_password_input: ChangePasswordInput,
 ) -> impl IntoResponse {
     let maybe_user = &auth_session.user;
@@ -497,7 +499,7 @@ pub fn forgot_password_screen(env: &Env) -> impl IntoResponse {
 }
 
 pub async fn forgot_password(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     env: &Env,
     email_input: ResendEmail,
 ) -> impl IntoResponse {
@@ -607,7 +609,7 @@ pub fn change_forgotten_password_screen(secret_code: &str) -> impl IntoResponse 
 }
 
 pub async fn change_forgotten_password(
-    db_pool: &Pool<Postgres>,
+    db_pool: &PgPool,
     forgot_password_input: ForgotPasswordInput,
     secret_code: String,
 ) -> impl IntoResponse {

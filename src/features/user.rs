@@ -61,7 +61,7 @@ pub async fn create(
     let mut transaction = db_pool.begin().await?;
 
     if let Some(user) =
-        crate::queries::user::user_state_for_signup(&db_pool, &create_user.email).await?
+        crate::queries::user::user_state_for_signup(&mut *transaction, &create_user.email).await?
     {
         let verification_token = generate_verification_token();
         crate::queries::user::set_email_prereq(

@@ -75,7 +75,7 @@ async fn mfa_qr(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
-    crate::hypermedia::service::auth::mfa_qr(auth_session, &shared_state.pool).await
+    crate::hypermedia::service::auth::mfa_qr(auth_session, shared_state.pool.clone()).await
 }
 
 async fn mfa_verify(
