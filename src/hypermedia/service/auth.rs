@@ -102,10 +102,12 @@ pub async fn mfa_qr(
         todo!("Create logic for changing MFA method");
     }
 
-    let totp = set_otp_secret(db_pool, user.id).await.map_err(|e| {
-        tracing::error!(?user.id, "Error setting OTP secret: {e}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    })?;
+    let totp = set_otp_secret(db_pool, user.id, user.email)
+        .await
+        .map_err(|e| {
+            tracing::error!(?user.id, "Error setting OTP secret: {e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        })?;
 
     Ok(MfaTemplate {
         mfa_url: "/auth/mfa".to_owned(),
