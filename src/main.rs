@@ -200,15 +200,15 @@ fn rest(
     let helmet_layer = HelmetLayer::new(generate_general_helmet_headers());
 
     let router = Router::new()
-        .merge(data::router::pluggy::router())
-        .merge(data::router::expenses::router())
+        .merge(data::pluggy::router())
+        .merge(data::expenses::router())
         .merge(hypermedia::router::expenses::router())
         .route_layer(permission_required!(
             Backend,
             login_url = "/auth/mfa",
             "restricted:read",
         ))
-        .merge(data::router::auth::private_router())
+        .merge(data::auth::private_router())
         .merge(hypermedia::router::auth::private_router())
         .route_layer(permission_required!(
             Backend,
