@@ -1,6 +1,6 @@
 use crate::util::generate_otp_token;
 use anyhow::bail;
-use sqlx::{Pool, Postgres};
+use sqlx::PgPool;
 use totp_rs::{Algorithm, Secret, TOTP};
 
 pub struct OtpData {
@@ -10,20 +10,21 @@ pub struct OtpData {
     pub otp_url: String,
 }
 
-pub async fn set_otp_secret(db_pool: &Pool<Postgres>, user_id: i32) -> anyhow::Result<OtpData> {
+pub async fn set_otp_secret(
+    db_pool: PgPool,
+    user_id: i32,
+    user_email: String,
+) -> anyhow::Result<OtpData> {
     let secret = Secret::Raw(generate_otp_token().as_bytes().to_vec());
     let mut transaction = db_pool.begin().await?;
 
-    let user_email = sqlx::query!(
-        r#"
-        UPDATE users SET otp_secret = $1 WHERE id = $2
-        RETURNING email
-        "#,
-        secret.to_encoded().to_string(),
-        user_id
-    )
-    .fetch_one(&mut *transaction)
-    .await?;
+    crate::queries::user::set_otp_secret(&mut *transaction, user_id, &secret)
+        .await
+        .map(|c| {
+            if c.rows_affected() > 1 {
+                tracing::error!("i really need a macro that cancels the transaction");
+            }
+        })?;
 
     let totp = TOTP::new(
         Algorithm::SHA1,
@@ -32,7 +33,7 @@ pub async fn set_otp_secret(db_pool: &Pool<Postgres>, user_id: i32) -> anyhow::R
         30,
         secret.to_bytes().unwrap(),
         Some("Finnish".to_owned()),
-        user_email.email,
+        user_email,
     )?;
 
     transaction.commit().await?;

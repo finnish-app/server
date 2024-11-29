@@ -66,3 +66,20 @@ pub async fn set_email_prereq(
     .execute(conn)
     .await
 }
+
+pub async fn set_otp_secret(
+    conn: impl PgExecutor<'_>,
+    user_id: i32,
+    secret: &totp_rs::Secret,
+) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE users SET otp_secret = $1
+        WHERE id = $2
+        "#,
+        secret.to_encoded().to_string(),
+        user_id
+    )
+    .execute(conn)
+    .await
+}
