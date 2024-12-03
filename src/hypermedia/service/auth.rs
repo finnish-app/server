@@ -134,7 +134,7 @@ pub async fn mfa_verify(
         1,
         30,
         secret.to_bytes().unwrap(),
-        Some("Finnish".to_owned()),
+        Some("Fina".to_owned()),
         user.email,
     )
     .unwrap();
