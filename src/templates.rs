@@ -338,3 +338,66 @@ pub struct PluggyConnectWidgetTemplate {
 #[derive(Template)]
 #[template(path = "pluggy_widget_modal_error.html")]
 pub struct PluggyWidgetModalErrorTemplate {}
+
+#[derive(Template)]
+#[template(path = "privacy.html")]
+pub struct PrivacyTemplate {
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl PrivacyTemplate {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce() -> Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = Self { nonce }.into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
+}
+
+#[derive(Template)]
+#[template(path = "terms.html")]
+pub struct TosTemplate {
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl TosTemplate {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce() -> Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = Self { nonce }.into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
+}
+
+#[derive(Template)]
+#[template(path = "about.html")]
+pub struct AboutTemplate {
+    /// CSP nonce
+    pub nonce: String,
+}
+
+impl AboutTemplate {
+    /// Adds CSP nonce to the template
+    /// And returns the response with the CSP header set.
+    pub fn into_response_with_nonce() -> Response<Body> {
+        let nonce = generate_otp_token();
+        let nonce_str = format!("'nonce-{nonce}'");
+
+        let mut response = Self { nonce }.into_response();
+
+        add_csp_to_response(&mut response, &nonce_str);
+        return response;
+    }
+}

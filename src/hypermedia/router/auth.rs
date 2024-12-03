@@ -4,7 +4,7 @@ use crate::{
         auth::MfaTokenForm,
         validation::{ChangePasswordInput, ForgotPasswordInput, ResendEmail, SignUpInput},
     },
-    templates::ChangePasswordTemplate,
+    templates::{AboutTemplate, ChangePasswordTemplate, PrivacyTemplate, TosTemplate},
     AppState,
 };
 use std::sync::Arc;
@@ -20,6 +20,9 @@ use reqwest::StatusCode;
 
 pub fn public_router() -> Router<Arc<AppState>> {
     Router::new()
+        .route("/about", get(about_index))
+        .route("/privacy", get(privacy_index))
+        .route("/terms", get(terms_index))
         .route("/auth/signin", get(signin_tab).post(signin))
         .route("/auth/signup", get(signup_tab).post(signup))
         .route(
@@ -47,6 +50,18 @@ pub fn private_router() -> Router<Arc<AppState>> {
             get(change_password_screen).post(change_password),
         )
         .route("/auth/mfa", get(mfa_qr).post(mfa_verify))
+}
+
+async fn about_index() -> impl IntoResponse {
+    return AboutTemplate::into_response_with_nonce();
+}
+
+async fn terms_index() -> impl IntoResponse {
+    return TosTemplate::into_response_with_nonce();
+}
+
+async fn privacy_index() -> impl IntoResponse {
+    return PrivacyTemplate::into_response_with_nonce();
 }
 
 async fn signin_tab(State(shared_state): State<Arc<AppState>>) -> impl IntoResponse {

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}About Fina{% endblock %}
+{% block nonce %}{{ nonce }}{% endblock %}
+
+{% block content %}
+<article>
+    <header>
+        <h1>About Fina</h1>
+        <p><small>Smart Personal Financial Management by Leveraging Machine Learning and the Open Banking API</small></p>
+    </header>
+
+    <section>
+        <h2>1. Introduction</h2>
+        <h3>1.1 Motivation</h3>
+        <p>The development of Fina was fostered by two major factors in the current financial landscape:</p>
+        
+        <h4>State of Software Products</h4>
+        <p>Modern software delivery has evolved significantly, with rapid updates and patches becoming the norm. However, for financial applications, we believe in maintaining the highest standards of quality and security from the start. Fina is built with a focus on reliability and optimization, ensuring a stable and secure experience for our users.</p>
+        
+        <h4>State of Personal Finances in Brazil</h4>
+        <p>With the average Brazilian maintaining 5.2 bank accounts and the rapid rise of digital banking, there's a growing need for comprehensive financial management tools. Fina addresses this complexity by providing a unified platform for managing multiple accounts while promoting financial literacy.</p>
+    </section>
+
+    <section>
+        <h2>2. Implementation</h2>
+        
+        <h3>2.1 Architecture</h3>
+        <p>Fina is built on a modern, secure architecture:</p>
+        <ul>
+            <li>Server: Written in async Rust with HTMX for the web interface</li>
+            <li>Database: PostgreSQL with async SQLx for optimal performance</li>
+            <li>Mobile: Native Android application written in Kotlin</li>
+            <li>Machine Learning: Custom categorization model for transaction analysis</li>
+        </ul>
+
+        <h3>2.2 Security Measures</h3>
+        <ul>
+            <li>Two-factor authentication (2FA)</li>
+            <li>Read-only access to banking information</li>
+            <li>Regular security updates and monitoring</li>
+        </ul>
+
+        <h3>2.3 Core Features</h3>
+        <ul>
+            <li>Multi-bank account integration via Open Banking API</li>
+            <li>Intelligent transaction categorization</li>
+            <li>Financial analytics and insights</li>
+            <li>Manual transaction tracking for cash expenses</li>
+            <li>Interactive dashboards and reports</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Open Source Commitment</h2>
+        <p>Fina is an open-source project, available at <a href="https://github.com/finnish-app/">github.com/finnish-app/</a>. We believe in transparency and community-driven development, allowing developers to contribute to our mission of improving financial management for everyone.</p>
+    </section>
+
+    <section>
+        <h2>4. Development Team</h2>
+        <p>Fina was developed at the University of São Paulo by:</p>
+        <ul>
+            <li>Caio A. G. Xavier</li>
+            <li>Dênio A. Almeida</li>
+            <li>Nícolas V. Auler</li>
+        </ul>
+        <p>Under the guidance of Prof. Bruno C. Albertini</p>
+    </section>
+
+    <section>
+        <h2>5. Contact Information</h2>
+        <address>
+            <p>Email: <a href="mailto:nickvarauler@gmail.com">nickvarauler@gmail.com</a></p>
+            <p>Source Code: <a href="https://github.com/finnish-app/">github.com/finnish-app/</a></p>
+        </address>
+    </section>
+</article>
+{% endblock %}

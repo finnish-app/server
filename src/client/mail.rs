@@ -50,8 +50,8 @@ pub fn send_sign_up_confirmation_mail(
         "<html>
             <body>
                 <h1>Hi there!</h1>
-                <p>Thanks for signing up for finnish!</p>
-                <p>Click <a href=\"https://finnish.ovh/auth/verify-email/{verification_code}\">here</a> to verify your email.</p>
+                <p>Thanks for signing up for Fina!</p>
+                <p>Click <a href=\"https://fina.center/auth/verify-email/{verification_code}\">here</a> to verify your email.</p>
             </body>
         </html>"
     );
@@ -59,7 +59,7 @@ pub fn send_sign_up_confirmation_mail(
     send_email(
         email_secrets,
         to_email,
-        "Welcome to finnish! Confirm your email.",
+        "Welcome to Fina! Confirm your email.",
         &body,
     )
 }
@@ -74,7 +74,7 @@ pub fn send_forgot_password_mail(
             <body>
                 <h1>Hi there!</h1>
                 <p>Having trouble login in or remembering your password?</p>
-                <p>Click <a href=\"https://finnish.ovh/auth/reset-password/{verification_code}\">here</a> to reset your password.</p>
+                <p>Click <a href=\"https://fina.center/auth/reset-password/{verification_code}\">here</a> to reset your password.</p>
             </body>
         </html>"
     );
