@@ -39,8 +39,8 @@ async fn connect_token(
 
     match crate::client::pluggy::auth::create_connect_token(
         &shared_state.pluggy_api_key.lock().await,
-        "",
-        &user.email,
+        "webhook".to_owned(),
+        user.id,
     )
     .await
     {

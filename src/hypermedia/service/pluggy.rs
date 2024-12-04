@@ -20,6 +20,7 @@ pub async fn widget(
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
     };
 
+    // TODO: what to do with webhook stuff
     let Ok(webhook_url) = create_user_endpoint(&env.svix_api_key, user.id).await else {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -30,9 +31,9 @@ pub async fn widget(
 
     let Ok(CreateConnectTokenOutcome::Success(connect_token)) = create_connect_token(
         pluggy_api_key,
-        // "https://arst.requestcatcher.com/test", works with the damn tester
-        &webhook_url, // why now with my svix webhook_url ?
-        &user.email,
+        // "https://fina.requestcatcher.com/test".to_owned(),
+        webhook_url,
+        user.id,
     )
     .await
     else {

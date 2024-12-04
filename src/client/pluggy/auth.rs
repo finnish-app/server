@@ -42,6 +42,19 @@ pub async fn create_api_key(
     Ok(CreateApiKeyOutcome::Success(api_key))
 }
 
+#[derive(Serialize)]
+struct CreateConnectTokenParams {
+    item_id: String,
+    options: CreateConnectTokenOptions,
+}
+
+#[derive(Serialize)]
+struct CreateConnectTokenOptions {
+    client_user_id: i32,
+    webhook_url: String,
+    avoid_duplicates: bool,
+}
+
 #[derive(Deserialize)]
 pub struct ConnectToken {
     #[serde(rename = "accessToken")]
@@ -57,22 +70,27 @@ pub enum CreateConnectTokenOutcome {
 
 pub async fn create_connect_token(
     api_key: &str,
-    webhook_url: &str,
-    user_email: &str,
+    webhook_url: String,
+    user_id: i32,
 ) -> anyhow::Result<CreateConnectTokenOutcome> {
     let mut headers = HeaderMap::new();
     let api_key_hdr_value = HeaderValue::from_str(api_key)?;
     headers.insert(HeaderName::from_static("x-api-key"), api_key_hdr_value);
 
-    let mut map = HashMap::new();
-    map.insert("clientUserId", user_email);
-    map.insert("webhookUrl", webhook_url);
+    let params = CreateConnectTokenParams {
+        item_id: "TODO".to_owned(),
+        options: CreateConnectTokenOptions {
+            client_user_id: user_id,
+            avoid_duplicates: false,
+            webhook_url,
+        },
+    };
 
     let client = reqwest::Client::new();
     let resp = client
         .post("https://api.pluggy.ai/connect_token")
         .headers(headers)
-        .json(&map)
+        .json(&params)
         .send()
         .await?;
 
@@ -135,7 +153,7 @@ mod tests {
             unreachable!()
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook", "user@example.com")
+        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
             .await
             .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Success(_)));
@@ -147,7 +165,7 @@ mod tests {
             api_key: "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcyMDQ4MzM5MCwiaWF0IjoxNzIwNDgzMzkwfQ.g_hft2ZzWndL2RFVXOGSx6yym-NApxB8QX0DX7WYs38".to_owned()
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook", "user@example.com")
+        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
             .await
             .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Forbidden));
@@ -159,7 +177,7 @@ mod tests {
             api_key: String::new(),
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook", "user@example.com")
+        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
             .await
             .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Forbidden));
