@@ -10,6 +10,8 @@
       rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
     in
       pkgs.mkShellNoCC {
+        RUSTFLAGS = "-Zthreads=4";
+
         buildInputs = with pkgs; [
           bacon
           cargo-expand
