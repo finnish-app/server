@@ -75,15 +75,6 @@
             strictDeps = true;
 
             RUSTFLAGS = "-Z threads=4";
-
-            buildInputs = [
-              pkgs.openssl
-              pkgs.pkg-config
-            ];
-            nativeBuildInputs = [
-              pkgs.pkg-config
-              pkgs.openssl
-            ];
           };
 
           # Build *just* the cargo dependencies, so we can reuse
@@ -131,6 +122,8 @@
 
           packages = {
             default = my-crate;
+
+            cargoArtifacts = cargoArtifacts;
           };
 
           apps.default = {
@@ -147,17 +140,11 @@
               cargo-expand
               cargo-llvm-cov
               cargo-nextest
-              cargo-watch
               jq
-              nixpkgs-fmt
-              openssl
-              pkg-config
               postgresql
               python3
               svix-cli
               sqlx-cli
-
-              my-crate
             ];
           };
         };
