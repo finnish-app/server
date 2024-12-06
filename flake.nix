@@ -143,6 +143,7 @@
 
             packages = with pkgs; [
               bacon
+              cachix
               cargo-expand
               cargo-llvm-cov
               cargo-nextest
