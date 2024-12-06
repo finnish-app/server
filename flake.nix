@@ -35,7 +35,7 @@
         ...
       }: {
         imports = [
-          ./devshells.nix
+          # ./devshells.nix
         ];
 
         systems = [
@@ -49,6 +49,51 @@
           ...
         }: let
           craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (p: p.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default));
+
+          # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+          # NB: we don't need to overlay our custom toolchain for the *entire*
+          # pkgs (which would require rebuidling anything else which uses rust).
+          # Instead, we just want to update the scope that crane will use by appending
+          # our specific toolchain there.
+          ## src = craneLib.cleanCargoSource ./.;
+          unfilteredRoot = ./.; # The original, unfiltered source
+          src = lib.fileset.toSource {
+            root = unfilteredRoot;
+            fileset = lib.fileset.unions [
+              # Default files from crane (Rust and cargo files)
+              (craneLib.fileset.commonCargoSources unfilteredRoot)
+              # Include all the .sql migrations as well
+              ./migrations
+              ./.sqlx
+              ./templates
+            ];
+          };
+
+          # Common arguments can be set here to avoid repeating them later
+          commonArgs = {
+            inherit src;
+            strictDeps = true;
+
+            RUSTFLAGS = "-Z threads=4";
+          };
+
+          # Build *just* the cargo dependencies, so we can reuse
+          # all of that work (e.g. via cachix) when running in CI
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+          # Build the actual crate itself, reusing the dependency
+          # artifacts from above.
+          ## runs tests -> which will break currently due to network connectivity
+          ## my-crate = craneLib.buildPackage (commonArgs
+          ### my-crate = craneLib.cargoBuild (commonArgs
+          ###   // {
+          ###     inherit cargoArtifacts;
+          ###   });
+          my-crate = craneLib.buildPackage (commonArgs
+            // {
+              inherit cargoArtifacts;
+
+              doCheck = false; # skip tests
+            });
         in {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
@@ -58,61 +103,7 @@
             ];
           };
 
-          checks = let
-            # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
-            # NB: we don't need to overlay our custom toolchain for the *entire*
-            # pkgs (which would require rebuidling anything else which uses rust).
-            # Instead, we just want to update the scope that crane will use by appending
-            # our specific toolchain there.
-            ## src = craneLib.cleanCargoSource ./.;
-            unfilteredRoot = ./.; # The original, unfiltered source
-            src = lib.fileset.toSource {
-              root = unfilteredRoot;
-              fileset = lib.fileset.unions [
-                # Default files from crane (Rust and cargo files)
-                (craneLib.fileset.commonCargoSources unfilteredRoot)
-                # Include all the .sql migrations as well
-                ./migrations
-                ./.sqlx
-                ./templates
-              ];
-            };
-
-            # Common arguments can be set here to avoid repeating them later
-            commonArgs = {
-              inherit src;
-              strictDeps = true;
-
-              RUSTFLAGS = "-Z threads=4";
-
-              buildInputs = [
-                pkgs.openssl
-                pkgs.pkg-config
-              ];
-              nativeBuildInputs = [
-                pkgs.pkg-config
-                pkgs.openssl
-              ];
-            };
-
-            # Build *just* the cargo dependencies, so we can reuse
-            # all of that work (e.g. via cachix) when running in CI
-            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-            # Build the actual crate itself, reusing the dependency
-            # artifacts from above.
-            ## runs tests -> which will break currently due to network connectivity
-            ## my-crate = craneLib.buildPackage (commonArgs
-            ### my-crate = craneLib.cargoBuild (commonArgs
-            ###   // {
-            ###     inherit cargoArtifacts;
-            ###   });
-            my-crate = craneLib.buildPackage (commonArgs
-              // {
-                inherit cargoArtifacts;
-
-                doCheck = false; # skip tests
-              });
-          in {
+          checks = {
             # Build the crate as part of `nix flake check` for convenience
             inherit my-crate;
 
@@ -127,6 +118,34 @@
                 inherit cargoArtifacts;
                 cargoClippyExtraArgs = "--all-targets -- --deny warnings";
               });
+          };
+
+          packages = {
+            default = my-crate;
+
+            cargoArtifacts = cargoArtifacts;
+          };
+
+          apps.default = {
+            type = "app";
+            program = my-crate;
+          };
+
+          devShells.default = craneLib.devShell {
+            RUSTFLAGS = "-Zthreads=4";
+
+            packages = with pkgs; [
+              bacon
+              cachix
+              cargo-expand
+              cargo-llvm-cov
+              cargo-nextest
+              jq
+              postgresql
+              python3
+              svix-cli
+              sqlx-cli
+            ];
           };
         };
       }
