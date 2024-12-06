@@ -15,6 +15,11 @@
     crane.url = "github:ipetkov/crane";
   };
 
+  nixConfig = {
+    extra-trusted-public-keys = "fina.cachix.org-1:Xaf+3HF5Wffl4Gtpi68Yz/wRQw0bH8tNVTlMnkLSRQc=";
+    extra-substituters = "https://fina.cachix.org";
+  };
+
   outputs = inputs @ {
     flake-parts,
     nixpkgs,
@@ -47,7 +52,7 @@
         in {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
-            config.allowUnfree = true;
+            # config.allowUnfree = true;
             overlays = [
               (import rust-overlay)
             ];
@@ -78,6 +83,8 @@
               inherit src;
               strictDeps = true;
 
+              RUSTFLAGS = "-Z threads=4";
+
               buildInputs = [
                 pkgs.openssl
                 pkgs.pkg-config
@@ -91,14 +98,19 @@
             # Build *just* the cargo dependencies, so we can reuse
             # all of that work (e.g. via cachix) when running in CI
             cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
             # Build the actual crate itself, reusing the dependency
             # artifacts from above.
             ## runs tests -> which will break currently due to network connectivity
             ## my-crate = craneLib.buildPackage (commonArgs
-            my-crate = craneLib.cargoBuild (commonArgs
+            ### my-crate = craneLib.cargoBuild (commonArgs
+            ###   // {
+            ###     inherit cargoArtifacts;
+            ###   });
+            my-crate = craneLib.buildPackage (commonArgs
               // {
                 inherit cargoArtifacts;
+
+                doCheck = false; # skip tests
               });
           in {
             # Build the crate as part of `nix flake check` for convenience
