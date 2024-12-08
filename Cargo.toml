@@ -15,12 +15,12 @@ axum = { version = "0.7.7", default-features = false }
 axum-helmet = { version = "0.1.0", default-features = false }
 axum-login = { version = "0.16.0", default-features = false }
 lettre = { version = "0.11.9", default-features = false, features = ["smtp-transport", "rustls-tls", "builder"] }
-opentelemetry = "0.27.0"
-opentelemetry-appender-log = "0.27.0"
-opentelemetry-appender-tracing = "0.27.0"
-opentelemetry-otlp = { version = "0.27.0", features = ["tonic", "zstd-tonic"] }
-opentelemetry-semantic-conventions = { version = "0.27.0", features = ["semconv_experimental"] }
-opentelemetry_sdk = { version = "0.27.0", features = ["rt-tokio"] }
+opentelemetry = { version = "0.27.0", default-features = false, features = ["logs"] }
+opentelemetry-appender-log = { version = "0.27.0", default-features = false }
+opentelemetry-appender-tracing = { version = "0.27.0", default-features = false }
+opentelemetry-otlp = { version = "0.27.0", default-features = false, features = ["zstd-tonic", "logs", "grpc-tonic"] }
+opentelemetry-semantic-conventions = { version = "0.27.0", default-features = false, features = ["semconv_experimental"] }
+opentelemetry_sdk = { version = "0.27.0", default-features = false, features = ["rt-tokio", "logs"] }
 password-auth = { version = "1.1.0-pre.1", default-features = false, features = ["argon2"] }
 plotly = { version = "0.11.0", default-features=false, features = ["with-axum"] }
 rand = { version = "0.8.5", default-features = false }
