@@ -21,27 +21,41 @@ pub async fn widget(
     };
 
     // TODO: what to do with webhook stuff
-    let Ok(webhook_url) = create_user_endpoint(&env.svix_api_key, user.id).await else {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            PluggyWidgetModalErrorTemplate {},
-        )
-            .into_response();
+    let webhook_url = match create_user_endpoint(&env.svix_api_key, user.id).await {
+        Ok(url) => url,
+        Err(e) => {
+            tracing::error!(?e, "couldn't create user endpoint");
+            // return (
+            //     StatusCode::INTERNAL_SERVER_ERROR,
+            //     PluggyWidgetModalErrorTemplate {},
+            // )
+            //     .into_response();
+            "https://fina.requestcatcher.com/test".to_owned()
+        }
     };
 
-    let Ok(CreateConnectTokenOutcome::Success(connect_token)) = create_connect_token(
-        pluggy_api_key,
-        // "https://fina.requestcatcher.com/test".to_owned(),
-        webhook_url,
-        user.id,
-    )
-    .await
-    else {
-        return (
-            StatusCode::FAILED_DEPENDENCY,
-            PluggyWidgetModalErrorTemplate {},
-        )
-            .into_response();
+    let connect_token = match create_connect_token(pluggy_api_key, webhook_url, user.id).await {
+        Ok(CreateConnectTokenOutcome::Success(connect_token)) => connect_token,
+        Ok(
+            CreateConnectTokenOutcome::Forbidden
+            | CreateConnectTokenOutcome::NotFound
+            | CreateConnectTokenOutcome::Internal,
+        ) => {
+            tracing::error!("pluggy returned error outcome on create connect token");
+            return (
+                StatusCode::FAILED_DEPENDENCY,
+                PluggyWidgetModalErrorTemplate {},
+            )
+                .into_response();
+        }
+        Err(e) => {
+            tracing::error!(?e, "pluggy failed to give a response");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                PluggyWidgetModalErrorTemplate {},
+            )
+                .into_response();
+        }
     };
 
     return PluggyConnectWidgetTemplate {
