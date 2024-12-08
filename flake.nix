@@ -92,6 +92,9 @@
             // {
               inherit cargoArtifacts;
 
+              pname = "finnish";
+              meta.mainProgram = "finnish";
+
               doCheck = false; # skip tests
             });
         in {
