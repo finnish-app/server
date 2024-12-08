@@ -293,6 +293,7 @@ fn renew_pluggy_task(
 
             let mut pluggy_api_key = pluggy_api_key.lock().await;
             *pluggy_api_key = new_pluggy_api_key.api_key;
+            tracing::info!("renewed pluggy api key");
         }
     })
 }
