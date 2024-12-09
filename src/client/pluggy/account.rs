@@ -93,6 +93,7 @@ enum CreditStatus {
 enum CreditLevel {
     Black,
     Signature,
+    Gold,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
