@@ -93,6 +93,7 @@ enum CreditStatus {
 enum CreditLevel {
     Black,
     Signature,
+    Gold,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -202,12 +203,41 @@ mod tests {
         "holderType": "MAIN",
         "status": "ACTIVE"
       }
+    },
+    {
+      "id": "c10bf4e0-ffa7-4886-a021-c03d571a34e8",
+      "type": "CREDIT",
+      "subtype": "CREDIT_CARD",
+      "name": "Mastercard Black",
+      "balance": 3971642.5,
+      "currencyCode": "BRL",
+      "itemId": "dc029997-3de2-4aa0-abe4-7c11677d980a",
+      "number": "9437",
+      "createdAt": "2024-07-09T17:06:59.579Z",
+      "updatedAt": "2024-07-09T17:06:59.579Z",
+      "marketingName": "PLUGGY UNICLASS MASTERCARD BLACK",
+      "taxNumber": null,
+      "owner": null,
+      "bankData": null,
+      "creditData": {
+        "level": "GOLD",
+        "brand": "MASTERCARD",
+        "balanceCloseDate": "2024-07-09",
+        "balanceDueDate": "2024-07-14",
+        "availableCreditLimit": 300000,
+        "balanceForeignCurrency": null,
+        "minimumPayment": 794328.49903322,
+        "creditLimit": 300000,
+        "isLimitFlexible": false,
+        "holderType": "MAIN",
+        "status": "ACTIVE"
+      }
     }
   ]
 }
         "#;
 
         let accounts: ListAccountsResponse = serde_json::from_str(data).unwrap();
-        assert_eq!(accounts.results.len(), 2);
+        assert_eq!(accounts.results.len(), 3);
     }
 }
