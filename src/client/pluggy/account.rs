@@ -132,11 +132,17 @@ pub async fn list_accounts(api_key: &str, item_id: &Uuid) -> anyhow::Result<List
         .send()
         .await?;
 
-    if let StatusCode::OK = resp.status() {
-        Ok(resp.json().await?)
-    } else {
-        bail!("Could not recover accounts for the item provided")
+    if !(matches!(resp.status(), StatusCode::OK)) {
+        bail!("unexpected status code returned from list accounts")
     }
+
+    let bytes = resp.bytes().await?;
+    let accounts = serde_json::from_slice(&bytes).map_err(|e| {
+        tracing::error!(?e, ?bytes, "error deserializing account list from pluggy");
+        e
+    })?;
+
+    Ok(accounts)
 }
 
 #[cfg(test)]
