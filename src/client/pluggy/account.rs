@@ -62,8 +62,8 @@ struct BankData {
 struct CreditData {
     level: Option<CreditLevel>,
     brand: CreditBrand,
-    balance_close_date: Date,
-    balance_due_date: Date,
+    balance_close_date: Option<Date>,
+    balance_due_date: Option<Date>,
     available_credit_limit: f32,
     /// Balance in usd
     balance_foreign_currency: Option<f32>,
