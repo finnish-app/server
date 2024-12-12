@@ -62,8 +62,7 @@ pub async fn list_for_user_in_period(
         WHERE ((date >= $1) OR ($1 IS NULL))
         AND ((date <= $2) OR ($2 IS NULL))
         AND user_id = $3
-        and deleted_at is null
-        ORDER BY date ASC"#,
+        and deleted_at is null"#,
         from,
         to,
         user_id

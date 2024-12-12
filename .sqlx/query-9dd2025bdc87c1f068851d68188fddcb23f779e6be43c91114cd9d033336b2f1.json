@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        and deleted_at is null\n        ORDER BY date ASC",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        FROM expenses\n        WHERE ((date >= $1) OR ($1 IS NULL))\n        AND ((date <= $2) OR ($2 IS NULL))\n        AND user_id = $3\n        and deleted_at is null",
   "describe": {
     "columns": [
       {
@@ -26,12 +26,18 @@
             "name": "expense_category",
             "kind": {
               "Enum": [
-                "food",
-                "transport",
-                "health",
-                "education",
+                "restaurants",
+                "shopping",
+                "services",
                 "entertainment",
-                "other"
+                "groceries",
+                "salary",
+                "interest Income",
+                "utilities",
+                "pharmacy",
+                "transfer",
+                "transport",
+                "others"
               ]
             }
           }
@@ -70,5 +76,5 @@
       false
     ]
   },
-  "hash": "5ef6dfd2c4975355144c235f0aa909fd5b01316daddb314d4e00dca3e11f044a"
+  "hash": "9dd2025bdc87c1f068851d68188fddcb23f779e6be43c91114cd9d033336b2f1"
 }

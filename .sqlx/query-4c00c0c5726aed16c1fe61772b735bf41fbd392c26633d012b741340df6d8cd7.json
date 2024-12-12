@@ -26,12 +26,18 @@
             "name": "expense_category",
             "kind": {
               "Enum": [
-                "food",
-                "transport",
-                "health",
-                "education",
+                "restaurants",
+                "shopping",
+                "services",
                 "entertainment",
-                "other"
+                "groceries",
+                "salary",
+                "interest Income",
+                "utilities",
+                "pharmacy",
+                "transfer",
+                "transport",
+                "others"
               ]
             }
           }
@@ -62,12 +68,18 @@
             "name": "expense_category",
             "kind": {
               "Enum": [
-                "food",
-                "transport",
-                "health",
-                "education",
+                "restaurants",
+                "shopping",
+                "services",
                 "entertainment",
-                "other"
+                "groceries",
+                "salary",
+                "interest Income",
+                "utilities",
+                "pharmacy",
+                "transfer",
+                "transport",
+                "others"
               ]
             }
           }

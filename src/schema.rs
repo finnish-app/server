@@ -11,13 +11,19 @@ use time::{macros::format_description, Date};
 #[sqlx(type_name = "expense_category", rename_all = "lowercase")]
 /// `ExpenseCategory` is an enum with the types of expenses.
 pub enum ExpenseCategory {
-    Food,
-    Transport,
-    Health,
-    Education,
+    Restaurants,
+    Shopping,
+    Services,
     Entertainment,
+    Groceries,
+    Salary,
+    InterestIncome,
+    Utilities,
+    Pharmacy,
+    Transfer,
+    Transport,
     #[default]
-    Other,
+    Others,
 }
 
 impl FromStr for ExpenseCategory {
@@ -25,12 +31,18 @@ impl FromStr for ExpenseCategory {
 
     fn from_str(str: &str) -> Result<Self, Self::Err> {
         match str {
-            "Food" => return Ok(Self::Food),
-            "Transport" => return Ok(Self::Transport),
-            "Health" => return Ok(Self::Health),
-            "Education" => return Ok(Self::Education),
+            "Restaurants" => return Ok(Self::Restaurants),
+            "Shopping" => return Ok(Self::Shopping),
+            "Services" => return Ok(Self::Services),
             "Entertainment" => return Ok(Self::Entertainment),
-            "Other" => return Ok(Self::Other),
+            "Groceries" => return Ok(Self::Groceries),
+            "Salary" => return Ok(Self::Salary),
+            "InterestIncome" => return Ok(Self::InterestIncome),
+            "Utilities" => return Ok(Self::Utilities),
+            "Pharmacy" => return Ok(Self::Pharmacy),
+            "Transfer" => return Ok(Self::Transfer),
+            "Transport" => return Ok(Self::Transport),
+            "Others" => return Ok(Self::Others),
             _ => return Err(format!("{str} is not a valid expense type")),
         }
     }
@@ -39,12 +51,18 @@ impl FromStr for ExpenseCategory {
 impl Display for ExpenseCategory {
     fn fmt(&self, fmtr: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Self::Food => return write!(fmtr, "Food"),
-            Self::Transport => return write!(fmtr, "Transport"),
-            Self::Health => return write!(fmtr, "Health"),
-            Self::Education => return write!(fmtr, "Education"),
+            Self::Restaurants => return write!(fmtr, "Restaurants"),
+            Self::Shopping => return write!(fmtr, "Shopping"),
+            Self::Services => return write!(fmtr, "Services"),
             Self::Entertainment => return write!(fmtr, "Entertainment"),
-            Self::Other => return write!(fmtr, "Other"),
+            Self::Groceries => return write!(fmtr, "Groceries"),
+            Self::Salary => return write!(fmtr, "Salary"),
+            Self::InterestIncome => return write!(fmtr, "InterestIncome"),
+            Self::Utilities => return write!(fmtr, "Utilities"),
+            Self::Pharmacy => return write!(fmtr, "Pharmacy"),
+            Self::Transfer => return write!(fmtr, "Transfer"),
+            Self::Transport => return write!(fmtr, "Transport"),
+            Self::Others => return write!(fmtr, "Others"),
         }
     }
 }

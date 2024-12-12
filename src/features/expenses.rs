@@ -1,6 +1,6 @@
 use plotly::{Layout, Plot, Scatter};
 use sqlx::PgPool;
-use std::collections::BTreeMap;
+use std::{cmp::Reverse, collections::BTreeMap};
 use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
@@ -35,7 +35,12 @@ pub async fn list_in_period(
     from: Option<Date>,
     to: Option<Date>,
 ) -> Result<Vec<crate::queries::expenses::Expense>, sqlx::Error> {
-    crate::queries::expenses::list_for_user_in_period(&db_pool, user_id, from, to).await
+    let mut expenses =
+        crate::queries::expenses::list_for_user_in_period(&db_pool, user_id, from, to).await?;
+
+    expenses.sort_unstable_by_key(|e| Reverse(e.date));
+
+    Ok(expenses)
 }
 
 pub async fn find_active_for_user(
@@ -199,7 +204,7 @@ mod tests {
         let create_expense = crate::schema::CreateExpense {
             description: "test_expense".to_owned(),
             price: 6.9,
-            category: crate::schema::ExpenseCategory::Food,
+            category: crate::schema::ExpenseCategory::Restaurants,
             is_essential: Some(false),
             date: now.date(),
         };
