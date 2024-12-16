@@ -160,7 +160,6 @@ pub async fn mfa_verify(
         Ok(app) => tracing::debug!("app: {:?}", app),
         Err(e) => {
             tracing::error!("Error creating svix app for user: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     }
 
