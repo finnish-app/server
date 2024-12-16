@@ -49,7 +49,7 @@ pub async fn signin(
     )
     .await
     {
-        tracing::error!("Error verifying frc solution: {}", e);
+        tracing::error!(%e, "Error verifying frc solution");
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Html("<p style=\"color:red;\">Error verifying captcha</p>"),
@@ -104,7 +104,7 @@ pub async fn mfa_qr(
     let totp = set_otp_secret(db_pool, user.id, user.email)
         .await
         .map_err(|e| {
-            tracing::error!(?user.id, "Error setting OTP secret: {e}");
+            tracing::error!(?user.id, ?e, "Error setting OTP secret");
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         })?;
 
@@ -150,7 +150,7 @@ pub async fn mfa_verify(
             }
         }
         Err(e) => {
-            tracing::error!("Error verifying MFA token: {}", e);
+            tracing::error!(?e, "Error verifying MFA token");
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     }
@@ -159,7 +159,7 @@ pub async fn mfa_verify(
     match create_user_app(&env.svix_api_key, user.id).await {
         Ok(app) => tracing::debug!("app: {:?}", app),
         Err(e) => {
-            tracing::error!("Error creating svix app for user: {}", e);
+            tracing::error!(?e, "Error creating svix app for user");
         }
     }
 
@@ -189,7 +189,7 @@ pub async fn mfa_verify(
         }
         Err(e) => {
             transaction.rollback().await.unwrap();
-            tracing::error!("Error updating db: {}", e);
+            tracing::error!(?e, "Error updating db");
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     }
@@ -245,7 +245,7 @@ pub async fn resend_verification_email(
     )
     .await
     {
-        tracing::error!("Error verifying frc solution: {}", e);
+        tracing::error!(%e, "Error verifying frc solution");
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Html("<p style=\"color:red;\">Error verifying captcha</p>"),
@@ -254,7 +254,7 @@ pub async fn resend_verification_email(
     }
 
     if let Err(e) = resend_email.validate() {
-        tracing::error!("Error validating signup input: {}", e);
+        tracing::error!(?e, "Error validating signup input");
         return StatusCode::BAD_REQUEST.into_response();
     }
 
@@ -306,12 +306,12 @@ pub async fn resend_verification_email(
             }
             Err(e) => {
                 transaction.rollback().await.unwrap();
-                tracing::error!("Error resending verification mail: {}", e);
+                tracing::error!(?e, "Error resending verification mail");
             }
         },
         Err(e) => {
             transaction.rollback().await.unwrap();
-            tracing::error!("Error updating verification code and expiration in db: {}", e);
+            tracing::error!(?e, "Error updating verification code and expiration in db");
         }
     }
 
@@ -387,7 +387,7 @@ pub async fn verify_email(db_pool: &PgPool, env: &Env, token: String) -> impl In
             }
         }
         Err(e) => {
-            tracing::error!("Error verifying email: {}", e);
+            tracing::error!(?e, "Error verifying email");
             let nonce = generate_otp_token();
             let nonce_str = format!("'nonce-{nonce}'");
 
@@ -411,7 +411,7 @@ pub async fn verify_email(db_pool: &PgPool, env: &Env, token: String) -> impl In
 }
 
 fn return_error_from_email_verification(e: &sqlx::Error, frc_sitekey: String) -> Response<Body> {
-    tracing::error!("Error updating db: {}", e);
+    tracing::error!(?e, "Error updating db");
     let nonce = generate_otp_token();
     let nonce_str = format!("'nonce-{nonce}'");
 
@@ -450,7 +450,7 @@ pub async fn change_password(
     };
 
     if let Err(e) = change_password_input.validate() {
-        tracing::error!("Error validating change password input: {}", e);
+        tracing::error!(?e, "Error validating change password input");
         return StatusCode::BAD_REQUEST.into_response();
     }
 
@@ -514,7 +514,7 @@ pub async fn forgot_password(
     )
     .await
     {
-        tracing::error!("Error verifying frc solution: {}", e);
+        tracing::error!(%e, "Error verifying frc solution");
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Html("<p style=\"color:red;\">Error verifying captcha</p>"),
@@ -523,7 +523,7 @@ pub async fn forgot_password(
     }
 
     if let Err(e) = email_input.validate() {
-        tracing::error!("Error validating forgot_password input: {}", e);
+        tracing::error!(?e, "Error validating forgot_password input");
         return StatusCode::BAD_REQUEST.into_response();
     }
 
@@ -546,7 +546,7 @@ pub async fn forgot_password(
             }
         }
         Err(e) => {
-            tracing::error!("Error checking if user with email exists: {}", e);
+            tracing::error!(?e, "Error checking if user with email exists");
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
@@ -578,12 +578,12 @@ pub async fn forgot_password(
             }
             Err(e) => {
                 transaction.rollback().await.unwrap();
-                tracing::error!("Error resending forgot password mail: {}", e);
+                tracing::error!(?e, "Error resending forgot password mail");
             }
         },
         Err(e) => {
             transaction.rollback().await.unwrap();
-            tracing::error!("Error updating verification code and expiration in db: {}", e);
+            tracing::error!(?e, "Error updating verification code and expiration in db");
         }
     }
 
@@ -636,7 +636,7 @@ pub async fn change_forgotten_password(
                         .into_response();
                 }
                 Err(e) => {
-                    tracing::error!("Error updating db: {}", e);
+                    tracing::error!(?e, "Error updating db");
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
@@ -645,7 +645,7 @@ pub async fn change_forgotten_password(
             }
         }
         Err(e) => {
-            tracing::error!("Error changing forgotten password: {}", e);
+            tracing::error!(?e, "Error changing forgotten password");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Html("<p style=\"color:red;\">Error changing forgotten password</p>"),
