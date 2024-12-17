@@ -1,20 +1,19 @@
-use sqlx::{postgres::PgQueryResult, Error, Pool, Postgres};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub async fn add_item(
-    db_pool: &Pool<Postgres>,
+    db_pool: PgPool,
     user_id: i32,
     item_id: Uuid,
     now: OffsetDateTime,
-) -> Result<PgQueryResult, Error> {
-    sqlx::query!(
-        r#"INSERT INTO pluggy_items (user_id, external_item_id, created_at)
-    VALUES ($1, $2, $3)"#,
-        user_id,
-        item_id,
-        now
-    )
-    .execute(db_pool)
-    .await
+) -> Result<(), sqlx::Error> {
+    crate::queries::pluggy_items::create(&db_pool, user_id, item_id, now)
+        .await
+        .map(|c| {
+            if c.rows_affected() > 1 {
+                tracing::error!("i really need a macro that cancels the transaction");
+            }
+            Ok(())
+        })?
 }

@@ -76,22 +76,36 @@ async fn connect_success(
         panic!("user not logged in")
     };
 
-    match crate::features::openfinance::add_item(
-        &shared_state.pool,
-        user.id,
-        pluggyconnect_request.item_id,
-        OffsetDateTime::now_utc(),
-    )
-    .await
-    {
-        Ok(r) => {
-            assert!(r.rows_affected() < 2);
-            StatusCode::CREATED
+    let maybe_item_id =
+        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
+        {
+            Ok(res) => res.map(|i| i.external_item_id),
+            Err(e) => {
+                tracing::error!(user.id, ?e, "error finding latest item_id for user");
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        };
+    if let Some(item_id) = maybe_item_id {
+        if item_id == pluggyconnect_request.item_id {
+            StatusCode::OK
+        } else {
+            tracing::error!(user.id, "updated not latest item_id?");
+            StatusCode::PRECONDITION_FAILED
         }
-
-        Err(e) => {
-            tracing::error!(?e, user.id, "error receiving pluggy connect item_id");
-            StatusCode::INTERNAL_SERVER_ERROR
+    } else {
+        match crate::features::openfinance::add_item(
+            shared_state.pool.clone(),
+            user.id,
+            pluggyconnect_request.item_id,
+            OffsetDateTime::now_utc(),
+        )
+        .await
+        {
+            Ok(()) => StatusCode::CREATED,
+            Err(e) => {
+                tracing::error!(?e, user.id, "error receiving pluggy connect item_id");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 }
