@@ -133,6 +133,7 @@ pub async fn list_accounts(api_key: &str, item_id: &Uuid) -> anyhow::Result<List
         .await?;
 
     if !(matches!(resp.status(), StatusCode::OK)) {
+        tracing::error!("received non OK status code");
         bail!("unexpected status code returned from list accounts")
     }
 

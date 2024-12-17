@@ -186,7 +186,11 @@ pub async fn list_transactions(
         StatusCode::OK => resp.json().await?,
         StatusCode::BAD_REQUEST => return Ok(ListTransactionsOutcome::Missing),
         StatusCode::INTERNAL_SERVER_ERROR => return Ok(ListTransactionsOutcome::Internal),
-        _ => bail!("unknown error: {}", resp.text().await?),
+        _ => {
+            let res = resp.text().await?;
+            tracing::error!(?res, "received unexpected error from list transactions");
+            bail!("unknown error: {}", res)
+        }
     };
 
     Ok(ListTransactionsOutcome::Success(transactions))

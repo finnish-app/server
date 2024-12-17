@@ -1,3 +1,4 @@
+use anyhow::Context;
 use plotly::{Layout, Plot, Scatter};
 use sqlx::PgPool;
 use std::{cmp::Reverse, collections::BTreeMap};
@@ -37,12 +38,14 @@ pub async fn process_pluggy_expenses(
     let Some(item_id) =
         crate::queries::pluggy_items::find_latest_for_user(&db_pool, user_id).await?
     else {
+        tracing::error!("aaaaaaa should create pluggy item");
         todo!("create pluggy item")
     };
 
     let accounts =
         crate::client::pluggy::account::list_accounts(pluggy_api_key, &item_id.external_item_id)
-            .await?
+            .await
+            .context("failed to list accounts from pluggy api")?
             .results;
 
     for account in accounts {
@@ -59,8 +62,10 @@ pub async fn process_pluggy_expenses(
                     .map(|t| t.date - time::Duration::days(1))
                     .as_ref(),
             )
-            .await?
+            .await
+            .context("failed to list accounts from pluggy api")?
         else {
+            tracing::error!("don't know yet");
             panic!("don't know yet")
         };
 
