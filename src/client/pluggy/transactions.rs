@@ -118,7 +118,7 @@ enum AcquirerType {
 struct CreditCardMetadata {
     installment_number: i32,
     total_installments: i32,
-    total_amount: i32,
+    total_amount: Option<i32>,
     #[serde(with = "time::serde::iso8601")]
     purchase_date: OffsetDateTime,
     payee_mcc: Option<String>,
