@@ -182,16 +182,24 @@ pub async fn list_transactions(
         .send()
         .await?;
 
-    let transactions: ListTransactionsResponse = match resp.status() {
-        StatusCode::OK => resp.json().await?,
+    match resp.status() {
+        StatusCode::OK => (),
         StatusCode::BAD_REQUEST => return Ok(ListTransactionsOutcome::Missing),
         StatusCode::INTERNAL_SERVER_ERROR => return Ok(ListTransactionsOutcome::Internal),
         _ => {
-            let res = resp.text().await?;
-            tracing::error!(?res, "received unexpected error from list transactions");
-            bail!("unknown error: {}", res)
+            bail!("received unexpected status code from list transactions")
         }
     };
+
+    let bytes = resp.bytes().await?;
+    let transactions: ListTransactionsResponse = serde_json::from_slice(&bytes).map_err(|e| {
+        tracing::error!(
+            ?e,
+            ?bytes,
+            "error deserializing transactions list from pluggy"
+        );
+        e
+    })?;
 
     Ok(ListTransactionsOutcome::Success(transactions))
 }
