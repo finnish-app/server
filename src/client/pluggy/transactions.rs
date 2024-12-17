@@ -119,10 +119,10 @@ struct CreditCardMetadata {
     installment_number: i32,
     total_installments: i32,
     total_amount: Option<i32>,
-    #[serde(with = "time::serde::iso8601")]
-    purchase_date: OffsetDateTime,
+    #[serde(default, with = "time::serde::iso8601::option")]
+    purchase_date: Option<OffsetDateTime>,
     payee_mcc: Option<String>,
-    card_number: String,
+    card_number: Option<String>,
     bill_id: String,
 }
 
