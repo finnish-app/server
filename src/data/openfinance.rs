@@ -23,6 +23,11 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/api/refresh-transactions", get(refresh_transactions))
 }
 
+#[derive(Deserialize)]
+struct ConnectTokenRequest {
+    maybe_item_id: Option<Uuid>,
+}
+
 #[derive(Serialize)]
 struct ConnectTokenResponse {
     connect_token: String,
@@ -31,6 +36,7 @@ struct ConnectTokenResponse {
 async fn connect_token(
     auth_session: AuthSession,
     State(shared_state): State<Arc<AppState>>,
+    Query(pluggyconnect_request): Query<ConnectTokenRequest>,
 ) -> Result<Json<ConnectTokenResponse>, StatusCode> {
     use crate::client::pluggy::auth::CreateConnectTokenOutcome;
 
@@ -38,21 +44,11 @@ async fn connect_token(
         panic!("user not logged in")
     };
 
-    let maybe_item_id =
-        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
-        {
-            Ok(res) => res.map(|i| i.external_item_id),
-            Err(e) => {
-                tracing::error!(user.id, ?e, "error finding latest item_id for user");
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-
     match crate::client::pluggy::auth::create_connect_token(
         &shared_state.pluggy_api_key.lock().await,
         "https://webhook.fina.center".to_owned(),
         user.id,
-        maybe_item_id,
+        pluggyconnect_request.maybe_item_id,
     )
     .await
     {
@@ -77,6 +73,7 @@ async fn connect_token(
 #[derive(Deserialize)]
 struct ConnectRequest {
     item_id: Uuid,
+    connector_name: String,
 }
 
 async fn connect_success(
@@ -88,27 +85,46 @@ async fn connect_success(
         panic!("user not logged in")
     };
 
-    let maybe_item_id =
-        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
-        {
-            Ok(res) => res.map(|i| i.external_item_id),
-            Err(e) => {
-                tracing::error!(user.id, ?e, "error finding latest item_id for user");
-                return StatusCode::INTERNAL_SERVER_ERROR;
-            }
-        };
+    let maybe_item_id = match crate::queries::pluggy_items::find_item(
+        &shared_state.pool,
+        user.id,
+        pluggyconnect_request.item_id,
+    )
+    .await
+    {
+        Ok(res) => res.map(|i| i.id),
+        Err(e) => {
+            tracing::error!(user.id, ?e, "error finding item_id for user");
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    };
+
     if let Some(item_id) = maybe_item_id {
-        if item_id == pluggyconnect_request.item_id {
-            StatusCode::OK
-        } else {
-            tracing::error!(user.id, "updated not latest item_id?");
-            StatusCode::PRECONDITION_FAILED
+        match crate::queries::pluggy_items::updated(
+            &shared_state.pool,
+            user.id,
+            item_id,
+            OffsetDateTime::now_utc(),
+        )
+        .await
+        {
+            Ok(c) => {
+                if c.rows_affected() > 1 {
+                    tracing::error!("i really need a macro that cancels the transaction");
+                }
+                StatusCode::OK
+            }
+            Err(e) => {
+                tracing::error!(?e, user.id, "error updating pluggy connect item");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     } else {
         match crate::features::openfinance::add_item(
             shared_state.pool.clone(),
             user.id,
             pluggyconnect_request.item_id,
+            pluggyconnect_request.connector_name,
             OffsetDateTime::now_utc(),
         )
         .await

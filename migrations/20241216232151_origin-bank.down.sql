@@ -1,6 +1,7 @@
 BEGIN;
--- ALTER TABLE pluggy_items
---     DROP COLUMN last_updated_at;
+ALTER TABLE pluggy_items
+    DROP COLUMN connector_name,
+    DROP COLUMN last_updated_at;
 ALTER TABLE expenses
     ALTER COLUMN category SET NOT NULL;
 ALTER TABLE expenses

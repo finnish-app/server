@@ -31,7 +31,7 @@ pub struct Transaction {
     pub date: OffsetDateTime,
     /// Category of the transaction (e.g. Restaurants, Education).
     /// See the Transaction Categorization section in our guides.
-    pub category: String,
+    pub category: Option<String>,
     /// Id of the transaction category.
     /// Can be used to identify the category in the Categories endpoint
     category_id: Option<String>,

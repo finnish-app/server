@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT DISTINCT ON (connector_name)\n        external_item_id,\n        connector_name\n        FROM\n            pluggy_items\n        WHERE\n            user_id = $1\n        ORDER BY\n            connector_name,\n            created_at DESC;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "external_item_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "connector_name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e241cced3064c9233118b0c2ea4b99dd6aaa7f971bf08499f06ea574ee321ae2"
+}
