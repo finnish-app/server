@@ -12,13 +12,13 @@ pub struct ListAccountsResponse {
     page: i16,
     total_pages: i16,
     /// List of retrieved accounts
-    results: Vec<Account>,
+    pub results: Vec<Account>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
-    id: Uuid,
+    pub id: Uuid,
     #[serde(rename = "type")]
     acc_type: AccountType,
     subtype: AccountSubType,

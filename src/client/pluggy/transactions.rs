@@ -5,33 +5,33 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ListTransactionsResponse {
     total: i16,
     page: i16,
     total_pages: i16,
     /// List of retrieved transactions
-    results: Vec<Transaction>,
+    pub results: Vec<Transaction>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
-    id: Uuid,
-    description: String,
+    pub id: Uuid,
+    pub description: String,
     description_raw: Option<String>,
     currency_code: String,
-    amount: f32,
+    pub amount: f32,
     /// Transaction amount in Account's Currency.
     /// Only present if the transaction is in a different currency
     /// than the account's currency
     amount_in_account_currency: Option<f32>,
     #[serde(with = "time::serde::iso8601")]
-    date: OffsetDateTime,
+    pub date: OffsetDateTime,
     /// Category of the transaction (e.g. Restaurants, Education).
     /// See the Transaction Categorization section in our guides.
-    category: String,
+    pub category: String,
     /// Id of the transaction category.
     /// Can be used to identify the category in the Categories endpoint
     category_id: Option<String>,
@@ -42,9 +42,9 @@ pub struct Transaction {
     /// Institution provided code
     provider_code: Option<String>,
     status: TransactionStatus,
-    account_id: Uuid,
+    pub account_id: Uuid,
     #[serde(default, with = "time::serde::iso8601::option")]
-    created_at: Option<OffsetDateTime>,
+    pub created_at: Option<OffsetDateTime>,
     #[serde(default, with = "time::serde::iso8601::option")]
     updated_at: Option<OffsetDateTime>,
     payment_data: Option<PaymentData>,
@@ -53,7 +53,7 @@ pub struct Transaction {
     merchant: Option<Merchant>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PaymentData {
     payer: PayerOrReceiver,
@@ -64,21 +64,21 @@ struct PaymentData {
     payment_method: PaymentMethod,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum DocumentType {
     Cpf,
     Cnpj,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct DocumentNumber {
     #[serde(rename = "type")]
     document_type: DocumentType,
     value: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PayerOrReceiver {
     document_number: DocumentNumber,
@@ -89,7 +89,7 @@ struct PayerOrReceiver {
     routing_number_ispb: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum PaymentMethod {
     Ted,
@@ -98,13 +98,13 @@ enum PaymentMethod {
     Tev,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct AcquirerData {
     #[serde(rename = "type")]
     acquirer_type: AcquirerType,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum AcquirerType {
     Sale,
@@ -113,7 +113,7 @@ enum AcquirerType {
     Chargeback,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct CreditCardMetadata {
     installment_number: i32,
@@ -126,7 +126,7 @@ struct CreditCardMetadata {
     bill_id: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Merchant {
     name: String,
@@ -136,14 +136,14 @@ struct Merchant {
     category: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum TransactionStatus {
     Posted,
     Pending,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum TransactionType {
     Debit,
