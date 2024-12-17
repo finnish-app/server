@@ -29,13 +29,42 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/expenses/:uuid", get(find).put(update).delete(delete))
         .route("/expenses/plots", get(plots))
         .route("/expenses/pluggy-widget", get(pluggy_widget))
+        .route(
+            "/expenses/update-connection/:uuid",
+            get(pluggy_widget_update),
+        )
 }
 
-async fn expenses_index(auth_session: AuthSession) -> impl IntoResponse {
+async fn expenses_index(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> impl IntoResponse {
     match auth_session.user {
-        Some(user) => ExpensesTemplate {
-            username: user.username,
-            ..Default::default()
+        Some(user) => {
+            let item_ids = match crate::queries::pluggy_items::find_latests_for_user(
+                &shared_state.pool,
+                user.id,
+            )
+            .await
+            {
+                Ok(ids) => ids,
+                Err(e) => {
+                    tracing::error!(?e, "database error on find latest user item_id");
+                    Vec::new()
+                }
+            };
+
+            ExpensesTemplate {
+                username: user.username,
+                connections: item_ids
+                    .into_iter()
+                    .map(|i| crate::templates::PluggyConnections {
+                        id: i.external_item_id,
+                        name: i.connector_name,
+                    })
+                    .collect(),
+                ..Default::default()
+            }
         }
         .into_response_with_nonce(),
         None => StatusCode::UNAUTHORIZED.into_response(),
@@ -307,9 +336,23 @@ async fn pluggy_widget(
 ) -> impl IntoResponse {
     crate::hypermedia::service::pluggy::widget(
         auth_session,
-        shared_state.pool.clone(),
         &shared_state.env,
         &shared_state.pluggy_api_key.lock().await,
+        None,
+    )
+    .await
+}
+
+async fn pluggy_widget_update(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+    Path(uuid): Path<Uuid>,
+) -> impl IntoResponse {
+    crate::hypermedia::service::pluggy::widget(
+        auth_session,
+        &shared_state.env,
+        &shared_state.pluggy_api_key.lock().await,
+        Some(uuid),
     )
     .await
 }

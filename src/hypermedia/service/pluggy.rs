@@ -10,13 +10,12 @@ use crate::{
 
 use askama_axum::IntoResponse;
 use axum::http::StatusCode;
-use sqlx::PgPool;
 
 pub async fn widget(
     auth_session: AuthSession,
-    db_pool: PgPool,
     env: &Env,
     pluggy_api_key: &str,
+    maybe_item_id: Option<uuid::Uuid>,
 ) -> impl IntoResponse {
     let Some(user) = auth_session.user else {
         return (StatusCode::UNAUTHORIZED, [("HX-Redirect", "/auth/signin")]).into_response();
@@ -35,19 +34,6 @@ pub async fn widget(
             "https://fina.requestcatcher.com/test".to_owned()
         }
     };
-
-    let maybe_item_id =
-        match crate::queries::pluggy_items::find_latest_for_user(&db_pool, user.id).await {
-            Ok(id) => id.map(|i| i.external_item_id),
-            Err(e) => {
-                tracing::error!(?e, "database error on find latest user item_id");
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    PluggyWidgetModalErrorTemplate {},
-                )
-                    .into_response();
-            }
-        };
 
     let connect_token =
         match create_connect_token(pluggy_api_key, webhook_url, user.id, maybe_item_id).await {
