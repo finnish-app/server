@@ -11,7 +11,10 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ item_id: itemData.item.id })
+                body: JSON.stringify({
+                    item_id: itemData.item.id,
+                    connector_name: itemData.item.connector.name
+                })
             })
                 .then(response => response.json())
                 .then(data => {

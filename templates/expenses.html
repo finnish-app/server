@@ -19,11 +19,23 @@
 <section class="section" id="openfinance">
 <div hx-ext="response-targets">
     <div id="response-div"></div>
-    <button hx-get="/expenses/pluggy-widget"
-            hx-target-error="#pluggy-modal-here" 
-    >
-        Sync with Pluggy
-    </button>
+        <div class="grid">
+            <button hx-get="/expenses/pluggy-widget"
+                    hx-target-error="#pluggy-modal-here" 
+            >
+                Add Pluggy Connection
+            </button>
+
+            <div id="existing-connections">
+                {% for connection in connections %}
+                <button 
+                    hx-get="/expenses/update-connection/{{ connection.id }}"
+                    hx-target-error="#pluggy-modal-here">
+                    Update {{ connection.name }}
+                </button>
+                {% endfor %}
+            </div>
+        <div class="grid">
     <div id="pluggy-modal-here" _="on toggleModal toggle @open on #pluggy-widget-error-modal"></div>
 </div>
 </section>

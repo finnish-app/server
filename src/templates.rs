@@ -9,6 +9,11 @@ use strum::IntoEnumIterator;
 use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
+pub struct PluggyConnections {
+    pub id: Uuid,
+    pub name: String,
+}
+
 #[derive(Template)]
 #[template(path = "expenses.html")]
 /// The askama template for the expenses page.
@@ -19,6 +24,7 @@ pub struct ExpensesTemplate {
     pub username: String,
     /// CSP nonce
     pub nonce: String,
+    pub connections: Vec<PluggyConnections>,
 }
 
 impl Default for ExpensesTemplate {
@@ -27,6 +33,7 @@ impl Default for ExpensesTemplate {
             expense_categories: ExpenseCategory::iter(),
             username: String::new(),
             nonce: String::new(),
+            connections: Vec::new(),
         };
     }
 }
@@ -42,6 +49,7 @@ impl ExpensesTemplate {
             expense_categories: self.expense_categories,
             username: self.username,
             nonce,
+            connections: self.connections,
         }
         .into_response();
 
