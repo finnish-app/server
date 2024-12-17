@@ -156,9 +156,14 @@ mod tests {
             unreachable!()
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
-            .await
-            .unwrap();
+        let outcome = create_connect_token(
+            &api_key.api_key,
+            "https://testwebhook.com".to_owned(),
+            1,
+            None,
+        )
+        .await
+        .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Success(_)));
     }
 
@@ -168,9 +173,14 @@ mod tests {
             api_key: "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcyMDQ4MzM5MCwiaWF0IjoxNzIwNDgzMzkwfQ.g_hft2ZzWndL2RFVXOGSx6yym-NApxB8QX0DX7WYs38".to_owned()
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
-            .await
-            .unwrap();
+        let outcome = create_connect_token(
+            &api_key.api_key,
+            "https://testwebhook.com".to_owned(),
+            1,
+            None,
+        )
+        .await
+        .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Forbidden));
     }
 
@@ -180,9 +190,14 @@ mod tests {
             api_key: String::new(),
         };
 
-        let outcome = create_connect_token(&api_key.api_key, "testwebhook".to_owned(), 1)
-            .await
-            .unwrap();
+        let outcome = create_connect_token(
+            &api_key.api_key,
+            "https://testwebhook.com".to_owned(),
+            1,
+            None,
+        )
+        .await
+        .unwrap();
         assert!(matches!(outcome, CreateConnectTokenOutcome::Forbidden));
     }
 }
