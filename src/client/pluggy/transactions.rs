@@ -56,12 +56,12 @@ pub struct Transaction {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PaymentData {
-    payer: PayerOrReceiver,
+    payer: Option<PayerOrReceiver>,
     receiver: PayerOrReceiver,
     reason: Option<String>,
-    reference_number: String,
+    reference_number: Option<String>,
     receiver_reference_id: Option<String>,
-    payment_method: PaymentMethod,
+    payment_method: Option<PaymentMethod>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
