@@ -88,6 +88,7 @@ pub struct Expense {
     pub is_essential: bool,
     pub date: Date,
     pub uuid: Uuid,
+    pub bank_source: Option<String>,
 }
 
 pub async fn list_for_user_in_period(
@@ -98,7 +99,7 @@ pub async fn list_for_user_in_period(
 ) -> Result<Vec<Expense>, sqlx::Error> {
     sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid, bank_source
         FROM expenses
         WHERE ((date >= $1) OR ($1 IS NULL))
         AND ((date <= $2) OR ($2 IS NULL))
@@ -119,7 +120,7 @@ pub async fn find_active_for_user(
 ) -> Result<Expense, sqlx::Error> {
     sqlx::query_as!(
         Expense,
-        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        r#"SELECT id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid, bank_source
         FROM expenses
         WHERE uuid = $1 AND user_id = $2
         and deleted_at is null
@@ -203,7 +204,7 @@ pub async fn update_for_site(
             date = COALESCE($5, date)
         WHERE uuid = $6 AND user_id = $7
         and deleted_at is null
-        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid
+        RETURNING id, description, price, category as "category: ExpenseCategory", is_essential, date, uuid, bank_source
         "#,
         p.description,
         p.price,
