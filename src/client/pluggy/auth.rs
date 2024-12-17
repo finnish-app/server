@@ -43,14 +43,16 @@ pub async fn create_api_key(
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CreateConnectTokenParams {
-    item_id: String,
+    item_id: Option<String>,
     options: CreateConnectTokenOptions,
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CreateConnectTokenOptions {
-    client_user_id: i32,
+    client_user_id: String,
     webhook_url: String,
     avoid_duplicates: bool,
 }
@@ -72,16 +74,17 @@ pub async fn create_connect_token(
     api_key: &str,
     webhook_url: String,
     user_id: i32,
+    update_item_id: Option<uuid::Uuid>,
 ) -> anyhow::Result<CreateConnectTokenOutcome> {
     let mut headers = HeaderMap::new();
     let api_key_hdr_value = HeaderValue::from_str(api_key)?;
     headers.insert(HeaderName::from_static("x-api-key"), api_key_hdr_value);
 
     let params = CreateConnectTokenParams {
-        item_id: "TODO".to_owned(),
+        item_id: update_item_id.map(|i| i.to_string()),
         options: CreateConnectTokenOptions {
-            client_user_id: user_id,
-            avoid_duplicates: false,
+            client_user_id: user_id.to_string(),
+            avoid_duplicates: true,
             webhook_url,
         },
     };

@@ -37,10 +37,21 @@ async fn connect_token(
         panic!("user not logged in")
     };
 
+    let maybe_item_id =
+        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
+        {
+            Ok(res) => res.map(|i| i.external_item_id),
+            Err(e) => {
+                tracing::error!(user.id, ?e, "error finding latest item_id for user");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
     match crate::client::pluggy::auth::create_connect_token(
         &shared_state.pluggy_api_key.lock().await,
         "webhook".to_owned(),
         user.id,
+        maybe_item_id,
     )
     .await
     {

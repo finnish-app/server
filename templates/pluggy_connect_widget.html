@@ -1,6 +1,7 @@
 <script type="text/javascript">
     const pluggyConnect = new PluggyConnect({
         connectToken: "{{ access_token }}",
+        updateItem: "{{ item_id }}",
         includeSandbox: true,
         theme: 'dark',
         onSuccess: (itemData) => {
