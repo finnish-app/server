@@ -38,7 +38,7 @@ pub struct Transaction {
     #[serde(rename = "type")]
     tx_type: TransactionType,
     /// Balance after the transaction
-    balance: f32,
+    balance: Option<f32>,
     /// Institution provided code
     provider_code: Option<String>,
     status: TransactionStatus,
