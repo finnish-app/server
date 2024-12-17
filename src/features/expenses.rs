@@ -35,73 +35,77 @@ pub async fn process_pluggy_expenses(
     db_pool: PgPool,
     pluggy_api_key: &str,
 ) -> anyhow::Result<()> {
-    let Some(item_id) =
-        crate::queries::pluggy_items::find_latest_for_user(&db_pool, user_id).await?
-    else {
-        tracing::error!("aaaaaaa should create pluggy item");
-        todo!("create pluggy item")
-    };
-
-    let accounts =
-        crate::client::pluggy::account::list_accounts(pluggy_api_key, &item_id.external_item_id)
-            .await
-            .context("failed to list accounts from pluggy api")?
-            .results;
-
-    for account in accounts {
-        let most_recent =
-            crate::queries::expenses::most_recent_for_account(&db_pool, user_id, account.id)
-                .await?;
-
-        let crate::client::pluggy::transactions::ListTransactionsOutcome::Success(res) =
-            crate::client::pluggy::transactions::list_transactions(
-                pluggy_api_key,
-                &account.id,
-                most_recent
-                    .as_ref()
-                    .map(|t| t.date - time::Duration::days(1))
-                    .as_ref(),
-            )
-            .await
-            .context("failed to list accounts from pluggy api")?
-        else {
-            tracing::error!("don't know yet");
-            panic!("don't know yet")
+    let item_ids =
+        match crate::queries::pluggy_items::find_latests_for_user(&db_pool, user_id).await {
+            Ok(ids) => ids,
+            Err(e) => {
+                tracing::error!(?e, "database error on find latest user item_id");
+                Vec::new()
+            }
         };
 
-        let transactions = res.results;
-        tracing::info!("current transactions: {transactions:#?}");
+    for item in item_ids {
+        let accounts =
+            crate::client::pluggy::account::list_accounts(pluggy_api_key, &item.external_item_id)
+                .await
+                .context("failed to list accounts from pluggy api")?
+                .results;
 
-        for transaction in transactions {
-            if let Some(recent_timestamps) = most_recent.as_ref() {
-                if transaction.created_at <= recent_timestamps.external_created_at {
-                    tracing::debug!(
-                        ?user_id,
-                        ?transaction.id,
-                        ?transaction.created_at,
-                        ?recent_timestamps.external_created_at,
-                        "skipped inserting already inserted transaction"
-                    );
-                    continue;
-                }
-            }
+        for account in accounts {
+            let most_recent =
+                crate::queries::expenses::most_recent_for_account(&db_pool, user_id, account.id)
+                    .await?;
 
-            let params = crate::queries::expenses::CreateParamsFromPluggy {
-                description: transaction.description,
-                price: transaction.amount,
-                category: None,
-                bank: Some("bank".to_owned()),
-                external_account_id: transaction.account_id,
-                external_id: transaction.id,
-                external_created_at: transaction.created_at,
-                is_essential: false,
-                date: transaction.date.date(),
-                now: OffsetDateTime::now_utc(),
+            let crate::client::pluggy::transactions::ListTransactionsOutcome::Success(res) =
+                crate::client::pluggy::transactions::list_transactions(
+                    pluggy_api_key,
+                    &account.id,
+                    most_recent
+                        .as_ref()
+                        .map(|t| t.date - time::Duration::days(1))
+                        .as_ref(),
+                )
+                .await
+                .context("failed to list transactions from pluggy api")?
+            else {
+                tracing::error!("don't know yet");
+                panic!("don't know yet")
             };
-            let res =
-                crate::queries::expenses::insert_from_pluggy(&db_pool, user_id, params).await?;
-            if res.rows_affected() > 1 {
-                tracing::error!("i really need a macro that cancels the transaction");
+
+            let transactions = res.results;
+            tracing::info!("current transactions: {transactions:#?}");
+
+            for transaction in transactions {
+                if let Some(recent_timestamps) = most_recent.as_ref() {
+                    if transaction.created_at <= recent_timestamps.external_created_at {
+                        tracing::debug!(
+                            ?user_id,
+                            ?transaction.id,
+                            ?transaction.created_at,
+                            ?recent_timestamps.external_created_at,
+                            "skipped inserting already inserted transaction"
+                        );
+                        continue;
+                    }
+                }
+
+                let params = crate::queries::expenses::CreateParamsFromPluggy {
+                    description: transaction.description,
+                    price: transaction.amount,
+                    category: None,
+                    bank: Some("bank".to_owned()),
+                    external_account_id: transaction.account_id,
+                    external_id: transaction.id,
+                    external_created_at: transaction.created_at,
+                    is_essential: false,
+                    date: transaction.date.date(),
+                    now: OffsetDateTime::now_utc(),
+                };
+                let res =
+                    crate::queries::expenses::insert_from_pluggy(&db_pool, user_id, params).await?;
+                if res.rows_affected() > 1 {
+                    tracing::error!("i really need a macro that cancels the transaction");
+                }
             }
         }
     }
