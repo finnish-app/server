@@ -7,6 +7,7 @@ mod hypermedia;
 mod queries;
 /// Module containing the database schemas and i/o schemas for hypermedia and data apis.
 mod schema;
+mod tasks;
 /// Module containing the askama html templates to be rendered.
 mod templates;
 /// Module containing time and crypto utility functions.
@@ -134,12 +135,6 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("couldn't migrate session store")?;
 
-    let deletion_task = tokio::task::spawn(
-        session_store
-            .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
-
     let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
         client::pluggy::auth::create_api_key(&env.pluggy_client_id, &env.pluggy_client_secret)
             .await?
@@ -154,20 +149,42 @@ async fn main() -> anyhow::Result<()> {
         pluggy_api_key,
     });
 
-    let renew_pluggy = renew_pluggy_task(
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
+    let renew_pluggy = tasks::renew_pluggy_task(
         shared_state.pluggy_api_key.clone(),
         shared_state.env.pluggy_client_id.clone(),
         shared_state.env.pluggy_client_secret.clone(),
     );
+    let categorize_transactions_task =
+        tasks::categorize_transactions_task(shared_state.pool.clone());
 
     tracing::info!("Server started");
-    let rest = rest(shared_state.clone(), session_store);
-    rest.await??;
 
-    tracing::info!("Starting deletion task"); // message won't show
-    deletion_task.await??;
-
-    renew_pluggy.await??;
+    tokio::select! {
+        rest_result = rest(shared_state.clone(), session_store) => {
+            rest_result??;
+        }
+        deletio_result = deletion_task => {
+            if let Err(e) = deletio_result {
+                tracing::error!(?e, "session deletion task failed");
+            }
+        }
+        renew_result = renew_pluggy => {
+            if let Err(e) = renew_result {
+                tracing::error!(?e, "Pluggy renewal task failed");
+            }
+        }
+        categorize_result = categorize_transactions_task => {
+            if let Err(e) = categorize_result {
+                tracing::error!(?e, "Transaction categorization task failed");
+            }
+        }
+    }
 
     logger_provider.shutdown()?;
     Ok(())
@@ -271,30 +288,6 @@ fn rest(
         let outcome = server.await;
         tracing::info!("REST went bye bye.");
         outcome.context("server")
-    })
-}
-
-fn renew_pluggy_task(
-    pluggy_api_key: Arc<tokio::sync::Mutex<String>>,
-    pluggy_client_id: String,
-    pluggy_client_secret: String,
-) -> tokio::task::JoinHandle<anyhow::Result<()>> {
-    tokio::task::spawn(async move {
-        loop {
-            tokio::time::sleep(Duration::from_secs(60 * 5)).await;
-            tracing::info!("waky waky renew pluggy");
-
-            let client::pluggy::auth::CreateApiKeyOutcome::Success(new_pluggy_api_key) =
-                client::pluggy::auth::create_api_key(&pluggy_client_id, &pluggy_client_secret)
-                    .await?
-            else {
-                bail!("task couldn't renew pluggy api_key")
-            };
-
-            let mut pluggy_api_key = pluggy_api_key.lock().await;
-            *pluggy_api_key = new_pluggy_api_key.api_key;
-            tracing::info!("renewed pluggy api key");
-        }
     })
 }
 

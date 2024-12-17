@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        update expenses\n        set category = $1\n        WHERE id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "expense_category",
+            "kind": {
+              "Enum": [
+                "restaurants",
+                "shopping",
+                "services",
+                "entertainment",
+                "groceries",
+                "salary",
+                "interest Income",
+                "utilities",
+                "pharmacy",
+                "transfer",
+                "transport",
+                "others"
+              ]
+            }
+          }
+        },
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d507e0c62b31fb31803767486b16c17a6887eb80663c7a2606b7caab4948c884"
+}
