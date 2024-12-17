@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE expenses SET\n            description = COALESCE($1, description),\n            price = COALESCE($2, price),\n            category = COALESCE($3 :: expense_category, category),\n            is_essential = COALESCE($4, is_essential),\n            date = COALESCE($5, date)\n        WHERE uuid = $6 AND user_id = $7\n        and deleted_at is null\n        RETURNING id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid\n        ",
+  "query": "SELECT id, description, price, category as \"category: ExpenseCategory\", is_essential, date, uuid, bank_source\n        FROM expenses\n        WHERE uuid = $1 AND user_id = $2\n        and deleted_at is null\n        ",
   "describe": {
     "columns": [
       {
@@ -57,35 +57,15 @@
         "ordinal": 6,
         "name": "uuid",
         "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "bank_source",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Float4",
-        {
-          "Custom": {
-            "name": "expense_category",
-            "kind": {
-              "Enum": [
-                "restaurants",
-                "shopping",
-                "services",
-                "entertainment",
-                "groceries",
-                "salary",
-                "interest Income",
-                "utilities",
-                "pharmacy",
-                "transfer",
-                "transport",
-                "others"
-              ]
-            }
-          }
-        },
-        "Bool",
-        "Date",
         "Uuid",
         "Int4"
       ]
@@ -97,8 +77,9 @@
       true,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "4c00c0c5726aed16c1fe61772b735bf41fbd392c26633d012b741340df6d8cd7"
+  "hash": "8dddda06cc45929492684b72913321b64371340fbc2fbd7eb330bf0505351b4a"
 }
