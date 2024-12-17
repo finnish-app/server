@@ -20,6 +20,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/api/pluggyconnect/success", post(connect_success))
         .route("/api/accounts", get(list_accounts))
         .route("/api/transactions", get(list_transactions))
+        .route("/api/refresh-transactions", get(refresh_transactions))
 }
 
 #[derive(Serialize)]
@@ -166,6 +167,7 @@ async fn list_transactions(
     match crate::client::pluggy::transactions::list_transactions(
         &shared_state.pluggy_api_key.lock().await,
         &list_transactions_request.account_id,
+        None,
     )
     .await
     {
@@ -177,4 +179,28 @@ async fn list_transactions(
             Err(StatusCode::FAILED_DEPENDENCY)
         }
     }
+}
+
+async fn refresh_transactions(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> StatusCode {
+    let Some(user) = auth_session.user else {
+        panic!("user not logged in")
+    };
+
+    tracing::info!("got in to refresh");
+
+    if let Err(e) = crate::features::expenses::process_pluggy_expenses(
+        user.id,
+        shared_state.pool.clone(),
+        &shared_state.pluggy_api_key.lock().await,
+    )
+    .await
+    {
+        tracing::error!(?e, ?user.id, "could not refresh transactions");
+        return StatusCode::FAILED_DEPENDENCY;
+    }
+
+    StatusCode::OK
 }

@@ -37,13 +37,54 @@ pub async fn create(
     .await
 }
 
+pub struct CreateParamsFromPluggy {
+    pub description: String,
+    pub price: f32,
+    pub category: Option<ExpenseCategory>,
+    pub bank: Option<String>,
+    pub date: Date,
+    pub now: OffsetDateTime,
+    pub external_account_id: Uuid,
+    pub external_id: Uuid,
+    pub external_created_at: Option<OffsetDateTime>,
+    pub is_essential: bool,
+}
+
+pub async fn insert_from_pluggy(
+    conn: impl PgExecutor<'_>,
+    user_id: i32,
+    p: CreateParamsFromPluggy,
+) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO expenses
+        (description, price, category, bank_source, external_account_id, external_id, date, uuid, is_essential, user_id, created_at, external_created_at)
+        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        "#,
+        p.description,
+        p.price,
+        p.category as Option<ExpenseCategory>,
+        p.bank,
+        p.external_account_id,
+        p.external_id,
+        p.date,
+        Uuid::new_v4(),
+        p.is_essential,
+        user_id,
+        p.now,
+        p.external_created_at,
+    )
+    .execute(conn)
+    .await
+}
+
 #[derive(Serialize)]
 /// Expense is a struct with the fields of an expense.
 pub struct Expense {
     pub id: i32,
     pub description: String,
     pub price: f32,
-    pub category: ExpenseCategory,
+    pub category: Option<ExpenseCategory>,
     pub is_essential: bool,
     pub date: Date,
     pub uuid: Uuid,
@@ -97,8 +138,8 @@ pub async fn exists_active(
 ) -> Result<Option<bool>, sqlx::Error> {
     let record = sqlx::query!(
         r#"
-    select exists(select 1 from expenses where uuid = $1 AND user_id = $2)
-    "#,
+        select exists(select 1 from expenses where uuid = $1 AND user_id = $2)
+        "#,
         expense_uuid,
         user_id
     )
@@ -193,5 +234,32 @@ pub async fn delete(
         user_id,
     )
     .execute(db_pool)
+    .await
+}
+
+pub struct MostRecentTimestamps {
+    pub date: Date,
+    pub external_created_at: Option<OffsetDateTime>,
+}
+
+pub async fn most_recent_for_account(
+    conn: impl PgExecutor<'_>,
+    user_id: i32,
+    external_account_id: Uuid,
+) -> Result<Option<MostRecentTimestamps>, sqlx::Error> {
+    sqlx::query_as!(
+        MostRecentTimestamps,
+        r#"
+        SELECT date, external_created_at
+        FROM expenses
+        WHERE external_account_id = $1
+        AND user_id = $2
+        order by external_created_at desc, date desc
+        limit 1
+        "#,
+        external_account_id,
+        user_id,
+    )
+    .fetch_optional(conn)
     .await
 }

@@ -159,15 +159,25 @@ pub enum ListTransactionsOutcome {
 pub async fn list_transactions(
     api_key: &str,
     account_id: &Uuid,
+    maybe_last_day: Option<&time::Date>,
 ) -> anyhow::Result<ListTransactionsOutcome> {
     let mut headers = HeaderMap::new();
     let api_key_hdr_value = HeaderValue::from_str(api_key)?;
     headers.insert(HeaderName::from_static("x-api-key"), api_key_hdr_value);
 
+    let query_params = if let Some(last_day) = maybe_last_day {
+        vec![
+            ("accountId", account_id.to_string()),
+            ("from", last_day.to_string()),
+        ]
+    } else {
+        vec![("accountId", account_id.to_string())]
+    };
+
     let client = reqwest::Client::new();
     let resp = client
         .get("https://api.pluggy.ai/transactions")
-        .query(&[("accountId", account_id)])
+        .query(&query_params)
         .headers(headers)
         .send()
         .await?;
