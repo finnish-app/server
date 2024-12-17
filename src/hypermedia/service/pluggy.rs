@@ -10,9 +10,11 @@ use crate::{
 
 use askama_axum::IntoResponse;
 use axum::http::StatusCode;
+use sqlx::PgPool;
 
 pub async fn widget(
     auth_session: AuthSession,
+    db_pool: PgPool,
     env: &Env,
     pluggy_api_key: &str,
 ) -> impl IntoResponse {
@@ -34,32 +36,47 @@ pub async fn widget(
         }
     };
 
-    let connect_token = match create_connect_token(pluggy_api_key, webhook_url, user.id).await {
-        Ok(CreateConnectTokenOutcome::Success(connect_token)) => connect_token,
-        Ok(
-            CreateConnectTokenOutcome::Forbidden
-            | CreateConnectTokenOutcome::NotFound
-            | CreateConnectTokenOutcome::Internal,
-        ) => {
-            tracing::error!("pluggy returned error outcome on create connect token");
-            return (
-                StatusCode::FAILED_DEPENDENCY,
-                PluggyWidgetModalErrorTemplate {},
-            )
-                .into_response();
-        }
-        Err(e) => {
-            tracing::error!(?e, "pluggy failed to give a response");
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                PluggyWidgetModalErrorTemplate {},
-            )
-                .into_response();
-        }
-    };
+    let maybe_item_id =
+        match crate::queries::pluggy_items::find_latest_for_user(&db_pool, user.id).await {
+            Ok(id) => id.map(|i| i.external_item_id),
+            Err(e) => {
+                tracing::error!(?e, "database error on find latest user item_id");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    PluggyWidgetModalErrorTemplate {},
+                )
+                    .into_response();
+            }
+        };
+
+    let connect_token =
+        match create_connect_token(pluggy_api_key, webhook_url, user.id, maybe_item_id).await {
+            Ok(CreateConnectTokenOutcome::Success(connect_token)) => connect_token,
+            Ok(
+                CreateConnectTokenOutcome::Forbidden
+                | CreateConnectTokenOutcome::NotFound
+                | CreateConnectTokenOutcome::Internal,
+            ) => {
+                tracing::error!("pluggy returned error outcome on create connect token");
+                return (
+                    StatusCode::FAILED_DEPENDENCY,
+                    PluggyWidgetModalErrorTemplate {},
+                )
+                    .into_response();
+            }
+            Err(e) => {
+                tracing::error!(?e, "pluggy failed to give a response");
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    PluggyWidgetModalErrorTemplate {},
+                )
+                    .into_response();
+            }
+        };
 
     return PluggyConnectWidgetTemplate {
         access_token: connect_token.access_token,
+        item_id: maybe_item_id.map_or(String::new(), |u| u.to_string()),
     }
     .into_response();
 }

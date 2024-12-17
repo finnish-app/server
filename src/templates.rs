@@ -333,6 +333,7 @@ pub struct DeleteExpenseModal {
 #[template(path = "pluggy_connect_widget.html")]
 pub struct PluggyConnectWidgetTemplate {
     pub access_token: String,
+    pub item_id: String,
 }
 
 #[derive(Template)]

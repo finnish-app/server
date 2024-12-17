@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n    select exists(select 1 from expenses where uuid = $1 AND user_id = $2)\n    ",
+  "query": "\n        select exists(select 1 from expenses where uuid = $1 AND user_id = $2)\n        ",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "f6d77f09cd2971061abca5e008869fc2c7fbf826765ab9f803fed0f954776868"
+  "hash": "a2286634373f5b586587e2bfb2deb8983b8f2f9275cfc1be0a112e8e825463a0"
 }

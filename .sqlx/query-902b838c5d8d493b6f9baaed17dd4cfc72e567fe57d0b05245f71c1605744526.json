@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select external_item_id from pluggy_items\n        where user_id = $1\n        order by created_at desc\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "external_item_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "902b838c5d8d493b6f9baaed17dd4cfc72e567fe57d0b05245f71c1605744526"
+}

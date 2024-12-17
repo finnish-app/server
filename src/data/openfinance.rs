@@ -20,6 +20,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/api/pluggyconnect/success", post(connect_success))
         .route("/api/accounts", get(list_accounts))
         .route("/api/transactions", get(list_transactions))
+        .route("/api/refresh-transactions", get(refresh_transactions))
 }
 
 #[derive(Serialize)]
@@ -37,10 +38,21 @@ async fn connect_token(
         panic!("user not logged in")
     };
 
+    let maybe_item_id =
+        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
+        {
+            Ok(res) => res.map(|i| i.external_item_id),
+            Err(e) => {
+                tracing::error!(user.id, ?e, "error finding latest item_id for user");
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
     match crate::client::pluggy::auth::create_connect_token(
         &shared_state.pluggy_api_key.lock().await,
         "webhook".to_owned(),
         user.id,
+        maybe_item_id,
     )
     .await
     {
@@ -76,22 +88,36 @@ async fn connect_success(
         panic!("user not logged in")
     };
 
-    match crate::features::openfinance::add_item(
-        &shared_state.pool,
-        user.id,
-        pluggyconnect_request.item_id,
-        OffsetDateTime::now_utc(),
-    )
-    .await
-    {
-        Ok(r) => {
-            assert!(r.rows_affected() < 2);
-            StatusCode::CREATED
+    let maybe_item_id =
+        match crate::queries::pluggy_items::find_latest_for_user(&shared_state.pool, user.id).await
+        {
+            Ok(res) => res.map(|i| i.external_item_id),
+            Err(e) => {
+                tracing::error!(user.id, ?e, "error finding latest item_id for user");
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        };
+    if let Some(item_id) = maybe_item_id {
+        if item_id == pluggyconnect_request.item_id {
+            StatusCode::OK
+        } else {
+            tracing::error!(user.id, "updated not latest item_id?");
+            StatusCode::PRECONDITION_FAILED
         }
-
-        Err(e) => {
-            tracing::error!(?e, user.id, "error receiving pluggy connect item_id");
-            StatusCode::INTERNAL_SERVER_ERROR
+    } else {
+        match crate::features::openfinance::add_item(
+            shared_state.pool.clone(),
+            user.id,
+            pluggyconnect_request.item_id,
+            OffsetDateTime::now_utc(),
+        )
+        .await
+        {
+            Ok(()) => StatusCode::CREATED,
+            Err(e) => {
+                tracing::error!(?e, user.id, "error receiving pluggy connect item_id");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
 }
@@ -141,6 +167,7 @@ async fn list_transactions(
     match crate::client::pluggy::transactions::list_transactions(
         &shared_state.pluggy_api_key.lock().await,
         &list_transactions_request.account_id,
+        None,
     )
     .await
     {
@@ -152,4 +179,28 @@ async fn list_transactions(
             Err(StatusCode::FAILED_DEPENDENCY)
         }
     }
+}
+
+async fn refresh_transactions(
+    auth_session: AuthSession,
+    State(shared_state): State<Arc<AppState>>,
+) -> StatusCode {
+    let Some(user) = auth_session.user else {
+        panic!("user not logged in")
+    };
+
+    tracing::info!("got in to refresh");
+
+    if let Err(e) = crate::features::expenses::process_pluggy_expenses(
+        user.id,
+        shared_state.pool.clone(),
+        &shared_state.pluggy_api_key.lock().await,
+    )
+    .await
+    {
+        tracing::error!(?e, ?user.id, "could not refresh transactions");
+        return StatusCode::FAILED_DEPENDENCY;
+    }
+
+    StatusCode::OK
 }
