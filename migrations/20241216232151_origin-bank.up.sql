@@ -7,5 +7,6 @@ ALTER TABLE expenses
 ALTER TABLE expenses
     ALTER COLUMN category DROP NOT NULL;
 ALTER TABLE pluggy_items
-    ADD COLUMN last_updated_at timestamptz NOT NULL;
+    ADD COLUMN last_updated_at timestamptz NOT NULL,
+    ADD COLUMN connector_name text NOT NULL;
 COMMIT;
