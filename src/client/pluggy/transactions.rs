@@ -82,9 +82,9 @@ struct DocumentNumber {
 #[serde(rename_all = "camelCase")]
 struct PayerOrReceiver {
     document_number: DocumentNumber,
-    name: String,
-    account_number: String,
-    branch_number: String,
+    name: Option<String>,
+    account_number: Option<String>,
+    branch_number: Option<String>,
     routing_number: Option<String>,
     routing_number_ispb: Option<String>,
 }
