@@ -264,3 +264,43 @@ pub async fn most_recent_for_account(
     .fetch_optional(conn)
     .await
 }
+
+pub struct UncategorizedTransactions {
+    pub id: i32,
+    pub description: String,
+    pub price: f32,
+    pub category: Option<ExpenseCategory>,
+}
+
+pub async fn list_uncategorized(
+    conn: impl PgExecutor<'_>,
+) -> Result<Vec<UncategorizedTransactions>, sqlx::Error> {
+    sqlx::query_as!(
+        UncategorizedTransactions,
+        r#"
+        SELECT id, description, price, category as "category: ExpenseCategory"
+        FROM expenses
+        WHERE category IS NULL
+        "#
+    )
+    .fetch_all(conn)
+    .await
+}
+
+pub async fn update_category(
+    conn: impl PgExecutor<'_>,
+    expense_id: i32,
+    category: ExpenseCategory,
+) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        update expenses
+        set category = $1
+        WHERE id = $2
+        "#,
+        category as ExpenseCategory,
+        expense_id,
+    )
+    .execute(conn)
+    .await
+}
