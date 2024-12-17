@@ -74,7 +74,8 @@ async fn list(
                             expense.date,
                             expense.description,
                             expense.price,
-                            expense.category,
+                            // FIX: don't unwrap or default
+                            expense.category.clone().unwrap_or_default(),
                             expense.is_essential,
                             expense.uuid
                         )
@@ -111,7 +112,8 @@ async fn editable_expense(
             date: expense.date,
             description: expense.description,
             price: expense.price,
-            current_category: expense.category,
+            // FIX: don't unwrap or default
+            current_category: expense.category.clone().unwrap_or_default(),
             is_essential: if expense.is_essential { "checked" } else { "" },
             uuid: expense.uuid,
             expense_categories: ExpenseCategory::iter(),
@@ -143,7 +145,8 @@ async fn find(
             date: expense.date,
             description: expense.description,
             price: expense.price,
-            category: expense.category,
+            // FIX: don't unwrap or default
+            category: expense.category.clone().unwrap_or_default(),
             is_essential: expense.is_essential,
             uuid: expense.uuid,
         }),
@@ -187,7 +190,8 @@ async fn update(
                 date: updated.date,
                 description: updated.description,
                 price: updated.price,
-                category: updated.category,
+                // FIX: don't unwrap or default
+                category: updated.category.clone().unwrap_or_default(),
                 is_essential: updated.is_essential,
                 uuid: updated.uuid,
             },
