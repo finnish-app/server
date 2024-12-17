@@ -135,12 +135,6 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("couldn't migrate session store")?;
 
-    let deletion_task = tokio::task::spawn(
-        session_store
-            .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    );
-
     let client::pluggy::auth::CreateApiKeyOutcome::Success(pluggy_api_key) =
         client::pluggy::auth::create_api_key(&env.pluggy_client_id, &env.pluggy_client_secret)
             .await?
@@ -155,6 +149,12 @@ async fn main() -> anyhow::Result<()> {
         pluggy_api_key,
     });
 
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
     let renew_pluggy = tasks::renew_pluggy_task(
         shared_state.pluggy_api_key.clone(),
         shared_state.env.pluggy_client_id.clone(),
@@ -164,14 +164,27 @@ async fn main() -> anyhow::Result<()> {
         tasks::categorize_transactions_task(shared_state.pool.clone());
 
     tracing::info!("Server started");
-    let rest = rest(shared_state.clone(), session_store);
-    rest.await??;
 
-    tracing::info!("Starting deletion task"); // message won't show
-    deletion_task.await??;
-
-    renew_pluggy.await??;
-    categorize_transactions_task.await??;
+    tokio::select! {
+        rest_result = rest(shared_state.clone(), session_store) => {
+            rest_result??;
+        }
+        deletio_result = deletion_task => {
+            if let Err(e) = deletio_result {
+                tracing::error!(?e, "session deletion task failed");
+            }
+        }
+        renew_result = renew_pluggy => {
+            if let Err(e) = renew_result {
+                tracing::error!(?e, "Pluggy renewal task failed");
+            }
+        }
+        categorize_result = categorize_transactions_task => {
+            if let Err(e) = categorize_result {
+                tracing::error!(?e, "Transaction categorization task failed");
+            }
+        }
+    }
 
     logger_provider.shutdown()?;
     Ok(())
