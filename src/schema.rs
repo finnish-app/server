@@ -45,6 +45,7 @@ impl FromStr for ExpenseCategory {
             "Transfer" => return Ok(Self::Transfer),
             "Transport" => return Ok(Self::Transport),
             "Others" => return Ok(Self::Others),
+            "Investments" => return Ok(Self::Investments),
             _ => return Err(format!("{str} is not a valid expense type")),
         }
     }
