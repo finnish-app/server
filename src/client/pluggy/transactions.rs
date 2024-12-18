@@ -116,7 +116,7 @@ enum AcquirerType {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct CreditCardMetadata {
-    installment_number: i32,
+    installment_number: Option<i32>,
     total_installments: i32,
     total_amount: Option<i32>,
     #[serde(default, with = "time::serde::iso8601::option")]
