@@ -123,7 +123,7 @@ struct CreditCardMetadata {
     purchase_date: Option<OffsetDateTime>,
     payee_mcc: Option<String>,
     card_number: Option<String>,
-    bill_id: String,
+    bill_id: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
