@@ -93,7 +93,7 @@ pub async fn process_pluggy_expenses(
                     description: transaction.description,
                     price: transaction.amount,
                     category: None,
-                    bank: Some("bank".to_owned()),
+                    bank: Some(item.connector_name.clone()),
                     external_account_id: transaction.account_id,
                     external_id: transaction.id,
                     external_created_at: transaction.created_at,
