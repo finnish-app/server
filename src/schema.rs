@@ -17,6 +17,7 @@ pub enum ExpenseCategory {
     Entertainment,
     Groceries,
     Salary,
+    #[serde(rename = "Interest Income")]
     InterestIncome,
     Utilities,
     Pharmacy,
@@ -24,6 +25,7 @@ pub enum ExpenseCategory {
     Transport,
     #[default]
     Others,
+    Investments,
 }
 
 impl FromStr for ExpenseCategory {
@@ -37,7 +39,7 @@ impl FromStr for ExpenseCategory {
             "Entertainment" => return Ok(Self::Entertainment),
             "Groceries" => return Ok(Self::Groceries),
             "Salary" => return Ok(Self::Salary),
-            "InterestIncome" => return Ok(Self::InterestIncome),
+            "Interest Income" => return Ok(Self::InterestIncome),
             "Utilities" => return Ok(Self::Utilities),
             "Pharmacy" => return Ok(Self::Pharmacy),
             "Transfer" => return Ok(Self::Transfer),
@@ -57,12 +59,13 @@ impl Display for ExpenseCategory {
             Self::Entertainment => return write!(fmtr, "Entertainment"),
             Self::Groceries => return write!(fmtr, "Groceries"),
             Self::Salary => return write!(fmtr, "Salary"),
-            Self::InterestIncome => return write!(fmtr, "InterestIncome"),
+            Self::InterestIncome => return write!(fmtr, "Interest Income"),
             Self::Utilities => return write!(fmtr, "Utilities"),
             Self::Pharmacy => return write!(fmtr, "Pharmacy"),
             Self::Transfer => return write!(fmtr, "Transfer"),
             Self::Transport => return write!(fmtr, "Transport"),
             Self::Others => return write!(fmtr, "Others"),
+            Self::Investments => return write!(fmtr, "Investments"),
         }
     }
 }
