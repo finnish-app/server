@@ -65,9 +65,7 @@ pub fn categorize_transactions_task(
                     id: row.id.to_string(),
                     description: row.description.clone(),
                     amount: row.price,
-                    balance: 0.0,
-                    // FIX: use external category
-                    category: row.category.clone().unwrap_or_default().to_string(),
+                    category: row.external_category.clone(),
                 })
                 .collect();
 

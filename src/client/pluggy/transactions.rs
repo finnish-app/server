@@ -169,9 +169,13 @@ pub async fn list_transactions(
         vec![
             ("accountId", account_id.to_string()),
             ("from", last_day.to_string()),
+            ("pageSize", "100".to_owned()),
         ]
     } else {
-        vec![("accountId", account_id.to_string())]
+        vec![
+            ("accountId", account_id.to_string()),
+            ("pageSize", "100".to_owned()),
+        ]
     };
 
     let client = reqwest::Client::new();

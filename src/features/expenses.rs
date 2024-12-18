@@ -92,13 +92,13 @@ pub async fn process_pluggy_expenses(
                 let params = crate::queries::expenses::CreateParamsFromPluggy {
                     description: transaction.description,
                     price: transaction.amount,
-                    category: None,
                     bank: Some(item.connector_name.clone()),
                     external_account_id: transaction.account_id,
                     external_id: transaction.id,
                     external_created_at: transaction.created_at,
                     is_essential: false,
                     date: transaction.date.date(),
+                    external_category: transaction.category,
                     now: OffsetDateTime::now_utc(),
                 };
                 let res =

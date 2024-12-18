@@ -10,8 +10,7 @@ pub struct TransactionToCategorize {
     pub id: String,
     pub description: String,
     pub amount: f32,
-    pub balance: f32,
-    pub category: String,
+    pub category: Option<String>,
 }
 
 #[derive(Deserialize)]

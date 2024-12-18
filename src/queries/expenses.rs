@@ -40,7 +40,6 @@ pub async fn create(
 pub struct CreateParamsFromPluggy {
     pub description: String,
     pub price: f32,
-    pub category: Option<ExpenseCategory>,
     pub bank: Option<String>,
     pub date: Date,
     pub now: OffsetDateTime,
@@ -48,6 +47,7 @@ pub struct CreateParamsFromPluggy {
     pub external_id: Uuid,
     pub external_created_at: Option<OffsetDateTime>,
     pub is_essential: bool,
+    pub external_category: Option<String>,
 }
 
 pub async fn insert_from_pluggy(
@@ -58,12 +58,11 @@ pub async fn insert_from_pluggy(
     sqlx::query!(
         r#"
         INSERT INTO expenses
-        (description, price, category, bank_source, external_account_id, external_id, date, uuid, is_essential, user_id, created_at, external_created_at)
-        VALUES ($1, $2, $3 :: expense_category, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        (description, price, bank_source, external_account_id, external_id, date, uuid, is_essential, user_id, created_at, external_created_at, external_category)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         "#,
         p.description,
         p.price,
-        p.category as Option<ExpenseCategory>,
         p.bank,
         p.external_account_id,
         p.external_id,
@@ -73,6 +72,7 @@ pub async fn insert_from_pluggy(
         user_id,
         p.now,
         p.external_created_at,
+        p.external_category,
     )
     .execute(conn)
     .await
@@ -269,7 +269,7 @@ pub struct UncategorizedTransactions {
     pub id: i32,
     pub description: String,
     pub price: f32,
-    pub category: Option<ExpenseCategory>,
+    pub external_category: Option<String>,
 }
 
 pub async fn list_uncategorized(
@@ -278,7 +278,7 @@ pub async fn list_uncategorized(
     sqlx::query_as!(
         UncategorizedTransactions,
         r#"
-        SELECT id, description, price, category as "category: ExpenseCategory"
+        SELECT id, description, price, external_category
         FROM expenses
         WHERE category IS NULL
         "#
