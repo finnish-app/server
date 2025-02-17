@@ -23,7 +23,7 @@ opentelemetry-semantic-conventions = { version = "0.27.0", default-features = fa
 opentelemetry_sdk = { version = "0.27.0", default-features = false, features = ["rt-tokio", "logs"] }
 password-auth = { version = "1.1.0-pre.1", default-features = false, features = ["argon2"] }
 plotly = { version = "0.11.0", default-features=false, features = ["with-axum"] }
-rand = { version = "0.8.5", default-features = false }
+rand = { version = "0.9.0", default-features = false }
 regex = { version = "1.11.0", default-features = false }
 reqwest = { version = "0.12.8", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0.210", default-features = false, features = ["derive", "serde_derive"] }
